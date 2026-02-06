@@ -819,66 +819,35 @@ export function PathAnalysis() {
                 )}
               </div>
               
-              {/* 分析类型 -->
+              {/* 分析类型 */}
               <div className="space-y-2">
                 <label className="text-sm text-[var(--text-muted)]">分析类型</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setPathType('funnel')}
-                    className={`p-2 rounded-lg border text-xs flex flex-col items-center gap-1 transition-all ${
-                      pathType === 'funnel'
-                        ? 'border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]'
-                        : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50'
-                    }`}
-                    style={{ display: 'flex', visibility: 'visible', opacity: 1 }}
-                  >
-                    <Filter className="w-4 h-4" />
-                    漏斗分析
-                  </button>
-                  <button
-                    onClick={() => setPathType('path')}
-                    className={`p-2 rounded-lg border text-xs flex flex-col items-center gap-1 transition-all ${
-                      pathType === 'path'
-                        ? 'border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]'
-                        : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50'
-                    }`}
-                  >
-                    <Route className="w-4 h-4" />
-                    路径分析
-                  </button>
-                  <button
-                    onClick={() => setPathType('clustering')}
-                    className={`p-2 rounded-lg border text-xs flex flex-col items-center gap-1 transition-all ${
-                      pathType === 'clustering'
-                        ? 'border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]'
-                        : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50'
-                    }`}
-                  >
-                    <Layers className="w-4 h-4" />
-                    路径聚类
-                  </button>
-                  <button
-                    onClick={() => setPathType('key_path')}
-                    className={`p-2 rounded-lg border text-xs flex flex-col items-center gap-1 transition-all ${
-                      pathType === 'key_path'
-                        ? 'border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]'
-                        : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50'
-                    }`}
-                  >
-                    <Target className="w-4 h-4" />
-                    关键路径
-                  </button>
-                  <button
-                    onClick={() => setPathType('sequence_mining')}
-                    className={`p-2 rounded-lg border text-xs flex flex-col items-center gap-1 transition-all ${
-                      pathType === 'sequence_mining'
-                        ? 'border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]'
-                        : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50'
-                    }`}
-                  >
-                    <Share2 className="w-4 h-4" />
-                    序列模式
-                  </button>
+                  {pathType === 'funnel' ? (
+                    <button onClick={() => setPathType('funnel')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Filter className="w-4 h-4"/>漏斗分析</button>
+                  ) : (
+                    <button onClick={() => setPathType('funnel')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Filter className="w-4 h-4"/>漏斗分析</button>
+                  )}
+                  {pathType === 'path' ? (
+                    <button onClick={() => setPathType('path')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Route className="w-4 h-4"/>路径分析</button>
+                  ) : (
+                    <button onClick={() => setPathType('path')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Route className="w-4 h-4"/>路径分析</button>
+                  )}
+                  {pathType === 'clustering' ? (
+                    <button onClick={() => setPathType('clustering')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Layers className="w-4 h-4"/>路径聚类</button>
+                  ) : (
+                    <button onClick={() => setPathType('clustering')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Layers className="w-4 h-4"/>路径聚类</button>
+                  )}
+                  {pathType === 'key_path' ? (
+                    <button onClick={() => setPathType('key_path')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Target className="w-4 h-4"/>关键路径</button>
+                  ) : (
+                    <button onClick={() => setPathType('key_path')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Target className="w-4 h-4"/>关键路径</button>
+                  )}
+                  {pathType === 'sequence_mining' ? (
+                    <button onClick={() => setPathType('sequence_mining')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Share2 className="w-4 h-4"/>序列模式</button>
+                  ) : (
+                    <button onClick={() => setPathType('sequence_mining')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Share2 className="w-4 h-4"/>序列模式</button>
+                  )}
                 </div>
               </div>
               

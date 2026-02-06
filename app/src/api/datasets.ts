@@ -37,4 +37,10 @@ export const datasetApi = {
   // 删除
   delete: (id: string) => 
     request.delete<ApiResponse<null>>(`/datasets/${id}`),
+
+  // 重命名
+  rename: (id: string, newName: string) => 
+    request.patch<ApiResponse<Dataset>>(`/datasets/${id}`, {
+      filename: newName
+    }),
 };

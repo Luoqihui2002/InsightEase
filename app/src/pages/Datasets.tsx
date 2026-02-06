@@ -16,7 +16,9 @@ import {
   Table,
   CheckSquare,
   Square,
-  X
+  X,
+  Pencil,
+  Check
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,7 +58,10 @@ export function Datasets() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
   
-
+  // 重命名状态
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -237,6 +242,41 @@ export function Datasets() {
       await loadDatasets();
     } catch (err: any) {
       alert('删除失败: ' + err.message);
+    }
+  };
+
+  // 开始重命名
+  const startRename = (dataset: Dataset) => {
+    setEditingId(dataset.id);
+    setEditingName(dataset.filename);
+  };
+
+  // 取消重命名
+  const cancelRename = () => {
+    setEditingId(null);
+    setEditingName('');
+  };
+
+  // 确认重命名
+  const confirmRename = async () => {
+    if (!editingId || !editingName.trim()) return;
+    
+    // 检查文件名是否合法
+    if (!/^[\w\u4e00-\u9fa5\-_\.]+$/.test(editingName)) {
+      alert('文件名包含非法字符');
+      return;
+    }
+    
+    setIsRenaming(true);
+    try {
+      await datasetApi.rename(editingId, editingName.trim());
+      await loadDatasets();
+      setEditingId(null);
+      setEditingName('');
+    } catch (err: any) {
+      alert('重命名失败: ' + err.message);
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -585,10 +625,41 @@ export function Datasets() {
                             </button>
                           </td>
                           <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <FileSpreadsheet className="w-5 h-5 text-[var(--neon-cyan)]" />
-                              <span className="text-[var(--text-primary)]">{dataset.filename}</span>
-                            </div>
+                            {editingId === dataset.id ? (
+                              <div className="flex items-center gap-2">
+                                <FileSpreadsheet className="w-5 h-5 text-[var(--neon-cyan)] flex-shrink-0" />
+                                <Input
+                                  value={editingName}
+                                  onChange={(e) => setEditingName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') confirmRename();
+                                    if (e.key === 'Escape') cancelRename();
+                                  }}
+                                  disabled={isRenaming}
+                                  autoFocus
+                                  className="h-8 text-sm bg-[var(--bg-primary)] border-[var(--border-subtle)] text-[var(--text-primary)]"
+                                />
+                                <button
+                                  onClick={confirmRename}
+                                  disabled={isRenaming}
+                                  className="p-1 rounded text-[var(--neon-green)] hover:bg-[var(--neon-green)]/10 disabled:opacity-50"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={cancelRename}
+                                  disabled={isRenaming}
+                                  className="p-1 rounded text-[var(--neon-pink)] hover:bg-[var(--neon-pink)]/10 disabled:opacity-50"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3">
+                                <FileSpreadsheet className="w-5 h-5 text-[var(--neon-cyan)]" />
+                                <span className="text-[var(--text-primary)]">{dataset.filename}</span>
+                              </div>
+                            )}
                           </td>
                           <td className="py-4 px-4 text-[var(--text-secondary)]">
                             {formatFileSize(dataset.file_size)}
@@ -617,6 +688,13 @@ export function Datasets() {
                                 >
                                   <Eye className="w-4 h-4 mr-2" />
                                   查看详情
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => startRename(dataset)}
+                                  className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                                >
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  重命名
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => downloadFile(dataset)}
@@ -696,7 +774,7 @@ export function Datasets() {
 
       {/* 详情弹窗 */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent style={{ width: '90vw', height: '90vh', maxWidth: 'none', padding: '24px' }}>
           <DialogHeader>
             <DialogTitle className="text-xl text-[var(--text-primary)] flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -708,7 +786,7 @@ export function Datasets() {
           </DialogHeader>
           
           {selectedDataset && (
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 120px)' }}>
               {/* 基本信息 */}
               <div className="grid grid-cols-4 gap-4">
                 <div className="p-4 rounded-lg bg-[var(--bg-tertiary)]">
