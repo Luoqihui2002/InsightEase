@@ -1,0 +1,251 @@
+import { useState, useRef, useEffect } from 'react';
+import { 
+  Play, 
+  Settings2, 
+  PieChart,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  TrendingUp,
+  MousePointer,
+  Eye,
+  ShoppingCart,
+  Loader2,
+  Download
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { DatasetSelector } from '@/components/DatasetSelector';
+import { analysisApi } from '@/api/analysis';
+import { toast } from 'sonner';
+import gsap from 'gsap';
+
+export function Attribution() {
+  const [isConfigOpen, setIsConfigOpen] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+  const [selectedDataset, setSelectedDataset] = useState('');
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showResult && resultRef.current) {
+      gsap.fromTo(
+        resultRef.current,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }
+      );
+    }
+  }, [showResult]);
+
+  const handleAnalyze = async () => {
+    if (!selectedDataset) {
+      toast.error('请先选择数据集');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setProgress(0);
+    setShowResult(false);
+    setAnalysisResult(null);
+
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 300);
+
+    try {
+      const res = await analysisApi.create({
+        dataset_id: selectedDataset,
+        analysis_type: 'correlation',
+        params: {}
+      });
+
+      if (res.code === 202 && res.data) {
+        const analysisId = res.data.id;
+        await pollResult(analysisId);
+      } else {
+        throw new Error(res.message || '分析启动失败');
+      }
+    } catch (err: any) {
+      toast.error(err.message || '分析失败');
+      setIsAnalyzing(false);
+      clearInterval(progressInterval);
+    }
+  };
+
+  const pollResult = async (analysisId: string) => {
+    const maxAttempts = 30;
+    let attempts = 0;
+
+    const checkResult = async () => {
+      try {
+        const res = await analysisApi.getResult(analysisId);
+        
+        if (res.data?.status === 'completed') {
+          setProgress(100);
+          setAnalysisResult(res.data.result_data);
+          setShowResult(true);
+          setIsAnalyzing(false);
+          toast.success('分析完成');
+          return;
+        } else if (res.data?.status === 'failed') {
+          throw new Error(res.data.error_msg || '分析失败');
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(checkResult, 1000);
+        } else {
+          throw new Error('分析超时');
+        }
+      } catch (err: any) {
+        toast.error(err.message);
+        setIsAnalyzing(false);
+      }
+    };
+
+    setTimeout(checkResult, 1000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-[var(--text-primary)]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          归因分析
+        </h1>
+        <p className="text-[var(--text-secondary)] mt-1">
+          分析用户转化路径，量化各触点的贡献价�?
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
+          <CardHeader 
+            className="cursor-pointer"
+            onClick={() => setIsConfigOpen(!isConfigOpen)}
+          >
+            <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
+                分析配置
+              </div>
+              {isConfigOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </CardTitle>
+          </CardHeader>
+          
+          {isConfigOpen && (
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm text-[var(--text-muted)]">选择数据�?/label>
+                <DatasetSelector 
+                  value={selectedDataset}
+                  onChange={(value) => { console.log("Dataset selected:", value); setSelectedDataset(value); }}
+                />
+              </div>
+
+              <Button 
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || !selectedDataset}
+                className="w-full bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80 font-medium"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    分析�?..
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    启动分析
+                  </>
+                )}
+              </Button>
+
+              {isAnalyzing && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-[var(--text-muted)]">
+                    <span>分析进度</span>
+                    <span>{Math.round(progress)}%</span>
+                  </div>
+                  <Progress value={progress} className="h-2 bg-[var(--bg-tertiary)]" />
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+
+        <div className="lg:col-span-2 space-y-6">
+          {!showResult ? (
+            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
+              <div className="text-center">
+                <PieChart className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
+                <p className="text-[var(--text-muted)]">选择数据集并启动分析</p>
+                <p className="text-xs text-[var(--text-muted)] mt-2">归因分析结果将在此显�?/p>
+              </div>
+            </Card>
+          ) : (
+            <div ref={resultRef} className="space-y-6">
+              <Card className="glass border-[var(--border-subtle)]">
+                <CardHeader>
+                  <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
+                    <PieChart className="w-5 h-5 text-[var(--neon-cyan)]" />
+                    归因分析结果
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {analysisResult?.correlation_matrix ? (
+                    <div className="space-y-4">
+                      <p className="text-[var(--text-secondary)]">相关性分析已完成</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-[var(--text-muted)]">
+                      分析完成，数据已生成
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {analysisResult?.ai_summary && (
+                <Card className="glass border-[var(--neon-cyan)]/30">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-[var(--neon-cyan)]" />
+                      AI 智能解读
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-[var(--neon-purple)]/10 to-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/30">
+                      <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">
+                        {analysisResult.ai_summary}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline"
+                  className="flex-1 border-[var(--neon-cyan)] text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/10"
+                  onClick={() => toast.info('导出功能开发中')}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  导出报告
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
