@@ -26,8 +26,7 @@ export type {
 } from './db';
 
 export { 
-  localStorageService, 
-  LocalStorageService 
+  localStorageService
 } from './local-storage.service';
 export type { 
   ProcessingResult, 
