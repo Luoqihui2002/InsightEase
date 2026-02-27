@@ -83,24 +83,56 @@ app/src/
 
 ---
 
-## 🚧 当前阶段：Phase 2.2（准备中）
+## 🚧 当前阶段：Phase 2.2（已完成 ✅）
 
 ### 目标：Web Worker + DuckDB-WASM 集成
 
-#### 待完成任务
-| 任务 | 预计工时 | 优先级 |
-|------|---------|--------|
-| 创建 DuckDB Worker | 4h | 🔴 高 |
-| 懒加载实现 | 2h | 🔴 高 |
-| Worker 通信封装 (Comlink) | 3h | 🔴 高 |
-| 大数据操作迁移 | 4h | 🟡 中 |
-| 加载状态 UI | 2h | 🟡 中 |
-| 性能测试 | 2h | 🟢 低 |
+#### 已完成任务
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| 创建 DuckDB Worker | ✅ | `app/src/workers/duckdb.worker.ts` |
+| 懒加载实现 | ✅ | 动态导入，仅首次使用下载 12MB |
+| Worker 通信封装 (Comlink) | ✅ | `app/src/services/duckdb-service.ts` |
+| 大数据操作迁移 | ✅ | `executeWithDuckDB()` 支持复杂操作 |
+| 加载状态 UI | ✅ | `DuckDBLoader` + `DuckDBIndicator` 组件 |
+
+#### 新增文件
+```
+app/src/
+├── workers/
+│   └── duckdb.worker.ts          # ⭐ DuckDB Web Worker
+├── services/
+│   ├── duckdb-service.ts         # ⭐ Worker 通信封装
+│   └── local-storage.service.ts  # 集成 DuckDB 引擎
+└── components/
+    └── DuckDBLoader.tsx          # ⭐ 加载状态 UI
+```
+
+#### 引擎选择策略（已生效）
+```typescript
+简单操作 (filter/dedup/sample) + < 20万行 → JS 引擎 ⚡
+复杂操作 (pivot/join) 或 大数据    → DuckDB-WASM 🚀
+```
 
 #### 预期效果
 - 100MB CSV 加载时间: 15s → 3s
 - 大数据处理不卡顿 UI
 - DuckDB 12MB WASM 懒加载（仅首次）
+
+---
+
+## 🚧 当前阶段：Phase 2.3（准备中）
+
+### 目标：大文件流式处理
+
+#### 待完成任务
+| 任务 | 预计工时 | 优先级 |
+|------|---------|--------|
+| File System Access API 集成 | 3h | 🔴 高 |
+| 分片读取实现 | 4h | 🔴 高 |
+| 流式解析 CSV | 3h | 🔴 高 |
+| 进度条显示 | 2h | 🟡 中 |
+| 内存优化测试 | 2h | 🟢 低 |
 
 ---
 

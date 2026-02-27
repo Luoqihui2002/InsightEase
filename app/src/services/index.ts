@@ -32,3 +32,17 @@ export type {
   ProcessingResult, 
   LocalStorageStatus 
 } from './local-storage.service';
+
+// Phase 2.2: DuckDB-WASM 服务
+export {
+  initDuckDB,
+  importToDuckDB,
+  queryDuckDB,
+  executeWithDuckDB,
+  isDuckDBAvailable,
+  waitForDuckDB,
+  terminateWorker,
+  onDuckDBStatusChange,
+  getDuckDBStatus,
+} from './duckdb-service';
+export type { DuckDBStatus } from './duckdb-service';

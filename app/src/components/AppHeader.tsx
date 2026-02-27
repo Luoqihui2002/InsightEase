@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTheme, type ThemeType } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
+import { SecurityBadge } from '@/components/SecurityBadge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,6 +108,9 @@ export function AppHeader() {
 
       {/* 右侧操作区 */}
       <div className="flex items-center gap-3">
+        {/* 安全模式徽章 */}
+        <SecurityBadge showDetails={false} />
+        
         {/* 主题切换 */}
         <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>

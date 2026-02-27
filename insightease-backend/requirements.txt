@@ -23,3 +23,6 @@ matplotlib
 seaborn
 reportlab
 alembic
+
+# 阿里云 OSS（云端存储）
+oss2

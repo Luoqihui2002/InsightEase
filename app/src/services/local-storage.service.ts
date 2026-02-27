@@ -10,6 +10,7 @@
 
 import { datasetStorage, operationChainStorage, compression } from './db';
 import { engineSelector, type EngineDecision } from './engine-selector';
+import { executeWithDuckDB } from './duckdb-service';
 import type { DataTable } from '@/types/data-table';
 import type { Operation, OperationChain } from '@/types/operation';
 
@@ -259,7 +260,9 @@ class LocalStorageService {
   /**
    * 执行操作链
    * 
-   * 当前实现：纯 JS 引擎（DuckDB 在 Phase 2.2 添加）
+   * 双引擎支持：
+   * - JS 引擎：简单操作、小数据量
+   * - DuckDB-WASM：复杂操作、大数据量
    */
   async executeOperations(
     table: DataTable,
@@ -270,9 +273,31 @@ class LocalStorageService {
     const decision = this.getEngineDecision(table, operations);
 
     try {
+      // 使用 DuckDB 处理大数据
+      if (decision.engine === 'duckdb') {
+        const result = await executeWithDuckDB(table, operations, onProgress);
+        const duration = performance.now() - startTime;
+        
+        if (result.success && result.data) {
+          return {
+            success: true,
+            data: result.data,
+            engine: 'duckdb',
+            duration,
+          };
+        } else {
+          return {
+            success: false,
+            error: result.error || 'DuckDB 处理失败',
+            engine: 'duckdb',
+            duration,
+          };
+        }
+      }
+
+      // 使用纯 JS 处理小数据
       let currentData = { ...table };
 
-      // 按顺序执行每个操作
       for (let i = 0; i < operations.length; i++) {
         const operation = operations[i];
         
@@ -280,13 +305,7 @@ class LocalStorageService {
           onProgress(i + 1, operations.length, operation.name);
         }
 
-        // 根据引擎选择执行方式
-        if (decision.engine === 'js') {
-          currentData = await this.executeWithJS(currentData, operation);
-        } else {
-          // DuckDB 引擎（待实现）
-          throw new Error('DuckDB 引擎在 Phase 2.2 中实现');
-        }
+        currentData = await this.executeWithJS(currentData, operation);
       }
 
       const duration = performance.now() - startTime;
@@ -294,7 +313,7 @@ class LocalStorageService {
       return {
         success: true,
         data: currentData,
-        engine: decision.engine,
+        engine: 'js',
         duration,
       };
     } catch (error) {

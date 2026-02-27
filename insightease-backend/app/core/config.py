@@ -27,6 +27,23 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./data/uploads"
     MAX_UPLOAD_SIZE: int = 100 * 1024 * 1024
     
+    # 阿里云 OSS 配置（云端存储）
+    OSS_ACCESS_KEY_ID: str = ""
+    OSS_ACCESS_KEY_SECRET: str = ""
+    OSS_BUCKET_NAME: str = ""
+    OSS_ENDPOINT: str = ""  # 如: oss-cn-hangzhou.aliyuncs.com
+    OSS_REGION: str = ""    # 如: cn-hangzhou
+    
+    @property
+    def OSS_ENABLED(self) -> bool:
+        """是否启用 OSS 云端存储"""
+        return all([
+            self.OSS_ACCESS_KEY_ID,
+            self.OSS_ACCESS_KEY_SECRET,
+            self.OSS_BUCKET_NAME,
+            self.OSS_ENDPOINT
+        ])
+    
     # AI配置
     KIMI_API_KEY: str = ""
     KIMI_BASE_URL: str = "https://api.moonshot.cn/v1"

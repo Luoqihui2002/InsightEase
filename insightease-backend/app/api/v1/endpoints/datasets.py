@@ -10,6 +10,7 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.storage import storage, AliyunOSSStorage
 from app.models import Dataset, User
 from app.schemas.base import ResponseModel, PaginationModel
 from app.schemas.dataset import (
@@ -144,41 +145,53 @@ async def upload_dataset(
         raise HTTPException(400, detail="仅支持CSV/Excel格式")
     
     dataset_id = str(uuid.uuid4())
-    safe_name = f"{dataset_id}_{file.filename.replace(' ', '_')}"
-    filepath = os.path.join(settings.UPLOAD_DIR, safe_name)
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     
     try:
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # 读取文件内容
+        file_content = await file.read()
+        file_size = len(file_content)
         
-        if ext == ".csv":
-            # 智能读取 CSV，自动检测表头
-            df = read_csv_with_auto_header(filepath, low_memory=False)
-            row_count = len(df)
-        else:
-            df = pd.read_excel(filepath)
-            row_count = len(df)
+        # 使用存储服务保存文件（OSS 或本地）
+        storage_path = await storage.save(dataset_id, file.filename, file_content)
         
-        schema = []
-        for col in df.columns:
-            # 确保列名是字符串（pandas 列名可能是数字等其他类型）
-            col_name = str(col)
-            schema.append({
-                "name": col_name,
-                "dtype": str(df[col].dtype),
-                "sample_values": df[col].dropna().head(3).tolist()
-            })
+        # 解析文件内容（需要先保存到临时文件）
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix=ext) as tmp:
+            tmp.write(file_content)
+            tmp_path = tmp.name
         
-        # 计算质量评分
-        quality_score = calculate_quality_score(df)
+        try:
+            if ext == ".csv":
+                # 智能读取 CSV，自动检测表头
+                df = read_csv_with_auto_header(tmp_path, low_memory=False)
+                row_count = len(df)
+            else:
+                df = pd.read_excel(tmp_path)
+                row_count = len(df)
+            
+            schema = []
+            for col in df.columns:
+                # 确保列名是字符串（pandas 列名可能是数字等其他类型）
+                col_name = str(col)
+                schema.append({
+                    "name": col_name,
+                    "dtype": str(df[col].dtype),
+                    "sample_values": df[col].dropna().head(3).tolist()
+                })
+            
+            # 计算质量评分
+            quality_score = calculate_quality_score(df)
+        finally:
+            # 清理临时文件
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
         
         db_dataset = Dataset(
             id=dataset_id,
             user_id=current_user.id,
             filename=file.filename,
-            storage_path=filepath,
-            file_size=os.path.getsize(filepath),
+            storage_path=storage_path,  # 可能是本地路径或 oss:// 路径
+            file_size=file_size,
             row_count=row_count,
             col_count=len(df.columns),
             schema=schema,
@@ -193,8 +206,11 @@ async def upload_dataset(
         return ResponseModel(data=db_dataset)
         
     except Exception as e:
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        # 如果数据库保存失败，尝试删除已上传的文件
+        try:
+            await storage.delete(storage_path)
+        except:
+            pass
         raise HTTPException(500, detail=f"处理失败: {str(e)}")
 
 def _normalize_dataset_schema(dataset):
@@ -283,11 +299,37 @@ async def preview_dataset(
         raise HTTPException(404, detail="数据集不存在")
     
     try:
-        ext = Path(dataset.storage_path).suffix.lower()
-        if ext == ".csv":
-            df = read_csv_with_auto_header(dataset.storage_path, nrows=rows)
+        storage_path = dataset.storage_path
+        
+        # 处理 OSS 存储的文件
+        if storage_path.startswith("oss://"):
+            # 下载到临时文件
+            file_content = await storage.read(storage_path)
+            import tempfile
+            ext = Path(dataset.filename).suffix.lower()
+            with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix=ext) as tmp:
+                tmp.write(file_content)
+                tmp_path = tmp.name
+            
+            try:
+                if ext == ".csv":
+                    df = read_csv_with_auto_header(tmp_path, nrows=rows)
+                else:
+                    df = pd.read_excel(tmp_path, nrows=rows)
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
         else:
-            df = pd.read_excel(dataset.storage_path, nrows=rows)
+            # 本地文件直接读取
+            ext = Path(storage_path).suffix.lower()
+            if storage_path.startswith('./'):
+                backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+                storage_path = os.path.join(backend_root, storage_path.lstrip('./').replace('/', os.sep))
+            
+            if ext == ".csv":
+                df = read_csv_with_auto_header(storage_path, nrows=rows)
+            else:
+                df = pd.read_excel(storage_path, nrows=rows)
         
         # 转换数据，确保所有键都是字符串
         raw_data = df.where(pd.notnull(df), None).to_dict(orient="records")
@@ -452,7 +494,7 @@ async def download_dataset(
     current_user: User = Depends(get_current_active_user)
 ):
     """下载数据集文件"""
-    from fastapi.responses import FileResponse
+    from fastapi.responses import FileResponse, RedirectResponse
     
     result = await db.execute(
         select(Dataset).where(
@@ -465,15 +507,32 @@ async def download_dataset(
     if not dataset:
         raise HTTPException(404, detail="数据集不存在")
     
-    if not os.path.exists(dataset.storage_path):
-        raise HTTPException(404, detail="文件不存在")
+    storage_path = dataset.storage_path
+    
+    # 处理 OSS 存储的文件
+    if storage_path.startswith("oss://"):
+        # 使用 OSS 临时下载链接
+        if isinstance(storage, AliyunOSSStorage):
+            download_url = storage.get_download_url(storage_path, expires=3600)
+            return RedirectResponse(url=download_url)
+        else:
+            raise HTTPException(500, detail="OSS 存储未正确配置")
+    
+    # 处理本地存储的文件
+    # 如果是相对路径，转换为绝对路径
+    if storage_path.startswith('./'):
+        backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+        storage_path = os.path.join(backend_root, storage_path.lstrip('./').replace('/', os.sep))
+    
+    if not os.path.exists(storage_path):
+        raise HTTPException(404, detail=f"文件不存在: {dataset.filename}，可能已被删除或未同步")
     
     # 处理中文文件名
     from urllib.parse import quote
     encoded_filename = quote(dataset.filename)
     
     return FileResponse(
-        path=dataset.storage_path,
+        path=storage_path,
         filename=dataset.filename,
         media_type="application/octet-stream",
         headers={

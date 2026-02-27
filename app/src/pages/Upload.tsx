@@ -12,8 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import gsap from 'gsap';
-import { datasetApi } from '@/api';  // 新增
-import type { FieldSchema } from '@/types/api';  // 新增
+import { datasetApi } from '@/api';
+import type { FieldSchema } from '@/types/api';
+import { localStorageService } from '@/services';
+import { toast } from 'sonner';
 
 interface UploadingFile {
   id: string;
@@ -74,7 +76,21 @@ export function Upload() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // 新增：真实上传逻辑
+  // 获取当前存储模式
+  const getStorageMode = (): 'cloud' | 'local' => {
+    const saved = localStorage.getItem('insightease_settings');
+    if (saved) {
+      try {
+        const settings = JSON.parse(saved);
+        return settings.storageMode || 'cloud';
+      } catch {
+        return 'cloud';
+      }
+    }
+    return localStorageService.getSecurityMode() ? 'local' : 'cloud';
+  };
+
+  // 上传逻辑：根据存储模式选择上传到云端或本地
   const handleFiles = async (files: File[]) => {
     const validFiles = files.filter(f => 
       f.name.endsWith('.csv') || 
@@ -82,11 +98,14 @@ export function Upload() {
       f.name.endsWith('.xls')
     );
 
+    const storageMode = getStorageMode();
+    const isLocalMode = storageMode === 'local';
+
     for (const file of validFiles) {
       const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const newFile: UploadingFile = {
         id,
-        file,  // 保存引用
+        file,
         name: file.name,
         size: formatFileSize(file.size),
         progress: 0,
@@ -96,44 +115,13 @@ export function Upload() {
       setUploadingFiles(prev => [...prev, newFile]);
 
       try {
-        // 调用真实 API 上传
-        const res: any = await datasetApi.upload(file, (percent) => {
-          setUploadingFiles(prev => 
-            prev.map(f => 
-              f.id === id ? { ...f, progress: percent } : f
-            )
-          );
-        });
-
-        // 上传成功
-        setUploadingFiles(prev => 
-          prev.map(f => 
-            f.id === id ? { ...f, progress: 100, status: 'completed' } : f
-          )
-        );
-
-        // 显示后端返回的扫描报告
-        const dataset = res.data || res;
-        setScanReport({
-          qualityScore: dataset?.quality_score || 85,
-          fields: dataset?.schema || [],
-          datasetId: dataset?.id,
-          rowCount: dataset?.row_count,
-          colCount: dataset?.col_count,
-          aiSummary: dataset?.ai_summary || '上传成功，数据已准备就绪。',
-        });
-
-        // 触发动画
-        setTimeout(() => {
-          if (reportRef.current) {
-            gsap.fromTo(
-              reportRef.current,
-              { opacity: 0, y: 30 },
-              { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }
-            );
-          }
-        }, 100);
-
+        if (isLocalMode) {
+          // 本地模式：存储到 IndexedDB
+          await handleLocalUpload(file, id);
+        } else {
+          // 云端模式：上传到后端服务器
+          await handleCloudUpload(file, id);
+        }
       } catch (err: any) {
         setUploadingFiles(prev => 
           prev.map(f => 
@@ -142,6 +130,111 @@ export function Upload() {
         );
       }
     }
+  };
+
+  // 本地上传处理
+  const handleLocalUpload = async (file: File, id: string) => {
+    // 模拟进度更新
+    const progressInterval = setInterval(() => {
+      setUploadingFiles(prev => 
+        prev.map(f => {
+          if (f.id === id && f.progress < 90) {
+            return { ...f, progress: f.progress + 10 };
+          }
+          return f;
+        })
+      );
+    }, 100);
+
+    try {
+      // 使用 localStorageService 导入到 IndexedDB
+      const table = await localStorageService.importDataset(file, (percent) => {
+        setUploadingFiles(prev => 
+          prev.map(f => 
+            f.id === id ? { ...f, progress: percent } : f
+          )
+        );
+      });
+
+      clearInterval(progressInterval);
+
+      // 上传成功
+      setUploadingFiles(prev => 
+        prev.map(f => 
+          f.id === id ? { ...f, progress: 100, status: 'completed' } : f
+        )
+      );
+
+      // 显示本地存储的扫描报告（简化版）
+      setScanReport({
+        qualityScore: 95, // 本地存储默认高分
+        fields: table.columns.map(col => ({
+          name: col,
+          dtype: 'string',
+          sample_values: table.data.slice(0, 3).map(row => row[col]),
+        })),
+        datasetId: table.id,
+        rowCount: table.rowCount,
+        colCount: table.columns.length,
+        aiSummary: '本地存储模式：数据已安全保存在您的浏览器中，不会上传到任何服务器。',
+      });
+
+      // 触发动画
+      setTimeout(() => {
+        if (reportRef.current) {
+          gsap.fromTo(
+            reportRef.current,
+            { opacity: 0, y: 30 },
+            { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }
+          );
+        }
+      }, 100);
+
+      toast.success(`文件已保存到本地：${file.name}`);
+    } catch (err) {
+      clearInterval(progressInterval);
+      throw err;
+    }
+  };
+
+  // 云端上传处理
+  const handleCloudUpload = async (file: File, id: string) => {
+    const res: any = await datasetApi.upload(file, (percent) => {
+      setUploadingFiles(prev => 
+        prev.map(f => 
+          f.id === id ? { ...f, progress: percent } : f
+        )
+      );
+    });
+
+    // 上传成功
+    setUploadingFiles(prev => 
+      prev.map(f => 
+        f.id === id ? { ...f, progress: 100, status: 'completed' } : f
+      )
+    );
+
+    // 显示后端返回的扫描报告
+    const dataset = res.data || res;
+    setScanReport({
+      qualityScore: dataset?.quality_score || 85,
+      fields: dataset?.schema || [],
+      datasetId: dataset?.id,
+      rowCount: dataset?.row_count,
+      colCount: dataset?.col_count,
+      aiSummary: dataset?.ai_summary || '上传成功，数据已准备就绪。',
+    });
+
+    // 触发动画
+    setTimeout(() => {
+      if (reportRef.current) {
+        gsap.fromTo(
+          reportRef.current,
+          { opacity: 0, y: 30 },
+          { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }
+        );
+      }
+    }, 100);
   };
 
   const removeFile = (id: string) => {

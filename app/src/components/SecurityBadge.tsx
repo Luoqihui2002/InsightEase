@@ -48,6 +48,19 @@ export function SecurityBadge({ className, showDetails = false }: SecurityBadgeP
     const newMode = !isSecurityMode;
     localStorageService.setSecurityMode(newMode);
     setIsSecurityMode(newMode);
+    
+    // 同步更新 Settings 页面的 storageMode
+    const savedSettings = localStorage.getItem('insightease_settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        settings.storageMode = newMode ? 'local' : 'cloud';
+        localStorage.setItem('insightease_settings', JSON.stringify(settings));
+      } catch {
+        // 忽略解析错误
+      }
+    }
+    
     if (newMode) {
       loadStats();
     }

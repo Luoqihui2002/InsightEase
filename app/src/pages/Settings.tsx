@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme, type ThemeType } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import { localStorageService } from '@/services';
 
 // 存储模式类型
 type StorageMode = 'cloud' | 'local';
@@ -100,10 +101,16 @@ export function Settings() {
   const pageRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
   
-  // 从 localStorage 加载设置
+  // 从 localStorage 加载设置，并同步安全模式状态
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem('insightease_settings');
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    const parsedSettings = saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    
+    // 同步安全模式状态到 localStorageService
+    const isSecurityMode = parsedSettings.storageMode === 'local';
+    localStorageService.setSecurityMode(isSecurityMode);
+    
+    return parsedSettings;
   });
   
   const [hasChanges, setHasChanges] = useState(false);
@@ -126,6 +133,10 @@ export function Settings() {
     localStorage.setItem('insightease_settings', JSON.stringify(settings));
     setHasChanges(false);
     toast.success('设置已保存');
+    
+    // 同步安全模式状态
+    const isSecurityMode = settings.storageMode === 'local';
+    localStorageService.setSecurityMode(isSecurityMode);
     
     // 如果切换到本地模式，显示提示
     if (settings.storageMode === 'local') {
@@ -157,6 +168,17 @@ export function Settings() {
       setShowLocalModeAlert(true);
     }
     updateSettings('storageMode', mode);
+    
+    // 立即同步安全模式状态（无需等待保存按钮）
+    const isSecurityMode = mode === 'local';
+    localStorageService.setSecurityMode(isSecurityMode);
+    
+    // 显示切换提示
+    if (mode === 'local') {
+      toast.info('已切换到本地存储模式，数据将保存在浏览器中', { duration: 3000 });
+    } else {
+      toast.info('已切换到云端存储模式，数据将上传到服务器', { duration: 3000 });
+    }
   };
   
   // 清理本地数据

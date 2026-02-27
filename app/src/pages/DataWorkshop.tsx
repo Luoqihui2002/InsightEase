@@ -38,7 +38,7 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 
 // Phase 2.1: 安全模式导入
-import { SecurityBadge, EngineIndicator } from '@/components/SecurityBadge';
+import { EngineIndicator } from '@/components/SecurityBadge';
 import { localStorageService, engineSelector } from '@/services';
 import type { EngineDecision } from '@/services';
 
@@ -1182,12 +1182,9 @@ export function DataWorkshop() {
           {/* 数据源 */}
           <Card className="glass border-[var(--border-subtle)] overflow-visible">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Database className="w-5 h-5 text-[var(--neon-cyan)]" />
-                  数据源
-                </div>
-                <SecurityBadge showDetails={false} />
+              <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
+                <Database className="w-5 h-5 text-[var(--neon-cyan)]" />
+                数据源
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 overflow-visible">
