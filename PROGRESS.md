@@ -1,7 +1,25 @@
 # InsightEase 开发进度文档
 
-> 最后更新: 2026-02-06  
-> 当前阶段: Phase 2.1 完成，准备 Phase 2.2
+> **⚠️ 注意: 本文档为历史记录，最新进度请查看 [PROGRESS_CURRENT.md](./PROGRESS_CURRENT.md)**
+
+> 最后更新: 2026-02-27  
+> 当前阶段: Phase 2.2 完成，准备 Phase 2.3
+
+---
+
+## 📌 最新进度
+
+**详见 [PROGRESS_CURRENT.md](./PROGRESS_CURRENT.md)**
+
+- ✅ Phase 2.1: IndexedDB 本地存储层 (100%)
+- ✅ Phase 2.2: Web Worker + DuckDB-WASM 集成 (100%)
+- ⏳ Phase 2.3: 大文件流式处理 (待开发)
+- ⏳ Phase 2.4: PWA 离线支持 (待开发)
+- ⏳ Phase 2.5: 安全模式完善 (待开发)
+
+---
+
+## 历史记录
 
 ---
 
