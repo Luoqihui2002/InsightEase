@@ -122,7 +122,7 @@ export function AppSidebar({ onOpenAIAssistant }: AppSidebarProps) {
         })}
       </nav>
 
-      {/* AI 助手入口 */}
+      {/* AI 工作台入口 */}
       <div className="p-4 border-t border-[var(--border-subtle)]">
         <Button
           onClick={onOpenAIAssistant}
@@ -133,8 +133,8 @@ export function AppSidebar({ onOpenAIAssistant }: AppSidebarProps) {
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-[var(--neon-green)] rounded-full animate-pulse" />
           </div>
           <div className="text-left">
-            <div className="text-sm font-medium">AI 助手</div>
-            <div className="text-xs text-[var(--text-muted)]">点击开始对话</div>
+            <div className="text-sm font-medium">AI 工作台</div>
+            <div className="text-xs text-[var(--text-muted)]">智能分析助手</div>
           </div>
         </Button>
       </div>

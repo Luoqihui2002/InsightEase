@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   UploadCloud, 
   FileSpreadsheet, 
@@ -14,7 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import gsap from 'gsap';
 import { datasetApi } from '@/api';
 import type { FieldSchema } from '@/types/api';
-import { localStorageService } from '@/services';
+import { localStorageService, companionService } from '@/services';
 import { toast } from 'sonner';
 
 interface UploadingFile {
@@ -43,6 +43,11 @@ export function Upload() {
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  // 设置当前页面上下文
+  useEffect(() => {
+    companionService.setPage('upload');
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -191,6 +196,13 @@ export function Upload() {
       }, 100);
 
       toast.success(`文件已保存到本地：${file.name}`);
+
+      // 触发 AI Companion 上传完成事件
+      companionService.recordAction('upload', {
+        rowCount: table.rowCount,
+        colCount: table.columns.length,
+        fileName: file.name,
+      });
     } catch (err) {
       clearInterval(progressInterval);
       throw err;
@@ -235,6 +247,13 @@ export function Upload() {
         );
       }
     }, 100);
+
+    // 触发 AI Companion 上传完成事件
+    companionService.recordAction('upload', {
+      rowCount: dataset?.row_count || 0,
+      colCount: dataset?.col_count || 0,
+      fileName: file.name,
+    });
   };
 
   const removeFile = (id: string) => {

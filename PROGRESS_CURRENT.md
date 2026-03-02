@@ -1,7 +1,7 @@
 # InsightEase 开发进度记录
 
-> 记录时间: 2026-02-27  
-> 当前阶段: Phase 2.2 已完成，准备 Phase 2.3
+> 记录时间: 2026-03-02  
+> 当前阶段: AI 助手功能 (Companion + Workspace) 已完成
 
 ---
 
@@ -66,6 +66,58 @@ insightease-backend/
 
 ---
 
+### Phase 2.5: AI 助手功能 (100%) ⭐ 新增
+
+**新增文件:**
+```
+app/src/
+├── components/
+│   ├── AICompanion.tsx          # 悬浮小圆点组件
+│   ├── AIWorkspace.tsx          # AI 工作台主面板（透明悬浮层）
+│   ├── KimiAvatar.tsx           # Kimi 风格斗鸡眼头像
+│   └── QuickActionPanel.tsx     # 快捷操作面板
+├── services/
+│   └── companion.service.ts     # AI 助手状态管理服务
+└── hooks/
+    └── useKeyboardShortcut.ts   # 键盘快捷键 hook
+```
+
+**功能实现:**
+- ✅ AI Companion 悬浮小圆点
+  - 可拖拽定位（framer-motion drag）
+  - 双击打开 AI 工作台
+  - Kimi 风格斗鸡眼头像（4 种表情状态）
+  - 呼吸动画效果
+  - 工作台打开时自动隐藏
+
+- ✅ AI Workspace 透明悬浮层
+  - 85vw × 90vh 大尺寸面板
+  - 毛玻璃效果（backdrop-blur-xl）
+  - 半透明背景保持原网页可见
+  - 关闭按钮 + 点击背景关闭
+
+- ✅ 对话界面
+  - 消息列表（用户/助手区分显示）
+  - 输入框 + 发送按钮
+  - 数据集选择器
+  - 流式输出动画
+
+- ✅ 能力展示页
+  - 9 种分析能力卡片
+  - 一键填入分析指令
+
+- ✅ 结果展示切换
+  - 下方展开模式
+  - 右侧滑出模式
+
+**设计特点:**
+- 透明悬浮层设计，不割裂用户操作流
+- 小圆点始终可见，随时唤起
+- 双击交互快速打开
+- 毛玻璃效果与 Cyberpunk 主题融合
+
+---
+
 ## 🔧 当前架构状态
 
 ### 存储模式设计（已实现）
@@ -78,6 +130,7 @@ insightease-backend/
 | 数据工坊 | IndexedDB ✅ | 后端 API ❌（未实现） |
 | 分析功能 | 仍调后端 API | 后端 API ✅ |
 | 历史记录 | 存云端数据库 | 存云端数据库 ✅ |
+| AI 助手 | ✅ 已集成 | ✅ 已集成 |
 
 ### 已知问题
 
@@ -95,7 +148,22 @@ insightease-backend/
 
 ## 📋 下一步开发计划
 
-### Phase 2.3: 大文件流式处理 (待开发)
+### Phase 3.0: AI 助手功能增强 (待开发)
+
+**目标:** 让 AI 助手真正可用，支持智能数据分析
+
+**待完成任务:**
+- [ ] AI 意图识别（自然语言 → 分析操作）
+- [ ] 对接后端分析 API
+- [ ] 分析结果可视化展示
+- [ ] 多轮对话上下文
+- [ ] 指令历史记录
+
+**预计工时:** 16h
+
+---
+
+### Phase 3.1: 大文件流式处理 (待开发)
 
 **目标:** 支持 1GB+ 文件上传，边读边处理
 
@@ -110,7 +178,7 @@ insightease-backend/
 
 ---
 
-### Phase 2.4: PWA 离线支持 (待开发)
+### Phase 3.2: PWA 离线支持 (待开发)
 
 **目标:** 安装到桌面，断网也能用
 
@@ -124,7 +192,7 @@ insightease-backend/
 
 ---
 
-### Phase 2.5: 安全模式完善 (待开发)
+### Phase 3.3: 安全模式完善 (待开发)
 
 **目标:** 企业级隐私保护
 
@@ -226,6 +294,7 @@ uvicorn main:app --reload --port 8000
 4. Upload 页面上传 CSV 文件
 5. Datasets 页面查看本地数据集
 6. 数据工坊测试大数据处理（DuckDB 懒加载）
+7. **双击右下角 AI 小圆点打开工作台** ⭐ 新增
 
 ---
 
@@ -237,6 +306,10 @@ uvicorn main:app --reload --port 8000
 - `app/src/workers/duckdb.worker.ts` - DuckDB Worker
 - `app/src/components/SecurityBadge.tsx` - 安全徽章
 - `app/src/components/DuckDBLoader.tsx` - DuckDB 加载 UI
+- ⭐ `app/src/components/AICompanion.tsx` - AI 小圆点
+- ⭐ `app/src/components/AIWorkspace.tsx` - AI 工作台
+- ⭐ `app/src/components/KimiAvatar.tsx` - Kimi 头像
+- ⭐ `app/src/services/companion.service.ts` - AI 状态管理
 
 **后端核心:**
 - `insightease-backend/app/core/storage.py` - 存储抽象层
@@ -265,19 +338,25 @@ uvicorn main:app --reload --port 8000
    - 当前未配置 OSS，文件存服务器本地
    - 如需多设备同步，请配置阿里云 OSS
 
+4. **AI 助手功能**
+   - 双击小圆点可打开/关闭工作台
+   - 小圆点可拖拽移动位置
+   - 当前为 UI 框架，智能分析功能待 Phase 3.0 实现
+
 ---
 
 ## 📊 当前项目统计
 
 | 指标 | 数值 |
 |------|------|
-| 前端代码行数 | ~20,000+ |
-| 组件数量 | 90+ |
-| 服务模块 | 6 个 |
+| 前端代码行数 | ~22,000+ |
+| 组件数量 | 95+ |
+| 服务模块 | 7 个 |
 | 操作类型 | 9 种 |
 | Worker 文件 | 1 个 |
 | 已完成阶段 | 2.5/5 |
+| AI 相关组件 | 4 个 |
 
 ---
 
-**继续开发请从 Phase 2.3 开始！** 🔥
+**下次继续开发：Phase 3.0 AI 助手功能增强！** 🔥

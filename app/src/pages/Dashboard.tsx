@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { companionService } from '@/services';
 import { 
   TrendingUp, 
   Database,
@@ -131,6 +132,11 @@ const COLORS = {
 
 // ============ Main Component ============
 export function Dashboard() {
+  // 设置当前页面
+  useEffect(() => {
+    companionService.setPage('dashboard');
+  }, []);
+
   const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [customDashboards, setCustomDashboards] = useState<CustomDashboard[]>([]);

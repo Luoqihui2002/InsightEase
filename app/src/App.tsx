@@ -22,6 +22,7 @@ import { Visualization } from '@/pages/Visualization';
 import { PathAnalysis } from '@/pages/PathAnalysis';
 import { Profile } from '@/pages/Profile';
 import { Settings } from '@/pages/Settings';
+import { AIWorkspace } from '@/pages/AIWorkspace';
 import { Login } from '@/pages/Login';
 import { Register } from '@/pages/Register';
 import { useTheme } from '@/hooks/useTheme';
@@ -120,6 +121,7 @@ function AppContent() {
             <Route path="data-workshop" element={<ErrorBoundary><DataWorkshop /></ErrorBoundary>} />
             <Route path="visualization" element={<ErrorBoundary><Visualization /></ErrorBoundary>} />
             <Route path="path" element={<ErrorBoundary><PathAnalysis /></ErrorBoundary>} />
+            <Route path="ai-workspace" element={<ErrorBoundary><AIWorkspace isOpen={true} onClose={() => window.history.back()} /></ErrorBoundary>} />
             <Route path="profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
             <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
           </Route>

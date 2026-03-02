@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { companionService } from '@/services';
 import { 
   BarChart3, 
   Play, 
@@ -26,6 +27,11 @@ interface ColumnInfo {
 }
 
 export function Statistics() {
+  // 设置当前页面
+  useEffect(() => {
+    companionService.setPage('statistics');
+  }, []);
+
   const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState('');

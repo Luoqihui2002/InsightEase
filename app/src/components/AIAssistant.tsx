@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Send, Sparkles, MessageSquare, Lightbulb, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { aiApi } from '@/api';  // 新增：导入 API
 
 interface Message {
@@ -100,6 +99,8 @@ export function AIAssistant({ isOpen, onClose, contextId }: AIAssistantProps) {
             : msg
         ));
         setIsLoading(false);
+        // 错误后也聚焦输入框
+        setTimeout(() => inputRef.current?.focus(), 100);
       },
       onFinish: () => {
         setMessages(prev => prev.map(msg => 
@@ -108,6 +109,8 @@ export function AIAssistant({ isOpen, onClose, contextId }: AIAssistantProps) {
             : msg
         ));
         setIsLoading(false);
+        // 完成后自动聚焦输入框，方便连续输入
+        setTimeout(() => inputRef.current?.focus(), 100);
       }
     });
   };
@@ -128,7 +131,7 @@ export function AIAssistant({ isOpen, onClose, contextId }: AIAssistantProps) {
 
   return (
     <div className="fixed inset-y-0 right-0 w-96 z-50 animate-in slide-in-from-right duration-300">
-      <div className="h-full glass border-l border-[var(--border-subtle)] flex flex-col">
+      <div className="h-full glass border-l border-[var(--border-subtle)] flex flex-col max-h-screen">
         {/* 头部 */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--border-subtle)]">
           <div className="flex items-center gap-3">
@@ -173,8 +176,8 @@ export function AIAssistant({ isOpen, onClose, contextId }: AIAssistantProps) {
           </div>
         </div>
 
-        {/* 消息列表 */}
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        {/* 消息列表 - 使用overflow-y-auto确保可滚动 */}
+        <div className="flex-1 overflow-y-auto p-4" ref={scrollRef}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -215,7 +218,7 @@ export function AIAssistant({ isOpen, onClose, contextId }: AIAssistantProps) {
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* 输入框 */}
         <div className="p-4 border-t border-[var(--border-subtle)]">

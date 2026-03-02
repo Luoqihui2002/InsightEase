@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { companionService } from '@/services';
 import { 
   Route, 
   Filter,
@@ -102,6 +103,11 @@ interface TopPath {
 }
 
 export function PathAnalysis() {
+  // 设置当前页面
+  useEffect(() => {
+    companionService.setPage('path-analysis');
+  }, []);
+
   // 基础状态
   const [selectedDataset, setSelectedDataset] = useState('');
   const [datasetInfo, setDatasetInfo] = useState<Dataset | null>(null);

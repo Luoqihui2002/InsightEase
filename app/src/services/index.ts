@@ -46,3 +46,12 @@ export {
   getDuckDBStatus,
 } from './duckdb-service';
 export type { DuckDBStatus } from './duckdb-service';
+
+// AI Companion 服务
+export { companionService } from './companion-service';
+export type { 
+  CompanionState,
+  CompanionMood,
+  CompanionSuggestion,
+  UserContext
+} from './companion-service';

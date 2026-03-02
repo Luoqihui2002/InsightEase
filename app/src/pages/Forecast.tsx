@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { companionService } from '@/services';
 import { 
   TrendingUp, 
   Play, 
@@ -118,6 +119,11 @@ const AUXILIARY_VARIABLES: AuxiliaryVariable[] = [
 ];
 
 export function Forecast() {
+  // 设置当前页面
+  useEffect(() => {
+    companionService.setPage('forecast');
+  }, []);
+
   const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);

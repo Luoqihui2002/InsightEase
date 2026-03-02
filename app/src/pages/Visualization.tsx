@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { companionService } from '@/services';
 import { 
   BarChart3, 
   PieChart, 
@@ -98,6 +99,11 @@ interface ChartRecommendation {
 }
 
 export function Visualization() {
+  // 设置当前页面
+  useEffect(() => {
+    companionService.setPage('visualization');
+  }, []);
+
   const [selectedDataset, setSelectedDataset] = useState('');
   const [datasetInfo, setDatasetInfo] = useState<Dataset | null>(null);
   const [fields, setFields] = useState<FieldInfo[]>([]);

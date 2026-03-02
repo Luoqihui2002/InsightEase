@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { companionService } from '@/services';
 import { 
   Users, 
   Play, 
@@ -30,6 +31,11 @@ interface ColumnInfo {
 }
 
 export function Clustering() {
+  // 设置当前页面
+  useEffect(() => {
+    companionService.setPage('clustering');
+  }, []);
+
   const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);

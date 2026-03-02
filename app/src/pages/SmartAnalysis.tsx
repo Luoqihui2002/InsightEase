@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { companionService } from '@/services';
 import { 
   Sparkles, 
   Database,
@@ -52,6 +53,11 @@ interface DiagnosisResult {
 }
 
 export function SmartAnalysis() {
+  // 设置当前页面
+  useEffect(() => {
+    companionService.setPage('smart-analysis');
+  }, []);
+
   // 当前步骤
   const [currentStep, setCurrentStep] = useState<WizardStep>('select');
   

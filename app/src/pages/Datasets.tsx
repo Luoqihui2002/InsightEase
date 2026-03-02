@@ -41,7 +41,7 @@ import { useNavigate } from 'react-router-dom';
 import { datasetApi } from '@/api';
 import { quickRequest } from '@/lib/request';
 import type { Dataset, DatasetPreview } from '@/types/api';
-import { localStorageService } from '@/services';
+import { localStorageService, companionService } from '@/services';
 import { toast } from 'sonner';
 import type { DataTable } from '@/types/data-table';
 
@@ -150,6 +150,25 @@ export function Datasets() {
   // 首次加载
   useEffect(() => {
     loadDatasets();
+    
+    // 通知AI助手当前页面
+    companionService.setPage('datasets');
+    
+    // 检查是否有本地数据集
+    const checkLocalData = async () => {
+      const localData = await localStorageService.listDatasets();
+      if (localData.length > 0) {
+        companionService.updateContext({
+          hasData: true,
+          dataInfo: {
+            rowCount: localData.reduce((sum, d) => sum + d.rowCount, 0),
+            colCount: localData[0]?.colCount || 0,
+            fileName: localData[0]?.name || '',
+          }
+        });
+      }
+    };
+    checkLocalData();
   }, []);
   
   // 监听存储模式变化

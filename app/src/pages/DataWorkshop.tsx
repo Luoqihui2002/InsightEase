@@ -39,7 +39,7 @@ import type { Dataset } from '@/types/api';
 
 // Phase 2.1: 安全模式导入
 import { EngineIndicator } from '@/components/SecurityBadge';
-import { localStorageService, engineSelector } from '@/services';
+import { localStorageService, engineSelector, companionService } from '@/services';
 import type { EngineDecision } from '@/services';
 
 // 操作类型
@@ -236,6 +236,24 @@ export function DataWorkshop() {
     loadLocalDatasets();
   }, [loadLocalDatasets]);
   
+  // AI Companion: 页面加载时通知
+  useEffect(() => {
+    companionService.setPage('workshop');
+    
+    // 如果有活跃表格，更新上下文
+    const activeTable = tables.find(t => t.id === activeTableId);
+    if (activeTable) {
+      companionService.updateContext({
+        hasData: true,
+        dataInfo: {
+          rowCount: activeTable.rowCount,
+          colCount: activeTable.columns.length,
+          fileName: activeTable.fileName,
+        }
+      });
+    }
+  }, [tables, activeTableId]);
+  
   // Phase 2.1: 更新引擎决策
   useEffect(() => {
     const activeTable = tables.find(t => t.id === activeTableId);
@@ -360,6 +378,13 @@ export function DataWorkshop() {
             toast.success(`已导入 ${file.name} (${parsedData.length} 行) 并保存到本地`);
           }).catch(() => {
             toast.success(`已导入 ${file.name} (${parsedData.length} 行)`);
+          });
+          
+          // AI Companion: 记录上传动作，触发引导
+          companionService.recordAction('upload', {
+            rowCount: parsedData.length,
+            colCount: columns.length,
+            fileName: file.name,
           });
         } catch (error) {
           toast.error(`${file.name} 解析失败`);

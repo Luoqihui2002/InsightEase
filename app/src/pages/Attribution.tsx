@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { companionService } from '@/services';
 import { 
   Play, 
   Settings2, 
@@ -129,6 +130,11 @@ const ATTRIBUTION_MODELS = [
 ];
 
 export function Attribution() {
+  // 设置当前页面
+  useEffect(() => {
+    companionService.setPage('attribution');
+  }, []);
+
   const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
