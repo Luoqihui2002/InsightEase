@@ -1,31 +1,34 @@
 /**
- * AI 工作台 - 透明悬浮层版本
+ * AI 工作台 - Phase 3.0 智能分析版本
  * 
- * 特点：
- * - 半透明背景，与原网页融为一体
- * - 对话+能力区占屏幕中央 70-80%
- * - 结果展示在下方或右侧（可收起）
- * - 悬浮层形式，不跳转页面
+ * 布局说明：
+ * - 上下布局(vertical)：数据预览在上，AI对话在下
+ * - 左右布局(horizontal)：数据预览在左(35%)，AI对话在右(65%)
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
   X, Send, Sparkles, BarChart3, TrendingUp, 
-  Users, Target, Lightbulb, GitBranch, Brain,
+  Users, Target, Lightbulb, GitBranch,
   ChevronDown, ChevronUp, Database, MessageSquare,
-  Loader2, PanelRight, PanelBottom
+  Loader2, LayoutTemplate, Columns2, Rows2,
+  History, Trash2, PanelRightClose
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KimiAvatar } from '@/components/KimiAvatar';
+import { AnalysisResultRenderer } from '@/components/AnalysisResultRenderer';
 import { aiApi } from '@/api/ai';
 import { datasetApi } from '@/api';
+import { intentRecognitionService, type AnalysisType } from '@/services/intent-recognition.service';
+import { analysisExecutionService, type AnalysisResult as ExecutionResult } from '@/services/analysis-execution.service';
+
 import type { Dataset } from '@/types/api';
 import { cn } from '@/lib/utils';
 
 interface AnalysisCapability {
-  id: string;
+  id: AnalysisType;
   name: string;
   icon: any;
   description: string;
@@ -38,17 +41,27 @@ const capabilities: AnalysisCapability[] = [
   { id: 'clustering', name: '智能聚类', icon: Users, description: '发现数据分组', keywords: ['聚类', '分组', '分群'] },
   { id: 'attribution', name: '归因分析', icon: Target, description: '分析驱动因素', keywords: ['归因', '因素', '原因'] },
   { id: 'correlation', name: '关联分析', icon: GitBranch, description: '发现变量关系', keywords: ['相关', '关联', '关系'] },
-  { id: 'anomaly', name: '异常检测', icon: Lightbulb, description: '识别异常点', keywords: ['异常', '离群', '检测'] },
+  { id: 'descriptive', name: '描述统计', icon: Lightbulb, description: '基础统计分析', keywords: ['统计', '均值', '标准差'] },
 ];
 
+// 聊天消息类型
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  type?: 'text' | 'chart' | 'analysis';
-  data?: any;
+  type?: 'text' | 'analysis' | 'error';
+  analysisResult?: ExecutionResult;
   timestamp: Date;
   isStreaming?: boolean;
+}
+
+// 对话历史
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface AIWorkspaceProps {
@@ -56,159 +69,425 @@ interface AIWorkspaceProps {
   onClose: () => void;
 }
 
+const STORAGE_KEY = 'ai_workspace_sessions';
+
 export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
+  // 当前会话消息
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: '你好！我是你的 AI 数据分析助手。\n\n告诉我你想分析什么，我可以帮你自动生成图表、预测趋势、发现数据洞察...',
+      content: '你好！我是你的 AI 数据分析助手。\n\n告诉我你想分析什么，比如：\n• "帮我统计一下销售额的平均值"\n• "预测下个月的业绩趋势"\n• "看一下各渠道的相关性"',
       type: 'text',
       timestamp: new Date(),
     }
   ]);
+  
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [activeTab, setActiveTab] = useState<'chat' | 'capabilities'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'capabilities' | 'history'>('chat');
   const [showResult, setShowResult] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [resultPosition, setResultPosition] = useState<'bottom' | 'right'>('bottom');
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [analysisResult, setAnalysisResult] = useState<ExecutionResult | null>(null);
+  const [mainLayout, setMainLayout] = useState<'vertical' | 'horizontal'>('vertical');
+  const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  const [analysisProgress, setAnalysisProgress] = useState<{status: string, progress: number} | null>(null);
+  const [datasetPreview, setDatasetPreview] = useState<{
+    columns: string[];
+    rows: Record<string, any>[];
+    totalRows: number;
+    columnTypes: Record<string, string>;
+  } | null>(null);
+  const [showPreview, setShowPreview] = useState(true);
+  
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 加载数据集列表
   useEffect(() => {
     if (isOpen) {
       loadDatasets();
+      loadChatHistory();
+      createNewSession();
     }
   }, [isOpen]);
 
+  // 自动滚动到底部
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // 加载数据集列表
   const loadDatasets = async () => {
     try {
-      const res = await datasetApi.list(1, 100) as any;
-      setDatasets(res?.items || res?.data?.items || []);
+      const res = await datasetApi.list(1, 100);
+      console.log('数据集列表响应:', res);
+      
+      // 注意：拦截器已经解包了 response.data
+      // 所以 res 直接就是 { code: 200, data: { items: [...] } }
+      let items: Dataset[] = [];
+      
+      if (res?.code === 200 && res.data?.items) {
+        items = res.data.items;
+      } else if (res?.code === 200 && Array.isArray(res.data)) {
+        items = res.data;
+      }
+      
+      console.log('解析后的数据集:', items);
+      setDatasets(items);
     } catch (error) {
       console.error('加载数据集失败:', error);
     }
   };
 
-  const detectIntent = (text: string): AnalysisCapability | null => {
-    const lowerText = text.toLowerCase();
-    for (const cap of capabilities) {
-      if (cap.keywords.some(kw => lowerText.includes(kw.toLowerCase()))) {
-        return cap;
+  // 加载聊天历史
+  const loadChatHistory = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setChatHistory(parsed.map((s: any) => ({
+          ...s,
+          createdAt: new Date(s.createdAt),
+          updatedAt: new Date(s.updatedAt),
+          messages: s.messages.map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          }))
+        })));
       }
+    } catch (error) {
+      console.error('加载聊天历史失败:', error);
     }
-    return null;
   };
 
-  const executeAnalysis = async (intent: AnalysisCapability, userMessage: string) => {
+  // 保存聊天历史
+  const saveChatHistory = (history: ChatSession[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    } catch (error) {
+      console.error('保存聊天历史失败:', error);
+    }
+  };
+
+  // 创建新会话
+  const createNewSession = () => {
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      title: '新对话',
+      messages: [{
+        id: 'welcome',
+        role: 'assistant',
+        content: '你好！我是你的 AI 数据分析助手。\n\n告诉我你想分析什么...',
+        type: 'text',
+        timestamp: new Date(),
+      }],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setCurrentSessionId(newSession.id);
+    setMessages(newSession.messages);
+    setShowResult(false);
+    setAnalysisResult(null);
+  };
+
+  // 切换到历史会话
+  const switchSession = (sessionId: string) => {
+    const session = chatHistory.find(s => s.id === sessionId);
+    if (session) {
+      setCurrentSessionId(sessionId);
+      setMessages(session.messages);
+      setActiveTab('chat');
+    }
+  };
+
+  // 删除历史会话
+  const deleteSession = (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    const updated = chatHistory.filter(s => s.id !== sessionId);
+    setChatHistory(updated);
+    saveChatHistory(updated);
+    if (currentSessionId === sessionId) {
+      createNewSession();
+    }
+  };
+
+  // 更新当前会话
+  const updateCurrentSession = (newMessages: Message[]) => {
+    setMessages(newMessages);
+    
+    const updatedHistory = chatHistory.map(session => {
+      if (session.id === currentSessionId) {
+        return {
+          ...session,
+          messages: newMessages,
+          updatedAt: new Date(),
+          title: newMessages.find(m => m.role === 'user')?.content.slice(0, 20) || '新对话'
+        };
+      }
+      return session;
+    });
+    
+    // 如果是新会话，添加到历史
+    if (!chatHistory.find(s => s.id === currentSessionId)) {
+      const newSession: ChatSession = {
+        id: currentSessionId,
+        title: newMessages.find(m => m.role === 'user')?.content.slice(0, 20) || '新对话',
+        messages: newMessages,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      updatedHistory.unshift(newSession);
+    }
+    
+    setChatHistory(updatedHistory);
+    saveChatHistory(updatedHistory);
+  };
+
+  // AI 意图识别 + 执行分析
+  const handleAnalysisRequest = async (userMessage: string) => {
     if (!selectedDataset) {
       addMessage({
         role: 'assistant',
         content: '请先选择一份数据集，我才能帮你分析哦~',
+        type: 'text'
       });
+      return;
+    }
+    
+    // 防止重复提交
+    if (isLoading) {
+      console.log('分析进行中，忽略重复请求');
       return;
     }
 
     setIsLoading(true);
+    setAnalysisProgress({ status: '正在理解你的需求...', progress: 10 });
     setShowResult(false);
 
     try {
-      // 模拟分析过程
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 1. AI 意图识别
+      const currentDataset = datasets.find(d => d?.id === selectedDataset);
+      const datasetSchemas = datasets
+        .filter(d => d && d.id)
+        .map(d => ({
+          id: d.id,
+          name: d.filename || '未命名数据集',
+          row_count: d.row_count || 0,
+          columns: (d.schema || []).map((col: any) => ({
+            name: col?.name || '',
+            type: col?.type || 'other',
+          }))
+        }));
 
-      const result = {
-        type: intent.id,
-        title: `${intent.name}结果`,
-        summary: `已完成${intent.name}，发现了关键洞察...`,
-        data: {},
-      };
+      const intent = await intentRecognitionService.recognizeIntent(
+        userMessage,
+        datasetSchemas
+      );
 
-      setAnalysisResult(result);
-      setShowResult(true);
+      // 2. 数据验证
+      if (intent.type === 'unknown') {
+        addMessage({
+          role: 'assistant',
+          content: `抱歉，我没太理解你的需求。\n\n你可以这样描述：\n• "统计销售额的平均值和标准差"\n• "预测下个月的业绩"\n• "看一下相关性热力图"`,
+          type: 'text'
+        });
+        setIsLoading(false);
+        setAnalysisProgress(null);
+        return;
+      }
 
+      // 3. 执行分析
       addMessage({
         role: 'assistant',
-        content: `${intent.name}完成！详细结果${resultPosition === 'bottom' ? '在下方' : '在右侧'}展示。`,
+        content: '',
+        isStreaming: true,
+        type: 'analysis'
       });
+
+      const result = await analysisExecutionService.executeByIntent(
+        intent,
+        {
+          datasetId: selectedDataset,
+          onProgress: (status, progress) => {
+            setAnalysisProgress({ status, progress });
+          },
+          onSuccess: (analysisResult) => {
+            setAnalysisResult(analysisResult);
+            setShowResult(true);
+            
+            updateLastMessage({
+              content: `${intent.description}完成！\n\n${analysisResult.summary || ''}`,
+              isStreaming: false,
+              type: 'analysis',
+              analysisResult
+            });
+          },
+          onError: (error) => {
+            updateLastMessage({
+              content: `分析失败：${error.message}`,
+              isStreaming: false,
+              type: 'error'
+            });
+          }
+        }
+      );
+
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '分析失败';
       addMessage({
         role: 'assistant',
-        content: '分析过程中出现了错误，请重试。',
+        content: `抱歉，分析过程中出现错误：${errorMsg}`,
+        type: 'error'
       });
     } finally {
       setIsLoading(false);
+      setAnalysisProgress(null);
     }
   };
 
-  const handleGeneralAnalysis = async (prompt: string) => {
-    addMessage({ role: 'assistant', content: '', isStreaming: true });
+  // 普通对话（不走分析流程）
+  const handleGeneralChat = async (prompt: string) => {
+    addMessage({ role: 'assistant', content: '', isStreaming: true, type: 'text' });
 
-    let fullText = '';
-    await aiApi.chatStream(prompt, (chunk, text) => {
-      fullText = text;
+    // 构建上下文
+    const history = messages
+      .filter(m => m.role !== 'assistant' || !m.isStreaming)
+      .slice(-6)
+      .map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+    await aiApi.chatStream(prompt, (_chunk, text) => {
       updateLastMessage({ content: text });
     }, {
+      history,
       onFinish: () => updateLastMessage({ isStreaming: false }),
-      onError: (err) => updateLastMessage({ content: `抱歉：${err}`, isStreaming: false }),
+      onError: (err) => updateLastMessage({ content: `抱歉：${err}`, isStreaming: false, type: 'error' }),
     });
   };
 
+  // 添加消息
   const addMessage = (msg: Partial<Message>) => {
-    setMessages(prev => [...prev, {
+    const newMessage: Message = {
       id: Date.now().toString(),
       role: 'assistant',
       content: '',
       type: 'text',
       timestamp: new Date(),
       ...msg,
-    }]);
+    };
+    const newMessages = [...messages, newMessage];
+    updateCurrentSession(newMessages);
   };
 
+  // 更新最后一条消息
   const updateLastMessage = (updates: Partial<Message>) => {
     setMessages(prev => {
       const last = prev[prev.length - 1];
       if (last?.role === 'assistant') {
-        return [...prev.slice(0, -1), { ...last, ...updates }];
+        const newMessages = [...prev.slice(0, -1), { ...last, ...updates }];
+        setTimeout(() => updateCurrentSession(newMessages), 100);
+        return newMessages;
       }
       return prev;
     });
   };
 
+  // 发送消息
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
     const userMsg = inputValue.trim();
     setInputValue('');
 
-    setMessages(prev => [...prev, {
+    const newMessages: Message[] = [...messages, {
       id: Date.now().toString(),
       role: 'user',
       content: userMsg,
       timestamp: new Date(),
-    }]);
+    }];
+    updateCurrentSession(newMessages);
 
-    const intent = detectIntent(userMsg);
-    if (intent) {
-      await executeAnalysis(intent, userMsg);
-    } else {
-      await handleGeneralAnalysis(userMsg);
-    }
+    await handleAnalysisRequest(userMsg);
   };
 
+  // 键盘事件
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
+
+  // 使用能力卡片
+  const useCapability = (cap: AnalysisCapability) => {
+    const prompt = `帮我做${cap.name}分析`;
+    setInputValue(prompt);
+    setActiveTab('chat');
+    
+    setTimeout(() => {
+      const newMessages: Message[] = [...messages, {
+        id: Date.now().toString(),
+        role: 'user',
+        content: prompt,
+        timestamp: new Date(),
+      }];
+      updateCurrentSession(newMessages);
+      handleAnalysisRequest(prompt);
+    }, 100);
+  };
+
+  // 加载数据集预览
+  const loadDatasetPreview = async (datasetId: string) => {
+    const dataset = datasets.find(d => d.id === datasetId);
+    if (!dataset) return;
+
+    const columnTypesFromSchema: Record<string, string> = {};
+    if (dataset.schema) {
+      dataset.schema.forEach((s: any) => {
+        columnTypesFromSchema[s.name] = s.type || s.dtype || 'unknown';
+      });
+    }
+
+    try {
+      const res = await datasetApi.preview(datasetId, 5);
+      console.log('API 原始响应:', res);
+      
+      // 注意：拦截器已经解包了 response.data
+      let responseData = null;
+      if (res?.code === 200 && res.data) {
+        responseData = res.data;
+      }
+      
+      if (responseData) {
+        setDatasetPreview({
+          columns: responseData.columns || [],
+          rows: responseData.data || [],
+          totalRows: responseData.total_rows || dataset.row_count || 0,
+          columnTypes: columnTypesFromSchema
+        });
+        setShowPreview(true);
+      }
+    } catch (error) {
+      console.error('加载预览失败:', error);
+    }
+  };
+
+  // 选择数据集时加载预览
+  useEffect(() => {
+    if (selectedDataset) {
+      loadDatasetPreview(selectedDataset);
+    } else {
+      setDatasetPreview(null);
+      setShowPreview(false);
+    }
+  }, [selectedDataset]);
 
   if (!isOpen) return null;
 
@@ -223,49 +502,148 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         onClick={onClose}
       />
 
-      {/* 主面板 - 占屏幕 70-80% */}
+      {/* 主面板 */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className={cn(
-          "relative flex flex-col rounded-3xl overflow-hidden",
+          "relative flex rounded-3xl overflow-hidden",
           "bg-[var(--bg-secondary)]/80 backdrop-blur-xl",
           "border border-[var(--border-subtle)]",
           "shadow-2xl shadow-black/50",
-          resultPosition === 'right' && showResult ? "w-[95vw] h-[90vh] flex-row" : "w-[85vw] max-w-[1200px] h-[85vh]"
+          "w-[95vw] h-[90vh]",
+          mainLayout === 'horizontal' ? "flex-row" : "flex-col"
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 关闭按钮 */}
+        {/* ========== 关闭按钮（移到左上角避免重叠）========== */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-50 p-2 rounded-full bg-[var(--bg-tertiary)]/50 hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+          className="absolute top-3 left-3 z-50 p-2 rounded-full bg-[var(--bg-tertiary)]/50 hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
-        {/* 左侧/主区域 - 对话和能力 */}
+        {/* ========== 数据预览区域 ========== */}
+        {mainLayout === 'vertical' ? (
+          // 上下布局：数据预览在上方
+          <>
+            {showPreview && datasetPreview && (
+              <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex-shrink-0">
+                {/* 数据预览头部 */}
+                <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
+                  <h3 className="text-sm font-medium text-[var(--text-primary)]">
+                    数据预览（前5行 / 共{datasetPreview.totalRows}行）
+                  </h3>
+                  <button 
+                    onClick={() => setShowPreview(false)}
+                    className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  >
+                    收起
+                  </button>
+                </div>
+                {/* 数据表格 */}
+                <div className="p-3 overflow-x-auto" style={{ maxHeight: '200px' }}>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-[var(--border-subtle)]">
+                        {datasetPreview.columns.map(col => (
+                          <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
+                            {col}
+                            <span className="ml-1 text-[10px] opacity-60">
+                              ({datasetPreview?.columnTypes[col] || 'unknown'})
+                            </span>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {datasetPreview.rows.map((row, idx) => (
+                        <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
+                          {datasetPreview.columns.map(col => (
+                            <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
+                              {row[col] ?? '-'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          // 左右布局：数据预览在左侧
+          <>
+            {showPreview && datasetPreview && (
+              <div className="w-[38%] border-r border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex flex-col">
+                {/* 数据预览头部 */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
+                  <h3 className="text-sm font-medium text-[var(--text-primary)]">
+                    数据预览
+                  </h3>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    共{datasetPreview.totalRows}行
+                  </span>
+                </div>
+                {/* 数据表格 */}
+                <div className="flex-1 overflow-auto p-3">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-[var(--bg-tertiary)]">
+                      <tr className="border-b border-[var(--border-subtle)]">
+                        {datasetPreview.columns.map(col => (
+                          <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
+                            {col}
+                            <span className="ml-1 text-[10px] opacity-60">
+                              ({datasetPreview?.columnTypes[col] || 'unknown'})
+                            </span>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {datasetPreview.rows.map((row, idx) => (
+                        <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
+                          {datasetPreview.columns.map(col => (
+                            <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
+                              {row[col] ?? '-'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ========== AI 对话区域 ========== */}
         <div className={cn(
-          "flex flex-col h-full",
-          resultPosition === 'right' && showResult ? "flex-1" : "w-full"
+          "flex flex-col",
+          mainLayout === 'horizontal' && showPreview && datasetPreview ? "w-[62%]" : "flex-1"
         )}>
           {/* 头部 */}
-          <div className="flex items-center gap-4 px-6 py-4 border-b border-[var(--border-subtle)] min-w-0">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] pl-12">
             <KimiAvatar size="sm" mood="happy" />
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)] whitespace-nowrap">AI 工作台</h2>
-              <p className="text-xs text-[var(--text-muted)] whitespace-nowrap">智能数据分析助手</p>
+            <div className="flex-shrink-0">
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
+              <p className="text-[10px] text-[var(--text-muted)]">智能数据分析助手</p>
             </div>
+            
+            <div className="flex-1"></div>
             
             {/* 数据集选择 */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Database className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
+              <Database className="w-4 h-4 text-[var(--text-muted)]" />
               <select
                 value={selectedDataset || ''}
                 onChange={(e) => setSelectedDataset(e.target.value || null)}
-                className="px-3 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] min-w-[150px]"
+                className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] w-[130px]"
               >
                 <option value="">选择数据集...</option>
                 {datasets.map(d => (
@@ -274,29 +652,49 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
               </select>
             </div>
 
-            {/* 结果位置切换 */}
+            {/* 布局切换 - 左右排版 | 上下排版 */}
             <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-tertiary)] flex-shrink-0">
               <button
-                onClick={() => setResultPosition('bottom')}
+                onClick={() => {
+                  setMainLayout('horizontal');
+                  if (!showPreview) setShowPreview(true);
+                }}
                 className={cn(
-                  "p-1.5 rounded transition-colors flex-shrink-0",
-                  resultPosition === 'bottom' ? "bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]" : "text-[var(--text-muted)]"
+                  "p-1.5 rounded transition-colors",
+                  mainLayout === 'horizontal' ? "bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
-                title="结果在下方"
+                title="左右排版（数据预览在左侧）"
               >
-                <PanelBottom className="w-4 h-4 flex-shrink-0" />
+                <Columns2 className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setResultPosition('right')}
+                onClick={() => {
+                  setMainLayout('vertical');
+                }}
                 className={cn(
-                  "p-1.5 rounded transition-colors flex-shrink-0",
-                  resultPosition === 'right' ? "bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]" : "text-[var(--text-muted)]"
+                  "p-1.5 rounded transition-colors",
+                  mainLayout === 'vertical' ? "bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
-                title="结果在右侧"
+                title="上下排版（数据预览在上方）"
               >
-                <PanelRight className="w-4 h-4 flex-shrink-0" />
+                <Rows2 className="w-4 h-4" />
               </button>
             </div>
+
+            {/* 隐藏/显示预览按钮（仅在上下布局显示） */}
+            {mainLayout === 'vertical' && selectedDataset && datasetPreview && (
+              <button
+                onClick={() => setShowPreview(!showPreview)}
+                className={cn(
+                  "px-2 py-1.5 text-xs rounded-lg transition-colors flex-shrink-0",
+                  showPreview 
+                    ? "bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]" 
+                    : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                )}
+              >
+                {showPreview ? '隐藏预览' : '显示预览'}
+              </button>
+            )}
           </div>
 
           {/* 标签切换 */}
@@ -325,11 +723,23 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
               <Sparkles className="w-4 h-4 flex-shrink-0" />
               能力
             </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={cn(
+                "py-3 px-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap",
+                activeTab === 'history' 
+                  ? "text-[var(--neon-cyan)] border-[var(--neon-cyan)]" 
+                  : "text-[var(--text-muted)] border-transparent hover:text-[var(--text-primary)]"
+              )}
+            >
+              <History className="w-4 h-4 flex-shrink-0" />
+              历史
+            </button>
           </div>
 
           {/* 内容区 */}
           <div className="flex-1 overflow-hidden">
-            {activeTab === 'chat' ? (
+            {activeTab === 'chat' && (
               <div className="h-full flex flex-col">
                 {/* 消息列表 */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={scrollRef}>
@@ -355,6 +765,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                           "max-w-[70%] rounded-2xl px-4 py-3 text-sm",
                           message.role === 'user'
                             ? 'bg-[var(--neon-cyan)]/20 text-[var(--text-primary)]'
+                            : message.type === 'error'
+                            ? 'bg-red-500/10 text-red-400 border border-red-500/20'
                             : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
                         )}
                       >
@@ -367,6 +779,23 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       </div>
                     </div>
                   ))}
+                  
+                  {/* 分析进度 */}
+                  {analysisProgress && (
+                    <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--neon-cyan)]/5 border border-[var(--neon-cyan)]/20">
+                      <Loader2 className="w-5 h-5 text-[var(--neon-cyan)] animate-spin" />
+                      <div className="flex-1">
+                        <div className="text-sm text-[var(--text-primary)]">{analysisProgress.status}</div>
+                        <div className="mt-2 h-1 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-[var(--neon-cyan)] transition-all duration-300"
+                            style={{ width: `${analysisProgress.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-xs text-[var(--text-muted)]">{analysisProgress.progress}%</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* 输入框 */}
@@ -377,7 +806,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder={selectedDataset ? '描述你想做的分析...' : '先选择一份数据集...'}
+                      placeholder={selectedDataset ? '描述你想做的分析，比如"预测下月销售额"...' : '先选择一份数据集...'}
                       disabled={isLoading || !selectedDataset}
                       className="flex-1 bg-[var(--bg-tertiary)]"
                     />
@@ -389,18 +818,23 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
+                  {!selectedDataset && (
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
+                      提示：请先选择上方数据集，然后描述你想做的分析
+                    </p>
+                  )}
                 </div>
               </div>
-            ) : (
+            )}
+
+            {activeTab === 'capabilities' && (
               <div className="p-6 grid grid-cols-2 gap-4 overflow-y-auto">
                 {capabilities.map((cap) => (
                   <button
                     key={cap.id}
-                    onClick={() => {
-                      setInputValue(`帮我做${cap.name}：${cap.description}`);
-                      setActiveTab('chat');
-                    }}
-                    className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group"
+                    onClick={() => useCapability(cap)}
+                    disabled={!selectedDataset || isLoading}
+                    className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
@@ -415,63 +849,98 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                 ))}
               </div>
             )}
+
+            {activeTab === 'history' && (
+              <div className="p-4 overflow-y-auto h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-[var(--text-primary)]">对话历史</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={createNewSession}
+                    className="text-[var(--neon-cyan)]"
+                  >
+                    新对话
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {chatHistory.length === 0 ? (
+                    <p className="text-sm text-[var(--text-muted)] text-center py-8">暂无历史对话</p>
+                  ) : (
+                    chatHistory.map((session) => (
+                      <div
+                        key={session.id}
+                        onClick={() => switchSession(session.id)}
+                        className={cn(
+                          "p-3 rounded-lg cursor-pointer group flex items-center justify-between",
+                          currentSessionId === session.id
+                            ? "bg-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/30"
+                            : "bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80"
+                        )}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-[var(--text-primary)] truncate">{session.title}</p>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            {session.updatedAt.toLocaleDateString()} {session.messages.length} 条消息
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => deleteSession(e, session.id)}
+                          className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-[var(--text-muted)] hover:text-red-400 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 下方结果区（当选择bottom时） */}
-          {resultPosition === 'bottom' && showResult && (
+          {/* 分析结果面板 - 显示在对话区域下方 */}
+          {showResult && analysisResult && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: '45%', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="border-t border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/50"
+              className="border-t border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 overflow-hidden flex flex-col"
             >
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-medium text-[var(--text-primary)]">{analysisResult?.title}</h3>
-                  <button 
-                    onClick={() => setShowResult(false)}
-                    className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                  >
-                    收起
-                  </button>
+              <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
+                <h3 className="font-medium text-[var(--text-primary)]">分析结果</h3>
+                <button 
+                  onClick={() => setShowResult(false)}
+                  className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)]"
+                  title="收起结果"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <AnalysisResultRenderer result={analysisResult} />
+              </div>
+            </motion.div>
+          )}
+          
+          {/* 分析结果折叠状态 */}
+          {!showResult && analysisResult && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="border-t border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/50 cursor-pointer hover:bg-[var(--bg-tertiary)] flex-shrink-0"
+              onClick={() => setShowResult(true)}
+            >
+              <div className="flex items-center justify-between px-4 py-2">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[var(--neon-cyan)]" />
+                  <span className="text-sm text-[var(--text-primary)]">分析结果</span>
+                  <span className="text-xs text-[var(--text-muted)]">（点击展开）</span>
                 </div>
-                <div className="h-32 rounded-lg bg-[var(--bg-secondary)] flex items-center justify-center">
-                  <p className="text-sm text-[var(--text-muted)]">{analysisResult?.summary}</p>
-                </div>
+                <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
               </div>
             </motion.div>
           )}
         </div>
-
-        {/* 右侧结果区（当选择right时） */}
-        {resultPosition === 'right' && showResult && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: '350px', opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            className="border-l border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 overflow-hidden"
-          >
-            <div className="p-4 h-full overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-[var(--text-primary)]">{analysisResult?.title}</h3>
-                <button 
-                  onClick={() => setShowResult(false)}
-                  className="p-1 rounded hover:bg-[var(--bg-tertiary)]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-[var(--bg-secondary)]">
-                  <p className="text-sm text-[var(--text-secondary)]">{analysisResult?.summary}</p>
-                </div>
-                <div className="h-40 rounded-lg bg-[var(--bg-secondary)] flex items-center justify-center">
-                  <BarChart3 className="w-8 h-8 text-[var(--neon-cyan)]/30" />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
       </motion.div>
     </div>
   );

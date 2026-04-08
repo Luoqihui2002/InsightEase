@@ -10,6 +10,10 @@ import base64
 from io import BytesIO
 import json
 
+# 配置 matplotlib 中文字体
+plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans', 'Arial Unicode MS', 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', 'sans-serif']
+plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+
 class VisualizationService:
     """可视化服务类"""
     

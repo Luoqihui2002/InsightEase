@@ -1,7 +1,7 @@
 # InsightEase 开发进度记录
 
-> 记录时间: 2026-03-02  
-> 当前阶段: AI 助手功能 (Companion + Workspace) 已完成
+> 记录时间: 2026-04-08  
+> 当前阶段: Phase 3.0 AI 助手功能增强 (100% + Bug修复)
 
 ---
 
@@ -66,7 +66,7 @@ insightease-backend/
 
 ---
 
-### Phase 2.5: AI 助手功能 (100%) ⭐ 新增
+### Phase 2.5: AI 助手功能 - UI 框架 (100%)
 
 **新增文件:**
 ```
@@ -84,37 +84,126 @@ app/src/
 
 **功能实现:**
 - ✅ AI Companion 悬浮小圆点
-  - 可拖拽定位（framer-motion drag）
-  - 双击打开 AI 工作台
-  - Kimi 风格斗鸡眼头像（4 种表情状态）
-  - 呼吸动画效果
-  - 工作台打开时自动隐藏
-
 - ✅ AI Workspace 透明悬浮层
-  - 85vw × 90vh 大尺寸面板
-  - 毛玻璃效果（backdrop-blur-xl）
-  - 半透明背景保持原网页可见
-  - 关闭按钮 + 点击背景关闭
-
-- ✅ 对话界面
-  - 消息列表（用户/助手区分显示）
-  - 输入框 + 发送按钮
-  - 数据集选择器
-  - 流式输出动画
-
-- ✅ 能力展示页
-  - 9 种分析能力卡片
-  - 一键填入分析指令
-
+- ✅ 对话界面 + 能力展示页
 - ✅ 结果展示切换
-  - 下方展开模式
-  - 右侧滑出模式
+
+---
+
+### Phase 3.0: AI 助手功能增强 (100% + Bug修复) ⭐ 当前
+
+**新增文件:**
+```
+app/src/
+├── services/
+│   ├── intent-recognition.service.ts    # AI 意图识别服务
+│   ├── analysis-execution.service.ts    # 分析执行服务
+│   └── __tests__/data-conversion.test.ts # 数据转换测试
+├── components/
+│   └── AnalysisResultRenderer.tsx       # 分析结果可视化渲染器
+└── pages/
+    └── AIWorkspace.tsx                  # 升级版（集成智能分析+双布局）
+```
+
+**功能实现:**
+
+1. **AI 意图识别增强** ✅
+   - 自然语言 → 分析操作智能映射
+   - 支持 13 种分析类型：描述统计、相关性、分布、异常检测、可视化、预测、综合、数据处理、路径、归因、序列挖掘、聚类
+   - AI 智能推荐数据集和列
+   - 推理过程展示
+
+2. **对接后端分析 API** ✅
+   - 封装 analysisExecutionService
+   - 异步任务状态轮询（3秒间隔，30次重试）
+   - 进度实时显示
+   - 错误处理和重试机制
+
+3. **分析结果可视化** ✅
+   - 支持折线图、柱状图、饼图、散点图、热力图
+   - 后端 base64 图片渲染 + 下载功能
+   - 数据格式转换（correlation_matrix、bar_chart、histogram）
+   - 数据表格展示
+   - 指标卡片（MAE、RMSE、R² 等）
+   - 结果摘要自动生成
+
+4. **双布局系统** ✅ ⭐ 新增
+   - **上下布局（vertical）**: 数据预览在上（固定200px），AI对话在下
+   - **左右布局（horizontal）**: 数据预览在左（38%），AI对话在右（62%）
+   - 布局切换按钮（Columns2/Rows2 图标）
+   - 关闭按钮移到左上角避免重叠
+
+5. **分析结果面板优化** ✅ ⭐ 新增
+   - 结果固定在对话区域下方（45%高度）
+   - 支持展开/折叠
+   - 折叠后可点击重新展开
+   - 添加下载按钮（base64图片导出）
+
+6. **多轮对话上下文** ✅
+   - 最近 6 条消息作为上下文
+   - AI 能理解连续对话
+   - 意图识别考虑历史语境
+
+7. **指令历史记录** ✅
+   - localStorage 持久化存储
+   - 历史会话列表展示
+   - 切换/删除历史对话
+   - 自动保存当前会话
+
+**数据集预览功能:**
+- 选中数据集后自动加载前5行预览
+- 显示列名和数据类型
+- 支持 96,000+ 行大数据集
+- 上下布局：可折叠的顶部面板
+- 左右布局：左侧固定面板，可滚动查看
+
+**使用示例:**
+```
+用户: "帮我预测下个月的销售额"
+AI: 识别意图 → forecast
+    推荐列 → value_column: "销售额", date_column: "日期"
+    执行分析 → 创建任务 → 轮询结果
+    展示 → 趋势图 + 预测指标
+
+用户: "看一下相关性"
+AI: 识别意图 → correlation
+    使用上下文 → 延续上一个数据集
+    执行分析 → 相关性矩阵 + 热力图
+```
 
 **设计特点:**
-- 透明悬浮层设计，不割裂用户操作流
-- 小圆点始终可见，随时唤起
-- 双击交互快速打开
-- 毛玻璃效果与 Cyberpunk 主题融合
+- 智能分析流程：输入 → 意图识别 → 参数提取 → 执行 → 可视化
+- 流式输出 + 进度条，体验流畅
+- 双布局系统适配不同使用场景
+- 对话历史自动管理
+- 分析结果可下载
+
+---
+
+## 🔧 本次 Bug 修复记录 (2026-04-08)
+
+### 1. API 响应解析修复 ✅
+**问题**: 拦截器已解包 `response.data`，但代码仍在访问 `res.data.data`
+**影响**: 数据集列表加载失败、分析结果获取失败
+**修复文件**:
+- `app/src/pages/AIWorkspace.tsx` - `loadDatasets()`, `loadDatasetPreview()`
+- `app/src/services/analysis-execution.service.ts` - 创建任务和轮询结果
+
+### 2. 图表数据转换修复 ✅
+**问题**: 后端返回的数据格式与前端图表组件不匹配
+**修复**:
+- `correlation_matrix`: 嵌套字典 → 数组格式
+- `bar_chart`: 字典 → 数组格式
+- `histogram`: 支持多种数据格式
+- `AnalysisResultRenderer.tsx`: 添加 base64 图片下载按钮
+
+### 3. 后端中文显示修复 ✅
+**问题**: matplotlib 生成的图表中文显示为方框
+**修复**: `visualization_service.py` 配置中文字体
+```python
+plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans', ...]
+plt.rcParams['axes.unicode_minus'] = False
+```
 
 ---
 
@@ -148,22 +237,22 @@ app/src/
 
 ## 📋 下一步开发计划
 
-### Phase 3.0: AI 助手功能增强 (待开发)
+### Phase 3.1: AI 助手优化 (待优化)
 
-**目标:** 让 AI 助手真正可用，支持智能数据分析
+**目标:** 提升 AI 助手稳定性和用户体验
 
 **待完成任务:**
-- [ ] AI 意图识别（自然语言 → 分析操作）
-- [ ] 对接后端分析 API
-- [ ] 分析结果可视化展示
-- [ ] 多轮对话上下文
-- [ ] 指令历史记录
+- [ ] 意图识别结果缓存（避免重复识别相同问题）
+- [ ] 分析结果导出（图片、PDF、Excel）
+- [ ] 语音输入支持
+- [ ] 分析模板保存（常用分析一键执行）
+- [ ] AI 解释分析结果（自然语言解读）
 
-**预计工时:** 16h
+**预计工时:** 8h
 
 ---
 
-### Phase 3.1: 大文件流式处理 (待开发)
+### Phase 3.2: 大文件流式处理 (待开发)
 
 **目标:** 支持 1GB+ 文件上传，边读边处理
 
@@ -280,9 +369,10 @@ venv\Scripts\activate  # Windows
 
 pip install -r requirements.txt
 # 注意：如需 OSS 功能，手动安装 pip install oss2
+# 注意：如需中文图表，确保系统有中文字体（SimHei等）
 
 cp .env.example .env
-# 编辑 .env 配置数据库连接
+# 编辑 .env 配置数据库连接和 KIMI_API_KEY
 
 uvicorn main:app --reload --port 8000
 ```
@@ -292,9 +382,10 @@ uvicorn main:app --reload --port 8000
 2. 登录后检查右上角"安全模式"徽章
 3. Settings 页面切换"本地存储"模式
 4. Upload 页面上传 CSV 文件
-5. Datasets 页面查看本地数据集
-6. 数据工坊测试大数据处理（DuckDB 懒加载）
-7. **双击右下角 AI 小圆点打开工作台** ⭐ 新增
+5. Datasets 页面查看云端数据集
+6. 双击右下角 AI 小圆点打开工作台
+7. 选择数据集后测试上下/左右布局切换
+8. 发送"帮我做智能可视化分析"测试 AI 分析流程
 
 ---
 
@@ -307,17 +398,23 @@ uvicorn main:app --reload --port 8000
 - `app/src/components/SecurityBadge.tsx` - 安全徽章
 - `app/src/components/DuckDBLoader.tsx` - DuckDB 加载 UI
 - ⭐ `app/src/components/AICompanion.tsx` - AI 小圆点
-- ⭐ `app/src/components/AIWorkspace.tsx` - AI 工作台
+- ⭐ `app/src/pages/AIWorkspace.tsx` - AI 工作台（双布局版）
 - ⭐ `app/src/components/KimiAvatar.tsx` - Kimi 头像
+- ⭐ `app/src/components/AnalysisResultRenderer.tsx` - 分析结果可视化
+- ⭐ `app/src/services/intent-recognition.service.ts` - AI 意图识别
+- ⭐ `app/src/services/analysis-execution.service.ts` - 分析执行服务
 - ⭐ `app/src/services/companion.service.ts` - AI 状态管理
 
 **后端核心:**
 - `insightease-backend/app/core/storage.py` - 存储抽象层
 - `insightease-backend/app/core/config.py` - 配置（含 OSS）
 - `insightease-backend/app/api/v1/endpoints/datasets.py` - 数据集 API
+- `insightease-backend/app/api/v1/endpoints/ai.py` - AI 接口（对话、解读、建议）
+- `insightease-backend/app/api/v1/endpoints/analysis.py` - 分析任务 API
+- `insightease-backend/app/services/visualization_service.py` - 可视化服务（含中文字体配置）
 
 **配置:**
-- `insightease-backend/.env` - 环境变量（数据库、OSS）
+- `insightease-backend/.env` - 环境变量（数据库、OSS、KIMI_API_KEY）
 - `app/vite.config.ts` - Vite 配置（Worker 支持）
 
 ---
@@ -341,7 +438,12 @@ uvicorn main:app --reload --port 8000
 4. **AI 助手功能**
    - 双击小圆点可打开/关闭工作台
    - 小圆点可拖拽移动位置
-   - 当前为 UI 框架，智能分析功能待 Phase 3.0 实现
+   - 选择数据集后可在上下/左右布局间切换
+   - 分析结果支持下载图片
+
+5. **中文字体显示**
+   - 后端图表中文需要系统安装中文字体
+   - Linux 服务器可能需要安装：`sudo apt-get install fonts-wqy-zenhei`
 
 ---
 
@@ -349,14 +451,31 @@ uvicorn main:app --reload --port 8000
 
 | 指标 | 数值 |
 |------|------|
-| 前端代码行数 | ~22,000+ |
-| 组件数量 | 95+ |
-| 服务模块 | 7 个 |
+| 前端代码行数 | ~26,000+ |
+| 组件数量 | 100+ |
+| 服务模块 | 9 个 |
 | 操作类型 | 9 种 |
 | Worker 文件 | 1 个 |
-| 已完成阶段 | 2.5/5 |
-| AI 相关组件 | 4 个 |
+| 已完成阶段 | 3.0/5 |
+| AI 相关组件 | 7 个 |
+| 支持的分析类型 | 13 种 |
+| 布局模式 | 2 种 |
 
 ---
 
-**下次继续开发：Phase 3.0 AI 助手功能增强！** 🔥
+**Git 提交信息建议:**
+```
+feat: AI Workspace 双布局系统 + 图表渲染修复
+
+- 新增上下/左右双布局切换功能
+- 数据预览区域自适应布局变化
+- 修复 API 响应解析（拦截器解包问题）
+- 修复图表数据格式转换（correlation_matrix、bar_chart）
+- 添加分析结果图片下载功能
+- 修复 matplotlib 中文显示问题
+- 优化结果面板展开/折叠交互
+```
+
+---
+
+**下次继续开发：Phase 3.1 AI 助手优化 或 OSS 配置！** 🔥
