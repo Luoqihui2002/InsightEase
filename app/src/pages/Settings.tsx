@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Settings2,
-  Cloud,
-  HardDrive,
   Palette,
   Globe,
   Bell,
@@ -17,7 +15,6 @@ import {
   Monitor,
   Zap,
   ChevronRight,
-  Lock,
   Save,
   RefreshCw
 } from 'lucide-react';
@@ -26,17 +23,11 @@ import { Button } from '@/components/ui/button';
 import { useTheme, type ThemeType } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import gsap from 'gsap';
-import { localStorageService } from '@/services';
-
-// 存储模式类型
-type StorageMode = 'cloud' | 'local';
-
 // 语言类型
 type Language = 'zh-CN' | 'en-US';
 
 // 设置状态接口
 interface AppSettings {
-  storageMode: StorageMode;
   language: Language;
   notifications: {
     analysisComplete: boolean;
@@ -52,7 +43,6 @@ interface AppSettings {
 
 // 默认设置
 const defaultSettings: AppSettings = {
-  storageMode: 'cloud',
   language: 'zh-CN',
   notifications: {
     analysisComplete: true,
@@ -101,20 +91,13 @@ export function Settings() {
   const pageRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
   
-  // 从 localStorage 加载设置，并同步安全模式状态
+  // 从 localStorage 加载设置
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem('insightease_settings');
-    const parsedSettings = saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-    
-    // 同步安全模式状态到 localStorageService
-    const isSecurityMode = parsedSettings.storageMode === 'local';
-    localStorageService.setSecurityMode(isSecurityMode);
-    
-    return parsedSettings;
+    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
-  
+
   const [hasChanges, setHasChanges] = useState(false);
-  const [showLocalModeAlert, setShowLocalModeAlert] = useState(false);
   const [clearDataDialog, setClearDataDialog] = useState(false);
   
   // 页面入场动画
@@ -133,15 +116,6 @@ export function Settings() {
     localStorage.setItem('insightease_settings', JSON.stringify(settings));
     setHasChanges(false);
     toast.success('设置已保存');
-    
-    // 同步安全模式状态
-    const isSecurityMode = settings.storageMode === 'local';
-    localStorageService.setSecurityMode(isSecurityMode);
-    
-    // 如果切换到本地模式，显示提示
-    if (settings.storageMode === 'local') {
-      toast.info('本地模式已启用，您的数据将不会上传到云端', { duration: 5000 });
-    }
   };
   
   // 更新设置
@@ -162,25 +136,6 @@ export function Settings() {
     setHasChanges(true);
   };
   
-  // 切换存储模式
-  const handleStorageModeChange = (mode: StorageMode) => {
-    if (mode === 'local') {
-      setShowLocalModeAlert(true);
-    }
-    updateSettings('storageMode', mode);
-    
-    // 立即同步安全模式状态（无需等待保存按钮）
-    const isSecurityMode = mode === 'local';
-    localStorageService.setSecurityMode(isSecurityMode);
-    
-    // 显示切换提示
-    if (mode === 'local') {
-      toast.info('已切换到本地存储模式，数据将保存在浏览器中', { duration: 3000 });
-    } else {
-      toast.info('已切换到云端存储模式，数据将上传到服务器', { duration: 3000 });
-    }
-  };
-  
   // 清理本地数据
   const handleClearData = () => {
     localStorage.removeItem('insightease_settings');
@@ -189,29 +144,7 @@ export function Settings() {
     setClearDataDialog(false);
     window.location.reload();
   };
-  
-  // 获取存储模式描述
-  const getStorageModeInfo = (mode: StorageMode) => {
-    switch (mode) {
-      case 'cloud':
-        return {
-          title: '云端存储',
-          desc: '数据上传到服务器，可在多设备同步，适合团队协作',
-          features: ['多设备同步', '自动备份', '团队共享', '云端分析'],
-          warning: null,
-        };
-      case 'local':
-        return {
-          title: '本地存储',
-          desc: '数据仅保存在浏览器本地，不上传到任何服务器，适合敏感数据',
-          features: ['数据隐私', '离线使用', '零网络传输', '企业合规'],
-          warning: '注意：清理浏览器数据将导致数据丢失，请定期导出备份',
-        };
-    }
-  };
-  
-  const currentModeInfo = getStorageModeInfo(settings.storageMode);
-  
+
   return (
     <div ref={pageRef} className="space-y-6 max-w-6xl mx-auto">
       {/* 页面标题 */}
@@ -238,135 +171,52 @@ export function Settings() {
         </div>
       </div>
       
-      {/* 存储模式设置 - 重点功能 */}
+      {/* 数据存储说明 */}
       <Card className="glass border-[var(--border-subtle)] border-l-4 border-l-[var(--neon-cyan)]">
         <CardHeader>
           <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
             <Database className="w-5 h-5 text-[var(--neon-cyan)]" />
-            数据存储模式
-            <span className="px-2 py-0.5 rounded-full text-xs bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]">
-              企业级
-            </span>
+            数据存储说明
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* 模式选择 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* 云端模式 */}
-            <div
-              onClick={() => handleStorageModeChange('cloud')}
-              className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${
-                settings.storageMode === 'cloud'
-                  ? 'border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10'
-                  : 'border-[var(--border-subtle)] hover:border-[var(--neon-cyan)]/50'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  settings.storageMode === 'cloud' 
-                    ? 'bg-[var(--neon-cyan)]/20' 
-                    : 'bg-[var(--bg-tertiary)]'
-                }`}>
-                  <Cloud className={`w-6 h-6 ${
-                    settings.storageMode === 'cloud' ? 'text-[var(--neon-cyan)]' : 'text-[var(--text-muted)]'
-                  }`} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-[var(--text-primary)]">云端存储</h3>
-                    {settings.storageMode === 'cloud' && (
-                      <CheckCircle2 className="w-4 h-4 text-[var(--neon-cyan)]" />
-                    )}
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    数据安全存储在云端服务器
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* 本地模式 */}
-            <div
-              onClick={() => handleStorageModeChange('local')}
-              className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${
-                settings.storageMode === 'local'
-                  ? 'border-[var(--neon-green)] bg-[var(--neon-green)]/10'
-                  : 'border-[var(--border-subtle)] hover:border-[var(--neon-green)]/50'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  settings.storageMode === 'local' 
-                    ? 'bg-[var(--neon-green)]/20' 
-                    : 'bg-[var(--bg-tertiary)]'
-                }`}>
-                  <HardDrive className={`w-6 h-6 ${
-                    settings.storageMode === 'local' ? 'text-[var(--neon-green)]' : 'text-[var(--text-muted)]'
-                  }`} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-[var(--text-primary)]">本地存储</h3>
-                    {settings.storageMode === 'local' && (
-                      <CheckCircle2 className="w-4 h-4 text-[var(--neon-green)]" />
-                    )}
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    数据仅保存在本地浏览器
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* 当前模式详情 */}
           <div className="p-5 rounded-xl bg-[var(--bg-secondary)]">
-            <div className="flex items-center gap-3 mb-3">
-              {settings.storageMode === 'cloud' ? (
-                <Cloud className="w-5 h-5 text-[var(--neon-cyan)]" />
-              ) : (
-                <Lock className="w-5 h-5 text-[var(--neon-green)]" />
-              )}
-              <h4 className="font-bold text-[var(--text-primary)]">{currentModeInfo.title}</h4>
-            </div>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">{currentModeInfo.desc}</p>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {currentModeInfo.features.map((feature, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
-                  <div className={`w-1.5 h-1.5 rounded-full ${
-                    settings.storageMode === 'cloud' ? 'bg-[var(--neon-cyan)]' : 'bg-[var(--neon-green)]'
-                  }`} />
-                  {feature}
-                </div>
-              ))}
-            </div>
-            
-            {currentModeInfo.warning && (
-              <div className="mt-4 p-3 rounded-lg bg-[var(--neon-orange)]/10 border border-[var(--neon-orange)]/30 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-[var(--neon-orange)] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-[var(--neon-orange)]">{currentModeInfo.warning}</p>
+            <div className="flex items-start gap-3 mb-4">
+              <Info className="w-5 h-5 text-[var(--neon-cyan)] flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-[var(--text-primary)] mb-2">统一后端处理架构</h4>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  当前正式版本统一由后端处理数据。浏览器本地处理模式已标记为 legacy，
+                  不再作为正式功能提供。
+                </p>
               </div>
-            )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="flex items-center gap-2 text-sm text-[var(--text-primary)] p-3 rounded-lg bg-[var(--bg-tertiary)]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--neon-cyan)]" />
+                处理位置：后端服务器
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[var(--text-primary)] p-3 rounded-lg bg-[var(--bg-tertiary)]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--neon-cyan)]" />
+                元数据存储：后端数据库
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[var(--text-primary)] p-3 rounded-lg bg-[var(--bg-tertiary)]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--neon-cyan)]" />
+                文件存储：服务器本地磁盘 / OSS
+              </div>
+            </div>
           </div>
-          
-          {/* 本地模式提示 */}
-          {settings.storageMode === 'local' && (
-            <div className="p-4 rounded-lg bg-[var(--neon-green)]/10 border border-[var(--neon-green)]/30">
-              <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-[var(--neon-green)] flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-[var(--text-secondary)]">
-                  <p className="font-medium text-[var(--text-primary)] mb-1">本地模式说明</p>
-                  <ul className="space-y-1 list-disc list-inside">
-                    <li>所有数据仅存储在浏览器 IndexedDB 中</li>
-                    <li>不会向服务器发送任何数据内容</li>
-                    <li>分析计算在本地 WASM 中完成（部分高级功能受限）</li>
-                    <li>建议定期导出数据备份</li>
-                  </ul>
-                </div>
+
+          <div className="p-4 rounded-lg bg-[var(--neon-orange)]/10 border border-[var(--neon-orange)]/30">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-[var(--neon-orange)] flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-[var(--text-secondary)]">
+                <p className="font-medium text-[var(--text-primary)] mb-1">Legacy 模式说明</p>
+                <p>浏览器本地处理（IndexedDB、DuckDB-WASM）相关代码已标记为 legacy，保留但不继续开发。如需私有部署，请联系管理员配置后端为本地磁盘模式。</p>
               </div>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
       
@@ -603,35 +453,6 @@ export function Settings() {
                 确认清理
               </Button>
             </div>
-          </div>
-        </div>
-      )}
-      
-      {/* 本地模式切换提示 */}
-      {showLocalModeAlert && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="max-w-md w-full mx-4 p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--neon-green)]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[var(--neon-green)]/20 flex items-center justify-center">
-                <Lock className="w-5 h-5 text-[var(--neon-green)]" />
-              </div>
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">切换到本地模式</h3>
-            </div>
-            <div className="space-y-3 text-[var(--text-secondary)] text-sm mb-6">
-              <p>切换到本地模式后：</p>
-              <ul className="space-y-2 list-disc list-inside">
-                <li>新上传的数据将只保存在本地浏览器</li>
-                <li>已上传到云端的数据仍可在云端访问</li>
-                <li>部分需要云端计算的高级功能将不可用</li>
-                <li>请确保定期导出重要数据备份</li>
-              </ul>
-            </div>
-            <Button
-              onClick={() => setShowLocalModeAlert(false)}
-              className="w-full bg-[var(--neon-green)] hover:bg-[var(--neon-green)]/90 text-[var(--bg-primary)]"
-            >
-              我知道了
-            </Button>
           </div>
         </div>
       )}

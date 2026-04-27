@@ -9,7 +9,7 @@
  */
 
 import * as Comlink from 'comlink';
-import type { DuckDBWorkerApi } from '@/workers/duckdb.worker';
+import type { DuckDBWorkerApi } from './duckdb.worker';
 import type { DataTable } from '@/types/data-table';
 import type { Operation } from '@/types/operation';
 
@@ -69,7 +69,7 @@ async function initWorker(): Promise<void> {
     try {
       // 动态创建 Worker
       // Vite 方式：使用 new URL 和 import.meta.url
-      const WorkerUrl = new URL('@/workers/duckdb.worker.ts', import.meta.url);
+      const WorkerUrl = new URL('./duckdb.worker.ts', import.meta.url);
       worker = new Worker(WorkerUrl, { type: 'module' });
       
       // 使用 Comlink 包装

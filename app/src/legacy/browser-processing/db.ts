@@ -1,6 +1,8 @@
 /**
  * IndexedDB 封装 - 使用 Dexie.js
- * 
+ * ⚠️ LEGACY / EXPERIMENTAL: 此模块属于浏览器本地处理路径。
+ * Main path must NOT import from this directory.
+ *
  * 功能：
  * - 本地数据集存储（支持大数据）
  * - 操作链持久化

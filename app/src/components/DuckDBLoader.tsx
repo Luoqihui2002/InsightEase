@@ -10,12 +10,12 @@
 import { useState, useEffect } from 'react';
 import { Database, Loader2, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { 
-  onDuckDBStatusChange, 
-  getDuckDBStatus, 
+import {
+  onDuckDBStatusChange,
+  getDuckDBStatus,
   type DuckDBStatus,
-  terminateWorker 
-} from '@/services/duckdb-service';
+  terminateWorker
+} from '@/legacy/browser-processing/duckdb-service';
 
 interface DuckDBLoaderProps {
   showWhenReady?: boolean;

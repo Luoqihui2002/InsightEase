@@ -1,10 +1,11 @@
 /**
- * 安全模式徽章 - 显示数据本地处理状态
+ * 架构状态徽章 - 显示当前后端处理架构状态
+ *
+ * 注意：此组件不再提供模式切换功能。
+ * 所有数据处理统一由后端执行，浏览器本地处理已标记为 legacy。
  */
 
-import { Shield, ShieldCheck, Database, Lock } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { localStorageService } from '@/services';
+import { Server, Database, HardDrive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SecurityBadgeProps {
@@ -13,103 +14,31 @@ interface SecurityBadgeProps {
 }
 
 export function SecurityBadge({ className, showDetails = false }: SecurityBadgeProps) {
-  const [isSecurityMode, setIsSecurityMode] = useState(false);
-  const [stats, setStats] = useState<{ datasetCount: number; usedSpace: string } | null>(null);
-
-  useEffect(() => {
-    // 初始化安全模式状态
-    const initialMode = localStorageService.getSecurityMode();
-    setIsSecurityMode(initialMode);
-
-    // 订阅变化
-    const unsubscribe = localStorageService.onSecurityModeChange((enabled) => {
-      setIsSecurityMode(enabled);
-      if (enabled) {
-        loadStats();
-      }
-    });
-
-    if (initialMode) {
-      loadStats();
-    }
-
-    return unsubscribe;
-  }, []);
-
-  const loadStats = async () => {
-    const status = await localStorageService.getStatus();
-    setStats({
-      datasetCount: status.datasetCount,
-      usedSpace: localStorageService.formatStorageSize(status.usedSpace),
-    });
-  };
-
-  const toggleMode = () => {
-    const newMode = !isSecurityMode;
-    localStorageService.setSecurityMode(newMode);
-    setIsSecurityMode(newMode);
-    
-    // 同步更新 Settings 页面的 storageMode
-    const savedSettings = localStorage.getItem('insightease_settings');
-    if (savedSettings) {
-      try {
-        const settings = JSON.parse(savedSettings);
-        settings.storageMode = newMode ? 'local' : 'cloud';
-        localStorage.setItem('insightease_settings', JSON.stringify(settings));
-      } catch {
-        // 忽略解析错误
-      }
-    }
-    
-    if (newMode) {
-      loadStats();
-    }
-  };
-
-  if (!isSecurityMode) {
-    return (
-      <button
-        onClick={toggleMode}
-        className={cn(
-          "flex items-center gap-1.5 px-2 py-1 rounded text-xs",
-          "border border-[var(--border-subtle)] text-[var(--text-muted)]",
-          "hover:border-[var(--neon-cyan)]/50 hover:text-[var(--neon-cyan)]",
-          "transition-all duration-200",
-          className
-        )}
-        title="点击启用安全模式，数据将仅保存在本地"
-      >
-        <Shield className="w-3.5 h-3.5" />
-        <span>安全模式</span>
-      </button>
-    );
-  }
-
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <button
-        onClick={toggleMode}
+      <div
         className={cn(
           "flex items-center gap-1.5 px-2 py-1 rounded text-xs",
           "bg-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/50",
-          "text-[var(--neon-cyan)]",
-          "hover:bg-[var(--neon-cyan)]/20 transition-all duration-200"
+          "text-[var(--neon-cyan)]"
         )}
-        title="安全模式已启用，数据不会上传"
+        title="当前版本统一由后端处理数据"
       >
-        <ShieldCheck className="w-3.5 h-3.5" />
-        <span className="font-medium">本地安全</span>
-        <Lock className="w-3 h-3 ml-0.5" />
-      </button>
+        <Server className="w-3.5 h-3.5" />
+        <span className="font-medium">Backend</span>
+      </div>
 
-      {showDetails && stats && (
+      {showDetails && (
         <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
           <span className="flex items-center gap-1">
             <Database className="w-3 h-3" />
-            {stats.datasetCount} 数据集
+            Metadata: Backend DB
           </span>
           <span>·</span>
-          <span>{stats.usedSpace}</span>
+          <span className="flex items-center gap-1">
+            <HardDrive className="w-3 h-3" />
+            File Storage: Backend-managed
+          </span>
         </div>
       )}
     </div>

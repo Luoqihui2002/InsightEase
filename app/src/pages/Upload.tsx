@@ -14,7 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import gsap from 'gsap';
 import { datasetApi } from '@/api';
 import type { FieldSchema } from '@/types/api';
-import { localStorageService, companionService } from '@/services';
+import { companionService } from '@/services';
 import { toast } from 'sonner';
 
 interface UploadingFile {
@@ -81,33 +81,16 @@ export function Upload() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // 获取当前存储模式
-  const getStorageMode = (): 'cloud' | 'local' => {
-    const saved = localStorage.getItem('insightease_settings');
-    if (saved) {
-      try {
-        const settings = JSON.parse(saved);
-        return settings.storageMode || 'cloud';
-      } catch {
-        return 'cloud';
-      }
-    }
-    return localStorageService.getSecurityMode() ? 'local' : 'cloud';
-  };
-
-  // 上传逻辑：根据存储模式选择上传到云端或本地
+  // 上传逻辑：统一上传到后端
   const handleFiles = async (files: File[]) => {
-    const validFiles = files.filter(f => 
-      f.name.endsWith('.csv') || 
-      f.name.endsWith('.xlsx') || 
+    const validFiles = files.filter(f =>
+      f.name.endsWith('.csv') ||
+      f.name.endsWith('.xlsx') ||
       f.name.endsWith('.xls')
     );
 
-    const storageMode = getStorageMode();
-    const isLocalMode = storageMode === 'local';
-
     for (const file of validFiles) {
-      const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const id = Date.now().toString() + Math.random().toString(36).substring(2, 11);
       const newFile: UploadingFile = {
         id,
         file,
@@ -120,16 +103,10 @@ export function Upload() {
       setUploadingFiles(prev => [...prev, newFile]);
 
       try {
-        if (isLocalMode) {
-          // 本地模式：存储到 IndexedDB
-          await handleLocalUpload(file, id);
-        } else {
-          // 云端模式：上传到后端服务器
-          await handleCloudUpload(file, id);
-        }
+        await handleUpload(file, id);
       } catch (err: any) {
-        setUploadingFiles(prev => 
-          prev.map(f => 
+        setUploadingFiles(prev =>
+          prev.map(f =>
             f.id === id ? { ...f, status: 'error', errorMsg: err.message } : f
           )
         );
@@ -137,80 +114,8 @@ export function Upload() {
     }
   };
 
-  // 本地上传处理
-  const handleLocalUpload = async (file: File, id: string) => {
-    // 模拟进度更新
-    const progressInterval = setInterval(() => {
-      setUploadingFiles(prev => 
-        prev.map(f => {
-          if (f.id === id && f.progress < 90) {
-            return { ...f, progress: f.progress + 10 };
-          }
-          return f;
-        })
-      );
-    }, 100);
-
-    try {
-      // 使用 localStorageService 导入到 IndexedDB
-      const table = await localStorageService.importDataset(file, (percent) => {
-        setUploadingFiles(prev => 
-          prev.map(f => 
-            f.id === id ? { ...f, progress: percent } : f
-          )
-        );
-      });
-
-      clearInterval(progressInterval);
-
-      // 上传成功
-      setUploadingFiles(prev => 
-        prev.map(f => 
-          f.id === id ? { ...f, progress: 100, status: 'completed' } : f
-        )
-      );
-
-      // 显示本地存储的扫描报告（简化版）
-      setScanReport({
-        qualityScore: 95, // 本地存储默认高分
-        fields: table.columns.map(col => ({
-          name: col,
-          dtype: 'string',
-          sample_values: table.data.slice(0, 3).map(row => row[col]),
-        })),
-        datasetId: table.id,
-        rowCount: table.rowCount,
-        colCount: table.columns.length,
-        aiSummary: '本地存储模式：数据已安全保存在您的浏览器中，不会上传到任何服务器。',
-      });
-
-      // 触发动画
-      setTimeout(() => {
-        if (reportRef.current) {
-          gsap.fromTo(
-            reportRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }
-          );
-        }
-      }, 100);
-
-      toast.success(`文件已保存到本地：${file.name}`);
-
-      // 触发 AI Companion 上传完成事件
-      companionService.recordAction('upload', {
-        rowCount: table.rowCount,
-        colCount: table.columns.length,
-        fileName: file.name,
-      });
-    } catch (err) {
-      clearInterval(progressInterval);
-      throw err;
-    }
-  };
-
-  // 云端上传处理
-  const handleCloudUpload = async (file: File, id: string) => {
+  // 后端上传处理
+  const handleUpload = async (file: File, id: string) => {
     const res: any = await datasetApi.upload(file, (percent) => {
       setUploadingFiles(prev => 
         prev.map(f => 

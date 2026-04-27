@@ -1,11 +1,15 @@
 /**
- * 本地存储服务 - 安全模式核心
- * 
- * 功能：
- * - 数据集本地持久化（IndexedDB + 压缩）
- * - 智能引擎选择（JS / DuckDB-WASM）
- * - 操作链本地存储
- * - 安全徽章状态管理
+ * 本地存储服务 - LEGACY / DEPRECATED
+ *
+ * 警告：此模块属于浏览器本地处理路径，已标记为 legacy。
+ * 当前正式主线统一由后端处理数据，不再通过前端"安全模式"决定存储位置。
+ *
+ * 保留原因：
+ * - 实验性功能可能仍需引用
+ * - 避免一次性大重构导致不可回滚
+ *
+ * 不要在新代码中 import 此模块。
+ * Upload / Datasets / AIWorkspace 等主链路不得依赖此服务。
  */
 
 import { datasetStorage, operationChainStorage, compression } from './db';
@@ -335,7 +339,7 @@ class LocalStorageService {
     operation: Operation
   ): Promise<DataTable> {
     // 导入 DataWorkshop 的执行函数
-    const { executeOperation } = await import('@/utils/operation-executor');
+    const { executeOperation } = await import('./operation-executor');
     return executeOperation(table, operation);
   }
 

@@ -1,6 +1,8 @@
 /**
  * 引擎选择器 - 根据数据规模和操作复杂度智能选择处理引擎
- * 
+ * ⚠️ LEGACY / EXPERIMENTAL: 此模块属于浏览器本地处理路径。
+ * Main path must NOT import from this directory.
+ *
  * 双引擎策略：
  * - JS Engine: 简单操作、中小数据量，零加载开销
  * - DuckDB-WASM: 复杂操作、大数据量，12MB 懒加载

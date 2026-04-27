@@ -41,15 +41,11 @@ import { useNavigate } from 'react-router-dom';
 import { datasetApi } from '@/api';
 import { quickRequest } from '@/lib/request';
 import type { Dataset, DatasetPreview } from '@/types/api';
-import { localStorageService, companionService } from '@/services';
-import { toast } from 'sonner';
-import type { DataTable } from '@/types/data-table';
+import { companionService } from '@/services';
 
 export function Datasets() {
   const navigate = useNavigate();
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [localDatasets, setLocalDatasets] = useState<DataTable[]>([]);
-  const [isLocalMode, setIsLocalMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,73 +66,19 @@ export function Datasets() {
   
   const tableRef = useRef<HTMLDivElement>(null);
 
-  // 获取当前存储模式
-  const getStorageMode = (): 'cloud' | 'local' => {
-    const saved = localStorage.getItem('insightease_settings');
-    if (saved) {
-      try {
-        const settings = JSON.parse(saved);
-        return settings.storageMode || 'cloud';
-      } catch {
-        return 'cloud';
-      }
-    }
-    return localStorageService.getSecurityMode() ? 'local' : 'cloud';
-  };
-
-  // 加载数据函数
+  // 加载数据函数：统一从后端 API 加载
   const loadDatasets = async () => {
     setLoading(true);
     setError('');
-    
-    const mode = getStorageMode();
-    setIsLocalMode(mode === 'local');
-    
+
     try {
-      if (mode === 'local') {
-        // 本地模式：从 IndexedDB 加载
-        const localData = await localStorageService.listDatasets();
-        // 转换为 Dataset 格式
-        const converted = localData.map(meta => ({
-          id: meta.id,
-          filename: meta.name,
-          file_size: meta.size,
-          row_count: meta.rowCount,
-          col_count: meta.colCount,
-          created_at: meta.createdAt,
-          quality_score: 95, // 本地数据默认高分
-          schema: meta.columns.map(col => ({
-            name: col,
-            dtype: 'string',
-            sample_values: [],
-          })),
-          is_deleted: false,
-          user_id: '',
-          storage_path: '',
-          updated_at: meta.createdAt,
-          ai_summary: '本地存储数据集',
-        })) as Dataset[];
-        setDatasets(converted);
-        
-        // 同时加载完整数据用于预览
-        const fullData: DataTable[] = [];
-        for (const meta of localData) {
-          const table = await localStorageService.loadDataset(meta.id);
-          if (table) {
-            fullData.push(table);
-          }
-        }
-        setLocalDatasets(fullData);
-      } else {
-        // 云端模式：从后端 API 加载
-        const res: any = await quickRequest.get('/datasets', { params: { page: 1, page_size: 50 } });
-        const newDatasets = res.items || res.data?.items || [];
-        setDatasets(newDatasets);
-      }
-      
+      const res: any = await quickRequest.get('/datasets', { params: { page: 1, page_size: 50 } });
+      const newDatasets = res.items || res.data?.items || [];
+      setDatasets(newDatasets);
+
       // 清理已不存在的选中项
       setSelectedRows(prev => {
-        const newIds = new Set(datasets.map((d: Dataset) => d.id));
+        const newIds = new Set(newDatasets.map((d: Dataset) => d.id));
         const validSelections = Array.from(prev).filter(id => newIds.has(id));
         return new Set(validSelections);
       });
@@ -153,22 +95,6 @@ export function Datasets() {
     
     // 通知AI助手当前页面
     companionService.setPage('datasets');
-    
-    // 检查是否有本地数据集
-    const checkLocalData = async () => {
-      const localData = await localStorageService.listDatasets();
-      if (localData.length > 0) {
-        companionService.updateContext({
-          hasData: true,
-          dataInfo: {
-            rowCount: localData.reduce((sum, d) => sum + d.rowCount, 0),
-            colCount: localData[0]?.colCount || 0,
-            fileName: localData[0]?.name || '',
-          }
-        });
-      }
-    };
-    checkLocalData();
   }, []);
   
   // 监听存储模式变化
@@ -250,26 +176,17 @@ export function Datasets() {
     
     setIsBatchDeleting(true);
     try {
-      if (isLocalMode) {
-        // 本地模式：从 IndexedDB 删除
-        for (const id of selectedRows) {
-          await localStorageService.deleteDataset(id);
-        }
-        toast.success(`已删除 ${selectedRows.size} 个本地数据集`);
-      } else {
-        // 云端模式：调用 API 删除
-        const deletePromises = Array.from(selectedRows).map(id => 
-          datasetApi.delete(id).catch(err => ({ id, error: err }))
-        );
-        
-        const results = await Promise.all(deletePromises);
-        const failures = results.filter((r: any) => r && r.error);
-        
-        if (failures.length > 0) {
-          alert(`${failures.length} 个数据集删除失败`);
-        }
+      const deletePromises = Array.from(selectedRows).map(id =>
+        datasetApi.delete(id).catch(err => ({ id, error: err }))
+      );
+
+      const results = await Promise.all(deletePromises);
+      const failures = results.filter((r: any) => r && r.error);
+
+      if (failures.length > 0) {
+        alert(`${failures.length} 个数据集删除失败`);
       }
-      
+
       await loadDatasets();
     } catch (err: any) {
       alert('批量删除失败: ' + err.message);
@@ -279,81 +196,45 @@ export function Datasets() {
   };
 
   // 批量下载
-  // 下载单个文件（带认证）
+  // 下载单个文件（从后端下载）
   const downloadFile = async (dataset: Dataset) => {
     try {
-      if (isLocalMode) {
-        // 本地模式：从 IndexedDB 读取并导出
-        const table = await localStorageService.loadDataset(dataset.id);
-        if (!table) {
-          throw new Error('数据集不存在');
+      const token = localStorage.getItem('access_token');
+      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+
+      const response = await fetch(`${baseURL}/datasets/${dataset.id}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        
-        // 转换为 CSV
-        const headers = table.columns.join(',');
-        const rows = table.data.map(row => 
-          table.columns.map(col => {
-            const val = row[col];
-            // 处理包含逗号或引号的值
-            if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
-              return `"${val.replace(/"/g, '""')}"`;
-            }
-            return val ?? '';
-          }).join(',')
-        );
-        const csv = [headers, ...rows].join('\n');
-        
-        // 创建下载链接
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${dataset.filename}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        
-        toast.success(`已下载: ${dataset.filename}`);
-      } else {
-        // 云端模式：从后端下载
-        const token = localStorage.getItem('access_token');
-        const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-        
-        const response = await fetch(`${baseURL}/datasets/${dataset.id}/download`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (!response.ok) {
-          let errorMsg = '下载失败';
-          try {
-            const errorData = await response.json();
-            errorMsg = errorData.detail || errorData.message || `下载失败 (${response.status})`;
-          } catch {
-            errorMsg = `下载失败 (${response.status}: ${response.statusText})`;
-          }
-          throw new Error(errorMsg);
+      });
+
+      if (!response.ok) {
+        let errorMsg = '下载失败';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.detail || errorData.message || `下载失败 (${response.status})`;
+        } catch {
+          errorMsg = `下载失败 (${response.status}: ${response.statusText})`;
         }
-        
-        const contentDisposition = response.headers.get('content-disposition');
-        let filename = dataset.filename;
-        if (contentDisposition) {
-          const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-          if (match) filename = decodeURIComponent(match[1].replace(/['"]/g, ''));
-        }
-        
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        throw new Error(errorMsg);
       }
+
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = dataset.filename;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match) filename = decodeURIComponent(match[1].replace(/['"]/g, ''));
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err: any) {
       alert(err.message || `下载 ${dataset.filename} 失败`);
     }
@@ -377,12 +258,7 @@ export function Datasets() {
   const handleDelete = async (id: string) => {
     if (!confirm('确定要删除这个数据集吗？')) return;
     try {
-      if (isLocalMode) {
-        await localStorageService.deleteDataset(id);
-        toast.success('数据集已删除');
-      } else {
-        await datasetApi.delete(id);
-      }
+      await datasetApi.delete(id);
       await loadDatasets();
     } catch (err: any) {
       alert('删除失败: ' + err.message);
@@ -522,16 +398,9 @@ export function Datasets() {
             <h1 className="text-heading-1 text-[var(--text-primary)]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
               Datasets
             </h1>
-            {isLocalMode && (
-              <span className="px-2 py-0.5 rounded text-xs bg-[var(--neon-green)]/20 text-[var(--neon-green)] border border-[var(--neon-green)]/30">
-                本地模式
-              </span>
-            )}
           </div>
           <p className="text-[var(--text-secondary)] mt-1">
-            {isLocalMode 
-              ? '管理本地浏览器中存储的数据集' 
-              : '管理和探索你的数据集'}
+            管理和探索你的数据集
           </p>
         </div>
         <Button 

@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { 
-  Database, 
-  Upload, 
-  Play, 
+import {
+  Database,
+  Upload,
+  Play,
   Settings2,
   ChevronDown,
   ChevronUp,
@@ -29,7 +29,8 @@ import {
   Combine,
   Calendar,
   HardDrive,
-  Zap
+  Zap,
+  AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -39,8 +40,10 @@ import type { Dataset } from '@/types/api';
 
 // Phase 2.1: 安全模式导入
 import { EngineIndicator } from '@/components/SecurityBadge';
-import { localStorageService, engineSelector, companionService } from '@/services';
-import type { EngineDecision } from '@/services';
+import { companionService } from '@/services';
+import { localStorageService } from '@/legacy/browser-processing/local-storage.service';
+import { engineSelector } from '@/legacy/browser-processing/engine-selector';
+import type { EngineDecision } from '@/legacy/browser-processing/engine-selector';
 
 // 操作类型
 type OperationType = 
@@ -1199,6 +1202,17 @@ export function DataWorkshop() {
         <p className="mt-1" style={{ color: '#94a3b8' }}>
           可视化数据表处理工具 - 宽长转换、多表JOIN、格式化输出
         </p>
+      </div>
+
+      {/* 实验性提示 */}
+      <div className="p-4 rounded-lg mb-6 bg-[var(--neon-orange)]/10 border border-[var(--neon-orange)]/30">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-[var(--neon-orange)] flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-[var(--text-secondary)]">
+            <p className="font-medium text-[var(--text-primary)] mb-1">实验性功能</p>
+            <p>数据工坊当前为实验性浏览器处理工作区，操作仅在浏览器临时执行，结果不会保存为后端数据集。正式后端处理能力将在下一阶段迁移。</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

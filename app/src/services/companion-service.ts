@@ -5,7 +5,6 @@
  */
 
 import { aiApi } from '@/api/ai';
-import { localStorageService } from './local-storage.service';
 
 export type CompanionMood = 'idle' | 'thinking' | 'happy' | 'tip';
 export type CompanionPosition = 'bottom-right' | 'dock';

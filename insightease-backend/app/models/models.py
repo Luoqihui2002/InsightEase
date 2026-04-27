@@ -43,12 +43,23 @@ class Dataset(Base):
     ai_summary = Column(Text, nullable=True)
     status = Column(String(20), default="uploaded")
     is_deleted = Column(Boolean, default=False)
-    
+
+    # Transform 相关字段 (Phase 3C)
+    parent_dataset_id = Column(
+        String(36),
+        ForeignKey("datasets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        comment="源数据集ID（transform生成时填充）"
+    )
+    transform_chain = Column(JSON, nullable=True, comment="transform操作链JSON（审计/复现用）")
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     owner = relationship("User", back_populates="datasets")
     analyses = relationship("Analysis", back_populates="dataset", cascade="all, delete-orphan")
+    parent = relationship("Dataset", remote_side=[id], backref="children")
 
 class Analysis(Base):
     __tablename__ = "analyses"
