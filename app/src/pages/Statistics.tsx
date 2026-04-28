@@ -3,11 +3,7 @@ import { companionService } from '@/services';
 import { 
   BarChart3, 
   Play, 
-  Settings2, 
-  Download,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
   Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +15,12 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import {
+  AnalysisPageShell,
+  AnalysisConfigPanel,
+  AnalysisResultPanel,
+  AnalysisActionBar,
+} from '@/components/analysis';
 
 interface ColumnInfo {
   name: string;
@@ -32,7 +34,6 @@ export function Statistics() {
     companionService.setPage('statistics');
   }, []);
 
-  const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState('');
   const [datasetInfo, setDatasetInfo] = useState<Dataset | null>(null);
@@ -167,6 +168,95 @@ export function Statistics() {
     setTimeout(checkResult, 1000);
   };
 
+  const handleExportCSV = () => {
+    if (!analysisResult?.column_stats) {
+      toast.error('暂无数据可导出');
+      return;
+    }
+
+    // 准备 CSV 数据
+    const targetColumns = selectedColumn === 'all' 
+      ? analysisResult.column_stats 
+      : analysisResult.column_stats.filter((c: any) => c.name === selectedColumn);
+    
+    // CSV 头部
+    const headers = ['字段名', '数据类型', '字段类型', '非空值', '空值', '空值占比(%)'];
+    const numericHeaders = ['平均值', '中位数', '标准差', '最小值', '最大值', 'Q1(25%)', 'Q3(75%)'];
+    const categoricalHeaders = ['唯一值', '最常见'];
+    
+    // 判断是否有数值型和分类型列
+    const hasNumeric = targetColumns.some((c: any) => c.type === 'numeric');
+    const hasCategorical = targetColumns.some((c: any) => c.type === 'categorical');
+    
+    let allHeaders = [...headers];
+    if (hasNumeric) allHeaders = [...allHeaders, ...numericHeaders];
+    if (hasCategorical) allHeaders = [...allHeaders, ...categoricalHeaders];
+    
+    // 生成数据行
+    const rows = targetColumns.map((col: any) => {
+      const baseRow = [
+        col.name,
+        col.dtype,
+        col.type === 'numeric' ? '数值型' : col.type === 'categorical' ? '分类型' : col.type,
+        col.non_null_count,
+        col.null_count,
+        col.null_percentage
+      ];
+      
+      let extraRow: (string | number)[] = [];
+      
+      if (col.type === 'numeric') {
+        extraRow = [
+          col.mean?.toFixed(4) || '',
+          col.median?.toFixed(4) || '',
+          col.std?.toFixed(4) || '',
+          col.min?.toFixed(4) || '',
+          col.max?.toFixed(4) || '',
+          col.q1?.toFixed(4) || '',
+          col.q3?.toFixed(4) || ''
+        ];
+        if (hasCategorical) {
+          extraRow = [...extraRow, '', '']; // 填充分类型列的空值
+        }
+      } else if (col.type === 'categorical') {
+        if (hasNumeric) {
+          extraRow = ['', '', '', '', '', '', '']; // 填充数值型列的空值
+        }
+        extraRow = [
+          ...extraRow,
+          col.unique_count || '',
+          col.most_common || ''
+        ];
+      } else {
+        // 其他类型填充空值
+        const fillCount = (hasNumeric ? 5 : 0) + (hasCategorical ? 2 : 0);
+        extraRow = new Array(fillCount).fill('');
+      }
+      
+      return [...baseRow, ...extraRow];
+    });
+    
+    // 生成 CSV 内容
+    const csvContent = [
+      allHeaders.join(','),
+      ...rows.map((row: any[]) => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    // 添加 BOM 以支持中文
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `统计分析报告-${datasetInfo?.filename || 'data'}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success('报告已导出为 CSV');
+  };
+
   // 渲染统计结果
   const renderStatsResult = () => {
     if (!analysisResult?.column_stats) return null;
@@ -254,103 +344,18 @@ export function Statistics() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: 'rgba(21, 27, 61, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-        <h1 className="text-heading-1 text-[var(--text-primary)]">
-          统计分析
-        </h1>
-        <p className="mt-1" style={{ color: '#94a3b8' }}>
-          对数据进行描述性统计分析，了解数据分布特征
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 配置面板 */}
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setIsConfigOpen(!isConfigOpen)}
-          >
-            <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
-                分析配置
-              </div>
-              {isConfigOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </CardTitle>
-          </CardHeader>
-          
-          {isConfigOpen && (
-            <CardContent className="space-y-4">
-              {/* 数据集选择 */}
-              <div className="space-y-2">
-                <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
-                <DatasetSelector 
-                  value={selectedDataset}
-                  onChange={setSelectedDataset}
-                />
-                {datasetInfo && (
-                  <p className="text-xs text-[var(--neon-cyan)]">
-                    {datasetInfo.row_count?.toLocaleString()} 行 · {datasetInfo.col_count} 列
-                  </p>
-                )}
-              </div>
-
-              {/* 数据类型验证提示 */}
-              {columns.length > 0 && (
-                <DataTypeValidation 
-                  columns={columns} 
-                  analysisType="statistics" 
-                />
-              )}
-
-              {/* 列选择 */}
-              {columns.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm text-[var(--text-muted)]">选择分析列</label>
-                  <select
-                    value={selectedColumn}
-                    onChange={(e) => setSelectedColumn(e.target.value)}
-                    className="w-full p-2 rounded text-sm"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
-                  >
-                    <option value="all">全部分析 (所有列)</option>
-                    <optgroup label="数值型列">
-                      {columns.filter(c => c.type === 'numeric').map(col => (
-                        <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="分类型列">
-                      {columns.filter(c => c.type === 'categorical').map(col => (
-                        <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="其他列">
-                      {columns.filter(c => c.type !== 'numeric' && c.type !== 'categorical').map(col => (
-                        <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
-              )}
-
-              {/* 分析按钮 */}
-              <button
+    <AnalysisPageShell
+      title="统计分析"
+      description="对数据进行描述性统计分析，了解数据分布特征"
+    >
+      <div className="flex flex-col lg:flex-row gap-6">
+        <AnalysisConfigPanel
+          footer={
+            <>
+              <Button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || !selectedDataset}
-                className="w-full font-medium py-2 px-4 rounded transition-all flex items-center justify-center"
-                style={{
-                  backgroundColor: selectedDataset ? 'var(--neon-cyan)' : 'var(--bg-tertiary)',
-                  color: selectedDataset ? 'var(--bg-primary)' : 'var(--text-muted)',
-                  cursor: selectedDataset ? 'pointer' : 'not-allowed',
-                  border: 'none',
-                  opacity: selectedDataset ? 1 : 0.5
-                }}
+                className="w-full"
               >
                 {isAnalyzing ? (
                   <>
@@ -363,153 +368,109 @@ export function Statistics() {
                     启动分析
                   </>
                 )}
-              </button>
-
+              </Button>
               {isAnalyzing && (
                 <p className="text-xs text-center text-[var(--text-muted)]">
                   正在分析数据，请稍候...
                 </p>
               )}
-            </CardContent>
-          )}
-        </Card>
+            </>
+          }
+        >
+          {/* 数据集选择 */}
+          <div className="space-y-2">
+            <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
+            <DatasetSelector 
+              value={selectedDataset}
+              onChange={setSelectedDataset}
+            />
+            {datasetInfo && (
+              <p className="text-xs text-[var(--neon-cyan)]">
+                {datasetInfo.row_count?.toLocaleString()} 行 · {datasetInfo.col_count} 列
+              </p>
+            )}
+          </div>
 
-        {/* 结果展示 */}
-        <div className="lg:col-span-2 space-y-6">
-          {!showResult ? (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3 className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
-                <p className="text-[var(--text-muted)]">选择数据集和列并启动分析</p>
-                <p className="text-xs text-[var(--text-muted)] mt-2">分析结果将在此显示</p>
-              </div>
-            </Card>
-          ) : (
+          {/* 数据类型验证提示 */}
+          {columns.length > 0 && (
+            <DataTypeValidation 
+              columns={columns} 
+              analysisType="statistics" 
+            />
+          )}
+
+          {/* 列选择 */}
+          {columns.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm text-[var(--text-muted)]">选择分析列</label>
+              <select
+                value={selectedColumn}
+                onChange={(e) => setSelectedColumn(e.target.value)}
+                className="w-full p-2 rounded text-sm"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle)'
+                }}
+              >
+                <option value="all">全部分析 (所有列)</option>
+                <optgroup label="数值型列">
+                  {columns.filter(c => c.type === 'numeric').map(col => (
+                    <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
+                  ))}
+                </optgroup>
+                <optgroup label="分类型列">
+                  {columns.filter(c => c.type === 'categorical').map(col => (
+                    <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
+                  ))}
+                </optgroup>
+                <optgroup label="其他列">
+                  {columns.filter(c => c.type !== 'numeric' && c.type !== 'categorical').map(col => (
+                    <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+          )}
+        </AnalysisConfigPanel>
+
+        <AnalysisResultPanel
+          loading={isAnalyzing && !showResult}
+          loadingMessage="正在分析数据，请稍候..."
+          empty={!showResult && !isAnalyzing}
+          emptyTitle="选择数据集和列并启动分析"
+          emptyDescription="分析结果将在此显示"
+          actions={showResult ? (
+            <AnalysisActionBar onExportCSV={handleExportCSV} />
+          ) : undefined}
+        >
+          {showResult && (
             <div ref={resultRef} className="space-y-6">
               {/* 统计结果 */}
               {renderStatsResult()}
 
               {/* AI 解读 */}
               {analysisResult?.ai_summary && (
-                <Card className="glass border-[var(--neon-cyan)]/30">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
+                <div className="rounded-xl border border-[var(--neon-cyan)]/30 bg-[var(--bg-secondary)] overflow-hidden">
+                  <div className="p-4 border-b border-[var(--border-subtle)]">
+                    <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
                       <Sparkles className="w-5 h-5 text-[var(--neon-cyan)]" />
                       AI 智能解读
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                    </div>
+                  </div>
+                  <div className="p-4">
                     <div className="p-4 rounded-lg bg-gradient-to-r from-[var(--neon-purple)]/10 to-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/30">
                       <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">
                         {analysisResult.ai_summary}
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
-
-              {/* 操作按钮 */}
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline"
-                  className="flex-1 border-[var(--neon-cyan)] text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/10"
-                  onClick={() => {
-                    if (!analysisResult?.column_stats) {
-                      toast.error('暂无数据可导出');
-                      return;
-                    }
-                    
-                    // 准备 CSV 数据
-                    const targetColumns = selectedColumn === 'all' 
-                      ? analysisResult.column_stats 
-                      : analysisResult.column_stats.filter((c: any) => c.name === selectedColumn);
-                    
-                    // CSV 头部
-                    const headers = ['字段名', '数据类型', '字段类型', '非空值', '空值', '空值占比(%)'];
-                    const numericHeaders = ['平均值', '中位数', '标准差', '最小值', '最大值', 'Q1(25%)', 'Q3(75%)'];
-                    const categoricalHeaders = ['唯一值', '最常见'];
-                    
-                    // 判断是否有数值型和分类型列
-                    const hasNumeric = targetColumns.some((c: any) => c.type === 'numeric');
-                    const hasCategorical = targetColumns.some((c: any) => c.type === 'categorical');
-                    
-                    let allHeaders = [...headers];
-                    if (hasNumeric) allHeaders = [...allHeaders, ...numericHeaders];
-                    if (hasCategorical) allHeaders = [...allHeaders, ...categoricalHeaders];
-                    
-                    // 生成数据行
-                    const rows = targetColumns.map((col: any) => {
-                      const baseRow = [
-                        col.name,
-                        col.dtype,
-                        col.type === 'numeric' ? '数值型' : col.type === 'categorical' ? '分类型' : col.type,
-                        col.non_null_count,
-                        col.null_count,
-                        col.null_percentage
-                      ];
-                      
-                      let extraRow: (string | number)[] = [];
-                      
-                      if (col.type === 'numeric') {
-                        extraRow = [
-                          col.mean?.toFixed(4) || '',
-                          col.median?.toFixed(4) || '',
-                          col.std?.toFixed(4) || '',
-                          col.min?.toFixed(4) || '',
-                          col.max?.toFixed(4) || '',
-                          col.q1?.toFixed(4) || '',
-                          col.q3?.toFixed(4) || ''
-                        ];
-                        if (hasCategorical) {
-                          extraRow = [...extraRow, '', '']; // 填充分类型列的空值
-                        }
-                      } else if (col.type === 'categorical') {
-                        if (hasNumeric) {
-                          extraRow = ['', '', '', '', '', '', '']; // 填充数值型列的空值
-                        }
-                        extraRow = [
-                          ...extraRow,
-                          col.unique_count || '',
-                          col.most_common || ''
-                        ];
-                      } else {
-                        // 其他类型填充空值
-                        const fillCount = (hasNumeric ? 5 : 0) + (hasCategorical ? 2 : 0);
-                        extraRow = new Array(fillCount).fill('');
-                      }
-                      
-                      return [...baseRow, ...extraRow];
-                    });
-                    
-                    // 生成 CSV 内容
-                    const csvContent = [
-                      allHeaders.join(','),
-                      ...rows.map((row: any[]) => row.map(cell => `"${cell}"`).join(','))
-                    ].join('\n');
-                    
-                    // 添加 BOM 以支持中文
-                    const BOM = '\uFEFF';
-                    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `统计分析报告-${datasetInfo?.filename || 'data'}-${new Date().toISOString().slice(0, 10)}.csv`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                    
-                    toast.success('报告已导出为 CSV');
-                  }}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  导出报告 (CSV)
-                </Button>
-              </div>
             </div>
           )}
-        </div>
+        </AnalysisResultPanel>
       </div>
-    </div>
+    </AnalysisPageShell>
   );
 }

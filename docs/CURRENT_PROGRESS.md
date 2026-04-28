@@ -227,6 +227,37 @@ Upload CSV/Excel
   - `npm run build` — built in 19.65s ✅
   - SelectItem empty value grep — no output ✅
 
+## Phase 4A-4-2: Statistics + Attribution Pages Migration
+
+- **目标**: 将两个中风险分析页面迁移到分析模板组件体系，验证模板在含图表、表格、导出功能页面中的可用性。
+- **修改文件**:
+  - `app/src/pages/Statistics.tsx`
+  - `app/src/pages/Attribution.tsx`
+- **Statistics 变更**:
+  - 根布局替换为 `AnalysisPageShell`。
+  - 左侧配置 Card 替换为 `AnalysisConfigPanel`，分析按钮移至 footer。
+  - 右侧结果 Card 替换为 `AnalysisResultPanel`，支持 loading/empty/result 状态切换。
+  - 导出按钮替换为 `AnalysisActionBar`（`onExportCSV`）。
+  - 移除未使用的 `Settings2`、`ChevronDown`、`ChevronUp` 导入。
+  - 保留 `renderStatsResult` 内部统计卡片结构（结果内容不变）。
+- **Attribution 变更**:
+  - 根布局替换为 `AnalysisPageShell`。
+  - 左侧配置 Card 替换为 `AnalysisConfigPanel`，分析按钮移至 footer。
+  - 右侧结果 Card 替换为 `AnalysisResultPanel`，支持 loading/empty/result 状态切换。
+  - 导出按钮替换为 `AnalysisActionBar`（`onExportCSV`）。
+  - 保留 ECharts 图表生命周期（`chartRef`、`chartInstance`、`renderComparisonChart`）零改动。
+  - 保留汇总统计卡片、模型结果卡片、对比表格等结果内容零改动。
+  - 移除未使用的 `Settings2`、`ChevronDown`、`ChevronUp`、`PieChart`、`Download` 导入。
+  - 移除未使用的 `isConfigOpen` 状态。
+- **约束遵守**:
+  - 所有业务逻辑（数据集选择、列选择、归因模型配置、API 调用、轮询、gsap 动画、ECharts 渲染、CSV 导出）零改动。
+  - 零原生 `<select>` 替换（留在 Phase 4A-5）。
+  - 无 `SelectItem value=""`。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 20.33s ✅
+  - SelectItem empty value grep — no output ✅
+
 ## 下一步建议
 
 ### 立即执行

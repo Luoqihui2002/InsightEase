@@ -2,18 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { companionService } from '@/services';
 import { 
   Play, 
-  Settings2, 
-  PieChart,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Download,
   Users,
   MousePointerClick,
   Clock,
   Target,
   BarChart3,
-  GitBranch
+  GitBranch,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +20,12 @@ import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
 import * as echarts from 'echarts';
+import {
+  AnalysisPageShell,
+  AnalysisConfigPanel,
+  AnalysisResultPanel,
+  AnalysisActionBar,
+} from '@/components/analysis';
 
 interface ColumnInfo {
   name: string;
@@ -135,7 +136,6 @@ export function Attribution() {
     companionService.setPage('attribution');
   }, []);
 
-  const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState('');
@@ -382,284 +382,84 @@ export function Attribution() {
     setTimeout(checkResult, 1000);
   };
 
+  const handleExportCSV = () => {
+    if (!analysisResult?.models) return;
+    
+    // 构建CSV数据
+    const rows: any[] = [];
+    
+    // 添加汇总信息
+    rows.push(['归因分析报告']);
+    rows.push(['生成时间', new Date().toLocaleString()]);
+    rows.push(['用户旅程数', analysisResult.user_journey_count || 0]);
+    rows.push(['总转化数', analysisResult.total_conversions || 0]);
+    rows.push(['总转化价值', analysisResult.total_conversion_value || 0]);
+    rows.push([]);
+    
+    // 添加各模型的详细数据
+    Object.entries(analysisResult.models).forEach(([modelKey, modelData]: [string, any]) => {
+      const modelInfo = ATTRIBUTION_MODELS.find(m => m.key === modelKey);
+      rows.push([`${modelInfo?.name || modelKey} 归因结果`]);
+      rows.push(['触点', '贡献值', '贡献度(%)']);
+      
+      Object.entries(modelData).forEach(([touchpoint, data]: [string, any]) => {
+        rows.push([touchpoint, data.value, data.percentage]);
+      });
+      rows.push([]);
+    });
+    
+    // 添加模型对比
+    if (analysisResult.summary?.model_comparison) {
+      rows.push(['模型对比']);
+      rows.push(['模型', 'Top1触点', 'Top1占比(%)', 'Top2触点', 'Top2占比(%)', 'Top3触点', 'Top3占比(%)']);
+      analysisResult.summary.model_comparison.forEach((item: any) => {
+        const row = [item.model_name];
+        item.top3.forEach((tp: any) => {
+          row.push(tp.touchpoint, tp.percentage);
+        });
+        rows.push(row);
+      });
+    }
+    
+    // 转换为CSV格式
+    const csvContent = rows.map((row: any[]) => 
+      row.map((cell: any) => {
+        const str = String(cell ?? '');
+        if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(',')
+    ).join('\n');
+    
+    // 添加BOM以支持中文
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `归因分析_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success('下载成功');
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(21, 27, 61, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-        <h1 className="text-heading-1 text-[var(--text-primary)]">
-          归因分析
-        </h1>
-        <p className="mt-1" style={{ color: '#94a3b8' }}>
-          分析用户转化路径，量化各触点的贡献价值
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 配置面板 */}
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setIsConfigOpen(!isConfigOpen)}
-          >
-            <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
-                分析配置
-              </div>
-              {isConfigOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </CardTitle>
-          </CardHeader>
-          
-          {isConfigOpen && (
-            <CardContent className="space-y-4">
-              {/* 数据集选择 */}
-              <div className="space-y-2">
-                <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
-                <DatasetSelector 
-                  value={selectedDataset}
-                  onChange={setSelectedDataset}
-                />
-                {datasetInfo && (
-                  <p className="text-xs text-[var(--neon-cyan)]">
-                    {datasetInfo.row_count?.toLocaleString()} 行 · {datasetInfo.col_count} 列
-                  </p>
-                )}
-              </div>
-
-              {/* 数据类型验证提示 */}
-              {columns.length > 0 && (
-                <DataTypeValidation 
-                  columns={columns} 
-                  analysisType="attribution" 
-                />
-              )}
-
-              {/* 配置说明 */}
-              <div className="p-3 rounded bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                <details className="text-xs">
-                  <summary className="cursor-pointer text-[var(--neon-cyan)] font-medium flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    配置参数说明
-                  </summary>
-                  <div className="mt-2 space-y-2 text-[var(--text-secondary)]">
-                    <p><span className="text-[var(--neon-purple)]">用户ID列：</span>唯一标识用户的列，用于区分不同用户的旅程。可以是用户ID、设备ID、会话ID等。</p>
-                    <p><span className="text-[var(--neon-purple)]">触点/渠道列：</span>记录用户接触点的列，如渠道来源、页面名称、广告系列等。</p>
-                    <p><span className="text-[var(--neon-purple)]">时间戳列：</span>记录事件发生时间的列，支持datetime、string、date等格式。</p>
-                    <p><span className="text-[var(--neon-purple)]">转化标记列（可选）：</span>标记是否发生转化的列（0/1或true/false）。不选则默认所有记录都是触点。</p>
-                    <p><span className="text-[var(--neon-purple)]">转化价值列（可选）：</span>转化的金额或价值，如订单金额、收益等。不选则默认每个转化价值为1。</p>
-                    <p className="text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]">
-                      数据要求：每行代表一个触点事件，系统会按用户ID和时间戳自动构建用户旅程。
-                    </p>
-                  </div>
-                </details>
-              </div>
-
-              {columns.length > 0 && (
-                <>
-                  {/* 必需列配置 */}
-                  <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
-                    <p className="text-xs text-[var(--neon-cyan)] font-medium">必需配置</p>
-                    
-                    {/* 用户ID列 */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <Users className="w-3 h-3" /> 用户ID列
-                      </label>
-                      <select
-                        value={userIdCol}
-                        onChange={(e) => setUserIdCol(e.target.value)}
-                        className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                      >
-                        <option value="">选择列</option>
-                        {columns.map(col => (
-                          <option key={col.name} value={col.name}>{col.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* 触点列 */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <MousePointerClick className="w-3 h-3" /> 触点/渠道列
-                      </label>
-                      <select
-                        value={touchpointCol}
-                        onChange={(e) => setTouchpointCol(e.target.value)}
-                        className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                      >
-                        <option value="">选择列</option>
-                        {columns.map(col => (
-                          <option key={col.name} value={col.name}>{col.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* 联合触点列（可选，支持多选） */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        联合触点列（可选，可多选）
-                      </label>
-                      <div className="max-h-32 overflow-y-auto bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded p-2 space-y-1">
-                        {columns.filter(c => c.name !== touchpointCol).map(col => (
-                          <label key={col.name} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--bg-hover)] p-1 rounded">
-                            <input
-                              type="checkbox"
-                              checked={additionalTouchpointCols.includes(col.name)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setAdditionalTouchpointCols([...additionalTouchpointCols, col.name]);
-                                } else {
-                                  setAdditionalTouchpointCols(additionalTouchpointCols.filter(c => c !== col.name));
-                                }
-                              }}
-                              className="rounded border-[var(--border-subtle)]"
-                            />
-                            <span className="text-[var(--text-primary)]">{col.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-[var(--text-muted)]">
-                        例如：选择 block_type 与 page 联合为 "page_block_type"（最多选3列）
-                      </p>
-                    </div>
-
-                    {/* 时间戳列 */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> 时间戳列
-                      </label>
-                      <select
-                        value={timestampCol}
-                        onChange={(e) => setTimestampCol(e.target.value)}
-                        className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                      >
-                        <option value="">选择列</option>
-                        <optgroup label="推荐的时间列">
-                          {columns.filter(c => isLikelyDateTimeColumn(c)).map(col => (
-                            <option key={col.name} value={col.name}>{col.name}</option>
-                          ))}
-                        </optgroup>
-                        <optgroup label="其他列">
-                          {columns.filter(c => !isLikelyDateTimeColumn(c)).map(col => (
-                            <option key={col.name} value={col.name}>{col.name}</option>
-                          ))}
-                        </optgroup>
-                      </select>
-                      <p className="text-[10px] text-[var(--text-muted)]">
-                        支持 datetime、string、date 等格式，系统会自动解析
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 可选列配置 */}
-                  <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
-                    <p className="text-xs text-[var(--text-muted)]">可选配置</p>
-                    
-                    {/* 转化标记列 */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <Target className="w-3 h-3" /> 转化标记列
-                      </label>
-                      <select
-                        value={conversionCol}
-                        onChange={(e) => setConversionCol(e.target.value)}
-                        className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                      >
-                        <option value="">无</option>
-                        {columns.map(col => (
-                          <option key={col.name} value={col.name}>{col.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* 转化价值列 */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <BarChart3 className="w-3 h-3" /> 转化价值列
-                      </label>
-                      <select
-                        value={conversionValueCol}
-                        onChange={(e) => setConversionValueCol(e.target.value)}
-                        className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                      >
-                        <option value="">无</option>
-                        {columns.filter(c => c.type === 'numeric').map(col => (
-                          <option key={col.name} value={col.name}>{col.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* 归因模型选择 */}
-                  <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <GitBranch className="w-3 h-3" /> 归因模型
-                      </p>
-                      <span className="text-[10px] text-[var(--neon-cyan)]">
-                        已选 {selectedModels.length} 个
-                      </span>
-                    </div>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {ATTRIBUTION_MODELS.map(model => (
-                        <div 
-                          key={model.key} 
-                          className={`p-3 rounded border transition-all ${
-                            selectedModels.includes(model.key)
-                              ? 'border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/5'
-                              : 'border-[var(--border-subtle)] hover:border-[var(--neon-cyan)]/50'
-                          }`}
-                        >
-                          <label className="flex items-start gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedModels.includes(model.key)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedModels([...selectedModels, model.key]);
-                                } else {
-                                  setSelectedModels(selectedModels.filter(m => m !== model.key));
-                                }
-                              }}
-                              className="rounded mt-1"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: model.color }} />
-                                <p className="text-sm font-medium text-[var(--text-primary)]">{model.name}</p>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]">
-                                  {model.useCase}
-                                </span>
-                              </div>
-                              <p className="text-xs text-[var(--text-muted)] mt-1">{model.description}</p>
-                              
-                              {/* 业务场景说明 */}
-                              {selectedModels.includes(model.key) && (
-                                <div className="mt-2 p-2 rounded bg-[var(--bg-tertiary)] text-xs space-y-1">
-                                  <p className="text-[var(--text-secondary)]">
-                                    <span className="text-[var(--neon-purple)]">适用场景：</span>
-                                    {model.scenario}
-                                  </p>
-                                  <p className="text-[var(--text-muted)] italic">{model.example}</p>
-                                </div>
-                              )}
-                            </div>
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
+    <AnalysisPageShell
+      title="归因分析"
+      description="分析用户转化路径，量化各触点的贡献价值"
+    >
+      <div className="flex flex-col lg:flex-row gap-6">
+        <AnalysisConfigPanel
+          footer={
+            <>
               <Button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || !selectedDataset}
-                className="w-full bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
+                className="w-full"
               >
                 {isAnalyzing ? (
                   <>
@@ -673,21 +473,271 @@ export function Attribution() {
                   </>
                 )}
               </Button>
-            </CardContent>
-          )}
-        </Card>
+              {isAnalyzing && (
+                <p className="text-xs text-center text-[var(--text-muted)]">
+                  正在进行归因分析，请稍候...
+                </p>
+              )}
+            </>
+          }
+        >
+          {/* 数据集选择 */}
+          <div className="space-y-2">
+            <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
+            <DatasetSelector 
+              value={selectedDataset}
+              onChange={setSelectedDataset}
+            />
+            {datasetInfo && (
+              <p className="text-xs text-[var(--neon-cyan)]">
+                {datasetInfo.row_count?.toLocaleString()} 行 · {datasetInfo.col_count} 列
+              </p>
+            )}
+          </div>
 
-        {/* 结果展示 */}
-        <div className="lg:col-span-2 space-y-6">
-          {!showResult ? (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
-              <div className="text-center">
-                <PieChart className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
-                <p className="text-[var(--text-muted)]">配置分析参数并启动</p>
-                <p className="text-xs text-[var(--text-muted)] mt-2">归因分析结果将在此显示</p>
+          {/* 数据类型验证提示 */}
+          {columns.length > 0 && (
+            <DataTypeValidation 
+              columns={columns} 
+              analysisType="attribution" 
+            />
+          )}
+
+          {/* 配置说明 */}
+          <div className="p-3 rounded bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+            <details className="text-xs">
+              <summary className="cursor-pointer text-[var(--neon-cyan)] font-medium flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                配置参数说明
+              </summary>
+              <div className="mt-2 space-y-2 text-[var(--text-secondary)]">
+                <p><span className="text-[var(--neon-purple)]">用户ID列：</span>唯一标识用户的列，用于区分不同用户的旅程。可以是用户ID、设备ID、会话ID等。</p>
+                <p><span className="text-[var(--neon-purple)]">触点/渠道列：</span>记录用户接触点的列，如渠道来源、页面名称、广告系列等。</p>
+                <p><span className="text-[var(--neon-purple)]">时间戳列：</span>记录事件发生时间的列，支持datetime、string、date等格式。</p>
+                <p><span className="text-[var(--neon-purple)]">转化标记列（可选）：</span>标记是否发生转化的列（0/1或true/false）。不选则默认所有记录都是触点。</p>
+                <p><span className="text-[var(--neon-purple)]">转化价值列（可选）：</span>转化的金额或价值，如订单金额、收益等。不选则默认每个转化价值为1。</p>
+                <p className="text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]">
+                  数据要求：每行代表一个触点事件，系统会按用户ID和时间戳自动构建用户旅程。
+                </p>
               </div>
-            </Card>
-          ) : (
+            </details>
+          </div>
+
+          {columns.length > 0 && (
+            <>
+              {/* 必需列配置 */}
+              <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
+                <p className="text-xs text-[var(--neon-cyan)] font-medium">必需配置</p>
+                
+                {/* 用户ID列 */}
+                <div className="space-y-1">
+                  <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                    <Users className="w-3 h-3" /> 用户ID列
+                  </label>
+                  <select
+                    value={userIdCol}
+                    onChange={(e) => setUserIdCol(e.target.value)}
+                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                  >
+                    <option value="">选择列</option>
+                    {columns.map(col => (
+                      <option key={col.name} value={col.name}>{col.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 触点列 */}
+                <div className="space-y-1">
+                  <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                    <MousePointerClick className="w-3 h-3" /> 触点/渠道列
+                  </label>
+                  <select
+                    value={touchpointCol}
+                    onChange={(e) => setTouchpointCol(e.target.value)}
+                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                  >
+                    <option value="">选择列</option>
+                    {columns.map(col => (
+                      <option key={col.name} value={col.name}>{col.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 联合触点列（可选，支持多选） */}
+                <div className="space-y-1">
+                  <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    联合触点列（可选，可多选）
+                  </label>
+                  <div className="max-h-32 overflow-y-auto bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded p-2 space-y-1">
+                    {columns.filter(c => c.name !== touchpointCol).map(col => (
+                      <label key={col.name} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--bg-hover)] p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={additionalTouchpointCols.includes(col.name)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAdditionalTouchpointCols([...additionalTouchpointCols, col.name]);
+                            } else {
+                              setAdditionalTouchpointCols(additionalTouchpointCols.filter(c => c !== col.name));
+                            }
+                          }}
+                          className="rounded border-[var(--border-subtle)]"
+                        />
+                        <span className="text-[var(--text-primary)]">{col.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-[var(--text-muted)]">
+                    例如：选择 block_type 与 page 联合为 "page_block_type"（最多选3列）
+                  </p>
+                </div>
+
+                {/* 时间戳列 */}
+                <div className="space-y-1">
+                  <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> 时间戳列
+                  </label>
+                  <select
+                    value={timestampCol}
+                    onChange={(e) => setTimestampCol(e.target.value)}
+                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                  >
+                    <option value="">选择列</option>
+                    <optgroup label="推荐的时间列">
+                      {columns.filter(c => isLikelyDateTimeColumn(c)).map(col => (
+                        <option key={col.name} value={col.name}>{col.name}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="其他列">
+                      {columns.filter(c => !isLikelyDateTimeColumn(c)).map(col => (
+                        <option key={col.name} value={col.name}>{col.name}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <p className="text-[10px] text-[var(--text-muted)]">
+                    支持 datetime、string、date 等格式，系统会自动解析
+                  </p>
+                </div>
+              </div>
+
+              {/* 可选列配置 */}
+              <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
+                <p className="text-xs text-[var(--text-muted)]">可选配置</p>
+                
+                {/* 转化标记列 */}
+                <div className="space-y-1">
+                  <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                    <Target className="w-3 h-3" /> 转化标记列
+                  </label>
+                  <select
+                    value={conversionCol}
+                    onChange={(e) => setConversionCol(e.target.value)}
+                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                  >
+                    <option value="">无</option>
+                    {columns.map(col => (
+                      <option key={col.name} value={col.name}>{col.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 转化价值列 */}
+                <div className="space-y-1">
+                  <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                    <BarChart3 className="w-3 h-3" /> 转化价值列
+                  </label>
+                  <select
+                    value={conversionValueCol}
+                    onChange={(e) => setConversionValueCol(e.target.value)}
+                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                  >
+                    <option value="">无</option>
+                    {columns.filter(c => c.type === 'numeric').map(col => (
+                      <option key={col.name} value={col.name}>{col.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* 归因模型选择 */}
+              <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                    <GitBranch className="w-3 h-3" /> 归因模型
+                  </p>
+                  <span className="text-[10px] text-[var(--neon-cyan)]">
+                    已选 {selectedModels.length} 个
+                  </span>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {ATTRIBUTION_MODELS.map(model => (
+                    <div 
+                      key={model.key} 
+                      className={`p-3 rounded border transition-all ${
+                        selectedModels.includes(model.key)
+                          ? 'border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/5'
+                          : 'border-[var(--border-subtle)] hover:border-[var(--neon-cyan)]/50'
+                      }`}
+                    >
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedModels.includes(model.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedModels([...selectedModels, model.key]);
+                            } else {
+                              setSelectedModels(selectedModels.filter(m => m !== model.key));
+                            }
+                          }}
+                          className="rounded mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: model.color }} />
+                            <p className="text-sm font-medium text-[var(--text-primary)]">{model.name}</p>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]">
+                              {model.useCase}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">{model.description}</p>
+                          
+                          {/* 业务场景说明 */}
+                          {selectedModels.includes(model.key) && (
+                            <div className="mt-2 p-2 rounded bg-[var(--bg-tertiary)] text-xs space-y-1">
+                              <p className="text-[var(--text-secondary)]">
+                                <span className="text-[var(--neon-purple)]">适用场景：</span>
+                                {model.scenario}
+                              </p>
+                              <p className="text-[var(--text-muted)] italic">{model.example}</p>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </AnalysisConfigPanel>
+
+        <AnalysisResultPanel
+          loading={isAnalyzing && !showResult}
+          loadingMessage="正在分析数据，请稍候..."
+          empty={!showResult && !isAnalyzing}
+          emptyTitle="配置分析参数并启动"
+          emptyDescription="归因分析结果将在此显示"
+          actions={showResult ? (
+            <AnalysisActionBar onExportCSV={handleExportCSV} />
+          ) : undefined}
+        >
+          {showResult && (
             <div ref={resultRef} className="space-y-6">
               {/* 汇总统计 */}
               {analysisResult?.summary && (
@@ -820,99 +870,10 @@ export function Attribution() {
                   </CardContent>
                 </Card>
               )}
-
-              {/* 下载结果 */}
-              {analysisResult?.models && (
-                <Card className="glass border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan)]/5">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-[var(--text-primary)]">
-                          导出归因分析结果
-                        </p>
-                        <p className="text-xs text-[var(--text-muted)]">
-                          将各模型的归因数据导出为CSV格式
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        className="border-[var(--neon-cyan)] text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)] hover:text-[var(--bg-primary)]"
-                        onClick={() => {
-                          if (!analysisResult?.models) return;
-                          
-                          // 构建CSV数据
-                          const rows: any[] = [];
-                          
-                          // 添加汇总信息
-                          rows.push(['归因分析报告']);
-                          rows.push(['生成时间', new Date().toLocaleString()]);
-                          rows.push(['用户旅程数', analysisResult.user_journey_count || 0]);
-                          rows.push(['总转化数', analysisResult.total_conversions || 0]);
-                          rows.push(['总转化价值', analysisResult.total_conversion_value || 0]);
-                          rows.push([]);
-                          
-                          // 添加各模型的详细数据
-                          Object.entries(analysisResult.models).forEach(([modelKey, modelData]: [string, any]) => {
-                            const modelInfo = ATTRIBUTION_MODELS.find(m => m.key === modelKey);
-                            rows.push([`${modelInfo?.name || modelKey} 归因结果`]);
-                            rows.push(['触点', '贡献值', '贡献度(%)']);
-                            
-                            Object.entries(modelData).forEach(([touchpoint, data]: [string, any]) => {
-                              rows.push([touchpoint, data.value, data.percentage]);
-                            });
-                            rows.push([]);
-                          });
-                          
-                          // 添加模型对比
-                          if (analysisResult.summary?.model_comparison) {
-                            rows.push(['模型对比']);
-                            rows.push(['模型', 'Top1触点', 'Top1占比(%)', 'Top2触点', 'Top2占比(%)', 'Top3触点', 'Top3占比(%)']);
-                            analysisResult.summary.model_comparison.forEach((item: any) => {
-                              const row = [item.model_name];
-                              item.top3.forEach((tp: any) => {
-                                row.push(tp.touchpoint, tp.percentage);
-                              });
-                              rows.push(row);
-                            });
-                          }
-                          
-                          // 转换为CSV格式
-                          const csvContent = rows.map((row: any[]) => 
-                            row.map((cell: any) => {
-                              const str = String(cell ?? '');
-                              if (str.includes(',') || str.includes('\n') || str.includes('"')) {
-                                return `"${str.replace(/"/g, '""')}"`;
-                              }
-                              return str;
-                            }).join(',')
-                          ).join('\n');
-                          
-                          // 添加BOM以支持中文
-                          const BOM = '\uFEFF';
-                          const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-                          const link = document.createElement('a');
-                          const url = URL.createObjectURL(blob);
-                          link.href = url;
-                          link.download = `归因分析_${new Date().toISOString().slice(0, 10)}.csv`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          URL.revokeObjectURL(url);
-                          
-                          toast.success('下载成功');
-                        }}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        下载CSV
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           )}
-        </div>
+        </AnalysisResultPanel>
       </div>
-    </div>
+    </AnalysisPageShell>
   );
 }

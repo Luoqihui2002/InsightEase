@@ -160,3 +160,14 @@
 - 导出按钮替换为 `AnalysisActionBar`。
 - 所有业务逻辑（数据集选择、特征列选择、K 值、API 调用、轮询、gsap 动画）零改动。
 - 零原生 `<select>` 替换。无 `SelectItem value=""`。
+
+## Phase 4A-4-2: Statistics + Attribution Pages Migration
+
+- `Statistics.tsx` 和 `Attribution.tsx` 迁移到分析模板组件体系。
+- 根布局替换为 `AnalysisPageShell`。
+- 左侧配置面板替换为 `AnalysisConfigPanel`，分析按钮移至 footer。
+- 右侧结果面板替换为 `AnalysisResultPanel`，支持 loading/empty/result 状态自动切换。
+- 导出按钮替换为 `AnalysisActionBar`。
+- Attribution 的 ECharts 图表生命周期（`chartRef`、`chartInstance`、`renderComparisonChart`）零改动。
+- 汇总统计卡片、模型结果卡片、对比表格等结果内容零改动。
+- 所有业务逻辑（数据集选择、列选择、归因模型配置、API 调用、轮询、gsap 动画、CSV 导出）零改动。
