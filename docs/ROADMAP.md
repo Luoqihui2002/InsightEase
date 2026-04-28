@@ -27,13 +27,33 @@
 6. **4A-4-5** — PathAnalysis（高风险，验证多类型选择器 + 子组件）✅
 7. **4A-4-6** — 迁移收官 + 复杂页面规划（SmartAnalysis / AIWorkspace / DataWorkshop）✅
 
-### 4A-5: 交互一致性治理（下一Phase）
-- 原生 `<select>` → shadcn `Select`（分析页面列选择器）
-- 手写 toggle → shadcn `Switch`
-- 手写模态框 → shadcn `Dialog`
-- 原生 `confirm()` / `alert()` → `AlertDialog` + `toast`
-- 原生 `<table>` → `DataTablePreview`（结果区表格）
-- `AnalysisResultSummary` / `AnalysisPollingOverlay` 评估与推广
+### 4A-5: 交互一致性治理（当前Phase）
+
+#### 4A-5-1: 交互清理审计 ✅
+- 审计 15 个页面的 native `<select>`、手写 toggle、clickable div、native `<table>`、`alert()`/`confirm()`
+- 产出 `docs/INTERACTION_CLEANUP_AUDIT.md`
+
+#### 4A-5-2: 低风险静态 select 和 switch（下一Phase）
+- SmartProcess 5 个静态 enum select → shadcn `Select`
+- GoalPlanner 1 个时间范围 select → shadcn `Select`
+- Dashboard 2 个 view tab → shadcn `Tabs`
+- Forecast batch mode toggle → shadcn `Switch`
+
+#### 4A-5-3: 动态列选择器替换
+- Attribution (5)、Statistics (1)、Forecast (2)、PathAnalysis (3)、Visualization (4)
+- native `<select>` → shadcn `Select`
+- sentinel value 映射：`value=""` → `none`/`auto`
+
+#### 4A-5-4: ToggleGroup 和按钮清理
+- PathAnalysis 5-type 选择器 → shadcn `ToggleGroup`
+- Forecast 模型选择器 → shadcn `ToggleGroup`
+- GoalPlanner template/method → shadcn `ToggleGroup`
+- Forecast checkbox → shadcn `Checkbox`
+
+#### 4A-5-5: Table 和 Dialog 清理
+- History、Attribution model comparison → `DataTablePreview`
+- AIWorkspace preview → `DataTablePreview`
+- 复杂语义表格（PathAnalysis funnel、GoalPlanner decomposition）保持 native
 
 ### 4A-6: 工程优化与视觉打磨
 1. **Bundle splitting** — `manualChunks` 拆分 vendor / echarts / radix，解决 3.3MB warning

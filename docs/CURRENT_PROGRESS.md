@@ -376,4 +376,6 @@ cd app && npx tsc --noEmit    # 0 errors ✅
 cd app && npm run build        # built in 22.94s ✅
 ```
 
+> 最近构建: built in 22.94s，JS chunk 3,385 KB。
+
 > 警告: JS chunk 3,385 KB，待 Phase 4A-6 拆分优化。

@@ -219,3 +219,17 @@
   - SmartAnalysis / AIWorkspace / DataWorkshop 分阶段计划
 - 建议下一Phase：4A-5 交互一致性治理。
 - 零代码修改。
+
+## Phase 4A-5-1: Interaction Cleanup Audit
+
+- 审计 15 个页面的交互不一致问题。
+- 发现 42 个 native `<select>`（11 个页面）、18 个手写 toggle/button 模式、11 个 native `<table>`。
+- 0 个 `alert()` / `confirm()`，0 个 `SelectItem value=""`。
+- 产出 `docs/INTERACTION_CLEANUP_AUDIT.md`：
+  - native select 清单（按风险分级：Low/Medium/High）
+  - sentinel value 映射表（`value=""` → `none`/`auto`）
+  - 手写 toggle/button 清单
+  - native table 清单
+  - 推荐实施顺序（4A-5-2 → 4A-5-3 → 4A-5-4 → 4A-5-5）
+- DataWorkshop (17 selects) 和 AIWorkspace 推迟到各自专属阶段。
+- 零代码修改。
