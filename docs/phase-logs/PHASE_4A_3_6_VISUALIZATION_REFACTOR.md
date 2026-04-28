@@ -1,7 +1,7 @@
 # Phase 4A-3-6: Visualization 页面骨架与图表容器重构
 
 **日期**: 2026-04-28
-**Commit**: `4b0e01d`
+**Commit**: `4f90f8f`
 **Commit Message**: `refactor: migrate visualization page to shared layout components`
 **Push Result**: `master -> master` ✅
 **标签**: `refactor: migrate visualization page to shared layout components`
@@ -183,12 +183,34 @@ None in this phase — no `confirm()` / `alert()` existed in Visualization.tsx.
 
 ---
 
+## Hotfix: Cluster Toggle Knob Overflow
+
+- **Issue**: 聚类分析 toggle 的白色旋钮在 enabled 状态下向右溢出，超出青色 track 边界
+- **Root cause**: 旋钮使用 `absolute` 定位但未显式指定 `left`，依赖默认布局位置，在不同浏览器/渲染环境下位置不一致；disabled 状态使用 `translate-x-0.5` 但 enabled 状态使用 `translate-x-5`，位移量与 track 宽度不匹配
+- **Fix**:
+  - 为旋钮显式添加 `left-0.5`，确保起始位置固定在 track 左内侧
+  - disabled 状态改为 `translate-x-0`（仅依靠 `left-0.5` 的 2px 偏移）
+  - enabled 状态保持 `translate-x-5`（20px 位移），track 宽 40px，旋钮宽 16px，右侧保留 2px 边距
+  ```tsx
+  <span className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+    enableClustering ? 'translate-x-5' : 'translate-x-0'
+  }`} />
+  ```
+- **Validation**:
+  - `tsc --noEmit` 0 errors ✅
+  - `npm run build` built in 14.38s ✅
+  - 切换行为、聚类逻辑、状态变量均未改动
+- **Commit**: `4f90f8f` 之后的独立 hotfix commit
+- **Push result**: `master -> master` ✅
+
+---
+
 ## 7. Known Issues / TODO
 
 | 项目 | 说明 | 计划解决 |
 |---|---|---|
 | 原生 `<select>` 字段选择器 | 当前使用 4 个原生 `<select>`，应替换为 shadcn Select | Phase 4A-5 |
-| 手写聚类 toggle switch | 当前为手写 `<button>` 模拟 toggle，应替换为 shadcn Switch | Phase 4A-5 |
+| 手写聚类 toggle switch | ~~当前为手写 `<button>` 模拟 toggle，应替换为 shadcn Switch~~ 视觉 bug 已 hotfix，后续仍计划替换为 shadcn Switch | Phase 4A-5 |
 | 图表类型选择 `<button>` | 当前为手写 `<button>`，应替换为 shadcn ToggleGroup | Phase 4A-5 |
 | 推荐卡片 `<div onClick={...}>` | 当前为可点击 div，应使用 shadcn Button 或 Card with hover | Phase 4A-5 |
 

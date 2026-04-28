@@ -151,6 +151,12 @@ Upload CSV/Excel
   - 移除未使用的 `Palette` 导入和 `Card` 组件导入。
 - **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 13.30s，无空 `SelectItem value=""`。
 
+### Hotfix: 聚类分析 toggle 旋钮溢出
+
+- **问题**: 聚类分析 toggle 的白色旋钮在 enabled 状态下向右溢出 track 边界。
+- **修复**: 为旋钮显式添加 `left-0.5`，disabled 状态改为 `translate-x-0`，enabled 状态保持 `translate-x-5`。
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 14.38s。
+
 ## 下一步建议
 
 ### 立即执行

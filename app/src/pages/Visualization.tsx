@@ -1254,8 +1254,8 @@ export function Visualization() {
                       enableClustering ? 'bg-[var(--neon-cyan)]' : 'bg-[var(--bg-tertiary)]'
                     }`}
                   >
-                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                      enableClustering ? 'translate-x-5' : 'translate-x-0.5'
+                    <span className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      enableClustering ? 'translate-x-5' : 'translate-x-0'
                     }`} />
                   </button>
                 </div>
