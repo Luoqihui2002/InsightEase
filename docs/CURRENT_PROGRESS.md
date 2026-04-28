@@ -88,6 +88,21 @@ Upload CSV/Excel
   - 新增"清除已完成"按钮（仅清除 completed/error 状态的上传项）。
 - **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 12.28s，无空 `SelectItem value=""`。
 
+## Phase 4A-3-3: History 页面骨架替换
+
+- **目标**: 将 History 页面迁移到共享组件体系（PageShell, PageHeader, ContentGrid, StatCard, SectionCard, LoadingState, ErrorState）。
+- **修改**:
+  - `History.tsx` 使用共享布局/反馈/数据展示组件替换原有手写布局。
+  - 标题从英文 `"History"` 改为中文 `"历史记录"`。
+  - 统计卡片使用 `ContentGrid(cols=4)` + `StatCard`，新增 `valueClassName` 支持彩色数值。
+  - 空状态使用 shadcn `<Empty>` 组件替代手写 div。
+  - 下载菜单使用 `<DropdownMenu>` 替代 `group-hover` CSS 方案，提升移动端可用性。
+  - 详情弹窗使用 `<Dialog>` + `<DialogContent>` 替代 `fixed inset-0` 手写模态框。
+- **类型修复**:
+  - 移除未使用的 `AlertCircle` 导入。
+  - 将 `Dialog` 条件渲染改为 `{selectedAnalysis && (<Dialog open={true}>...)}`，消除 `possibly null` 错误。
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 13.06s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行
@@ -107,7 +122,7 @@ Upload CSV/Excel
 
 ```bash
 cd app && npx tsc --noEmit    # 0 errors ✅
-cd app && npm run build        # built in 19.47s ✅
+cd app && npm run build        # built in 13.06s ✅
 ```
 
 > 警告: JS chunk 3,365 KB，待 Phase 4A 拆分优化。

@@ -6,18 +6,19 @@ import type { ReactNode } from "react"
 export interface StatCardProps {
   label: string
   value: string | number
+  valueClassName?: string
   trend?: { value: number; positive: boolean }
   icon?: ReactNode
   className?: string
 }
 
-export function StatCard({ label, value, trend, icon, className }: StatCardProps) {
+export function StatCard({ label, value, valueClassName, trend, icon, className }: StatCardProps) {
   return (
     <Card className={cn("bg-[var(--bg-secondary)] border-[var(--border-subtle)]", className)}>
       <CardContent className="flex items-center justify-between p-6">
         <div className="flex flex-col gap-1">
           <p className="text-sm text-[var(--text-secondary)]">{label}</p>
-          <p className="text-2xl font-bold text-[var(--text-primary)]">{value}</p>
+          <p className={cn("text-2xl font-bold", valueClassName || "text-[var(--text-primary)]")}>{value}</p>
           {trend && (
             <div
               className={cn(

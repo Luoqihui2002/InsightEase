@@ -85,3 +85,13 @@
 - 简化拖拽区域视觉动画（移除持续旋转渐变）。
 - 新增"清除已完成"批量操作按钮。
 - 业务逻辑（上传 API、状态管理、文件解析）零改动。
+
+## Phase 4A-3-3: History 页面迁移
+
+- `History.tsx` 使用共享组件体系重构页面骨架（PageShell, PageHeader, ContentGrid, StatCard, SectionCard, LoadingState, ErrorState）。
+- `StatCard` 新增 `valueClassName` 属性，支持自定义数值颜色。
+- 空状态替换为 shadcn `<Empty>` 组件。
+- 下载菜单替换为 `<DropdownMenu>`，提升移动端可用性。
+- 详情弹窗替换为 `<Dialog>` + `<DialogContent>`，移除手写模态框。
+- 标题国际化：`History` -> `历史记录`。
+- 业务逻辑（API 调用、导出函数、状态管理）零改动。
