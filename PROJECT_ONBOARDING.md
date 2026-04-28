@@ -1,5 +1,8 @@
 # InsightEase Project Onboarding Doc
 
+> **⚠️ 本文档部分内容已过时（如 IndexedDB/DuckDB-WASM 等 browser-local 栈已移除）。**
+> **最新架构和文档入口请查看 [docs/README.md](docs/README.md)。**
+
 > 版本: 1.0  
 > 更新日期: 2026-04-08  
 > 项目阶段: Phase 3.0 (AI 助手功能增强 - 已完结)

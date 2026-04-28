@@ -49,7 +49,30 @@
       "Read(//c//**)",
       "Read(//c/Users/admin/miniconda3/etc/profile.d/**)",
       "Read(//c/Users/admin/miniconda3/shell/etc/profile.d/**)",
-      "Bash(/c/Users/admin/miniconda3/Scripts/conda.exe env *)"
+      "Bash(/c/Users/admin/miniconda3/Scripts/conda.exe env *)",
+      "Bash(curl -s http://localhost:8000/api/v1/health)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(curl -s http://localhost:5173/src/pages/DataWorkshop.tsx)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(tee /tmp/build_errors.txt)",
+      "Bash(tee /tmp/build_errors2.txt)",
+      "Bash(where python *)",
+      "Read(//c/Users/admin/anaconda3/**)",
+      "Read(//c/Users/admin/miniconda3/**)",
+      "Read(//c/ProgramData/Anaconda3/**)",
+      "Bash(c:/Users/admin/miniconda3/Scripts/conda.exe env *)",
+      "Bash(c:/Users/admin/miniconda3/python.exe -c \"import sys; print\\(sys.version\\); print\\(sys.executable\\)\")",
+      "Bash(c:/Users/admin/miniconda3/python.exe -c \"import pymysql; print\\('pymysql ok'\\)\")",
+      "Bash(c:/Users/admin/miniconda3/envs/insight/python.exe -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(c:/Users/admin/miniconda3/envs/insight/python.exe -c \"import fastapi, uvicorn, sqlalchemy, pymysql; print\\('all deps ok'\\)\")",
+      "Bash(mysql -uroot -ppassword -e \"SELECT 1;\")",
+      "Bash(c:/Users/admin/miniconda3/envs/insight/python.exe -c \"import pymysql; c=pymysql.connect\\(host='localhost',user='root',password='password',database='insightease'\\); c.cursor\\(\\).execute\\('SELECT 1'\\); print\\('mysql ok'\\)\")",
+      "Bash(mv ARCHITECTURE_BOUNDARY_AUDIT.md REDUNDANCY_AUDIT.md RUNTIME_PATH_AUDIT.md STORAGE_ARCHITECTURE.md archive/audits/)",
+      "Bash(mv PHASE1_PHASE2_FIX_REPORT.md PHASE2_5_VERIFICATION_REPORT.md PHASE3A_LEGACY_ISOLATION_REPORT.md PHASE3C1_5_BACKEND_INTEGRATION_REPORT.md PHASE3C1_BACKEND_TRANSFORM_REPORT.md archive/phase-reports/)",
+      "Bash(mv MVP_SCOPE.md DATAWORKSHOP_BACKENDIZATION_PLAN.md DATASET_TRANSFORM_API_CONTRACT.md archive/old-plans/)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

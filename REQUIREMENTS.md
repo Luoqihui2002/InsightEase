@@ -1,5 +1,8 @@
 # InsightEase 项目依赖文档
 
+> **⚠️ 注意：本文档中列出的部分前端依赖（dexie、@duckdb/duckdb-wasm、comlink、fflate）已在 Phase 3 中移除。**
+> **最新架构和文档入口请查看 [docs/README.md](docs/README.md)。**
+
 > 换设备开发时，按此文档安装依赖
 
 ---
