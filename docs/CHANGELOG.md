@@ -171,3 +171,11 @@
 - Attribution 的 ECharts 图表生命周期（`chartRef`、`chartInstance`、`renderComparisonChart`）零改动。
 - 汇总统计卡片、模型结果卡片、对比表格等结果内容零改动。
 - 所有业务逻辑（数据集选择、列选择、归因模型配置、API 调用、轮询、gsap 动画、CSV 导出）零改动。
+
+## Phase 4A-4-3: SmartProcess + GoalPlanner Pages Migration
+
+- `SmartProcess.tsx` 迁移到分析模板组件体系（`AnalysisPageShell` + `AnalysisConfigPanel` + `AnalysisResultPanel` + `AnalysisActionBar`）。
+- `GoalPlanner.tsx` 使用 `AnalysisPageShell` 替换标题栏，保留自定义 `grid grid-cols-1 lg:grid-cols-3` 布局，不强制套用 2-col 模板。
+- 移除所有 `glass` 毛玻璃类，替换为标准 `bg-[var(--bg-secondary)]`。
+- 移除可折叠配置面板行为。
+- 所有业务逻辑（预处理配置、漏斗模板、目标拆解、localStorage、预测对比、gsap 动画）零改动。

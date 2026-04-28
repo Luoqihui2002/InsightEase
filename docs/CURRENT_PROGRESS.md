@@ -258,6 +258,33 @@ Upload CSV/Excel
   - `npm run build` — built in 20.33s ✅
   - SelectItem empty value grep — no output ✅
 
+## Phase 4A-4-3: SmartProcess + GoalPlanner Pages Migration
+
+- **目标**: 将两个中风险分析页面迁移到共享布局组件体系，验证模板在文件下载结果和自定义布局场景中的可用性。
+- **修改文件**:
+  - `app/src/pages/SmartProcess.tsx`
+  - `app/src/pages/GoalPlanner.tsx`
+- **SmartProcess 变更**:
+  - 根布局替换为 `AnalysisPageShell`。
+  - 左侧配置 Card 替换为 `AnalysisConfigPanel`，处理按钮移至 footer。
+  - 右侧结果 Card 替换为 `AnalysisResultPanel`，支持 loading/empty/result 状态切换。
+  - 下载按钮替换为 `AnalysisActionBar`（`onDownload`）。
+  - 移除未使用的 `Settings2`、`ChevronDown`、`ChevronUp`、`Sparkles`、`BarChart3`、`Download` 导入。
+- **GoalPlanner 变更**:
+  - 根布局替换为 `AnalysisPageShell`（不强制使用 `AnalysisConfigPanel` + `AnalysisResultPanel`，保持自定义布局）。
+  - 移除标题栏 div（由 `AnalysisPageShell` 接管）。
+  - 移除配置面板的 `glass` 毛玻璃效果和可折叠头部。
+  - 所有结果区域 Card 的 `glass` 类替换为标准 `bg-[var(--bg-secondary)]`。
+  - 移除未使用的 `isConfigOpen` 状态及 `ChevronDown`、`ChevronUp` 导入。
+- **约束遵守**:
+  - 所有业务逻辑（数据集选择、预处理配置、漏斗模板、目标拆解、localStorage、预测对比、gsap 动画）零改动。
+  - 零原生 `<select>` 替换（留在 Phase 4A-5）。
+  - 无 `SelectItem value=""`。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 24.88s ✅
+  - SelectItem empty value grep — no output ✅
+
 ## 下一步建议
 
 ### 立即执行

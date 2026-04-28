@@ -3,8 +3,6 @@ import {
   Target, 
   Play, 
   Settings2, 
-  ChevronDown,
-  ChevronUp,
   Loader2,
   Brain,
   TrendingUp,
@@ -16,6 +14,7 @@ import {
   ArrowRight,
   Calculator as CalculatorIcon
 } from 'lucide-react';
+import { AnalysisPageShell } from '@/components/analysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import gsap from 'gsap';
@@ -100,7 +99,6 @@ export function GoalPlanner() {
   // 强制使用导入的图标和常量
   void CalculatorIcon;
   
-  const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
   const [showResult, setShowResult] = useState(false);
   
@@ -464,35 +462,18 @@ export function GoalPlanner() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: 'rgba(21, 27, 61, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-        <h1 className="text-heading-1 text-[var(--text-primary)]">
-          指标规划
-        </h1>
-        <p className="mt-1" style={{ color: '#94a3b8' }}>
-          多层漏斗目标拆解与路径规划
-        </p>
-      </div>
-
+    <AnalysisPageShell
+      title="指标规划"
+      description="多层漏斗目标拆解与路径规划"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 配置面板 */}
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setIsConfigOpen(!isConfigOpen)}
-          >
-            <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
-                规划配置
-              </div>
-              {isConfigOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </CardTitle>
-          </CardHeader>
-          
-          {isConfigOpen && (
-            <CardContent className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4 lg:col-span-1 flex flex-col gap-4">
+          <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
+            <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
+            规划配置
+          </div>
+          <div className="flex flex-col gap-4 max-h-[calc(100vh-300px)] overflow-y-auto">
               {/* 漏斗模板选择 */}
               <div className="space-y-2">
                 <label className="text-body text-[var(--text-secondary)] font-medium">选择漏斗模板</label>
@@ -831,14 +812,13 @@ export function GoalPlanner() {
                   )}
                 </button>
               )}
-            </CardContent>
-          )}
-        </Card>
+          </div>
+        </div>
 
         {/* 结果展示区域 */}
         <div className="lg:col-span-2 space-y-6">
           {!showResult ? (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] h-96 flex items-center justify-center">
               <div className="text-center">
                 <Target className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
                 <p className="text-[var(--text-muted)]">配置漏斗层级和目标</p>
@@ -849,7 +829,7 @@ export function GoalPlanner() {
             <div ref={resultRef} className="space-y-6">
               {/* 差距分析卡片 */}
               {gapAnalysis && (
-                <Card className="glass border-[var(--border-subtle)]">
+                <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                       <TrendingUp className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -914,7 +894,7 @@ export function GoalPlanner() {
 
               {/* 目标 vs 预测对比 */}
               {comparisonResult && (
-                <Card className="glass border-[var(--border-subtle)]">
+                <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                       <TrendingUp className="w-5 h-5 text-[var(--neon-orange)]" />
@@ -997,7 +977,7 @@ export function GoalPlanner() {
 
               {/* 智能建议 */}
               {smartSuggestions.length > 0 && (
-                <Card className="glass border-[var(--neon-purple)]/30">
+                <Card className="bg-[var(--bg-secondary)] border-[var(--neon-purple)]/30">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                       <Brain className="w-5 h-5 text-[var(--neon-purple)]" />
@@ -1020,7 +1000,7 @@ export function GoalPlanner() {
               )}
 
               {/* 逐层拆解结果 */}
-              <Card className="glass border-[var(--border-subtle)]">
+              <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                 <CardHeader>
                   <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                     <Brain className="w-5 h-5 text-[var(--neon-purple)]" />
@@ -1078,7 +1058,7 @@ export function GoalPlanner() {
               </Card>
 
               {/* 路径可视化 */}
-              <Card className="glass border-[var(--border-subtle)]">
+              <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                 <CardHeader>
                   <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                     <ArrowRight className="w-5 h-5 text-[var(--neon-green)]" />
@@ -1129,6 +1109,6 @@ export function GoalPlanner() {
           )}
         </div>
       </div>
-    </div>
+    </AnalysisPageShell>
   );
 }

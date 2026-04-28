@@ -1,27 +1,28 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  Sparkles, 
-  Settings2, 
   Wand2,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Loader2,
-  Download,
   Trash2,
   Filter,
   AlertTriangle,
-  BarChart3,
   FileSpreadsheet,
   RotateCcw
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { DatasetSelector } from '@/components/DatasetSelector';
 import { analysisApi } from '@/api/analysis';
 import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import {
+  AnalysisPageShell,
+  AnalysisConfigPanel,
+  AnalysisResultPanel,
+  AnalysisActionBar,
+} from '@/components/analysis';
 
 // 处理配置类型
 interface ProcessConfig {
@@ -55,7 +56,6 @@ interface ProcessResult {
 }
 
 export function SmartProcess() {
-  const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState<string>('');
@@ -234,224 +234,21 @@ export function SmartProcess() {
   const handleReprocess = () => {
     setShowResult(false);
     setProcessResult(null);
-    setIsConfigOpen(true);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(21, 27, 61, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-        <h1 className="text-heading-1 text-[var(--text-primary)]">
-          智能处理
-        </h1>
-        <p className="mt-1" style={{ color: '#94a3b8' }}>
-          自定义数据处理流程，生成高质量数据集
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 配置面板 */}
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setIsConfigOpen(!isConfigOpen)}
-          >
-            <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
-                处理配置
-              </div>
-              {isConfigOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </CardTitle>
-          </CardHeader>
-          
-          {isConfigOpen && (
-            <CardContent className="space-y-4">
-              {/* 数据集选择 */}
-              <div className="space-y-2">
-                <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
-                <DatasetSelector 
-                  value={selectedDataset}
-                  onChange={setSelectedDataset}
-                />
-                {datasetInfo && (
-                  <p className="text-xs text-[var(--neon-cyan)]">
-                    {datasetInfo.row_count?.toLocaleString()} 行 · {datasetInfo.col_count} 列
-                  </p>
-                )}
-              </div>
-
-              <div className="border-t border-[var(--border-subtle)] pt-4 space-y-4">
-                
-                {/* 缺失值处理 */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-[var(--neon-cyan)]" />
-                    <label className="text-sm font-medium text-[var(--text-primary)]">缺失值处理</label>
-                  </div>
-                  <select
-                    value={config.missingValueStrategy}
-                    onChange={(e) => handleConfigChange('missingValueStrategy', e.target.value as any)}
-                    className="w-full p-2 rounded text-sm"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
-                  >
-                    <option value="mean">填充均值（数值列）</option>
-                    <option value="median">填充中位数（数值列）</option>
-                    <option value="mode">填充众数（分类列）</option>
-                    <option value="fill">填充固定值</option>
-                    <option value="drop">删除包含缺失值的行</option>
-                    <option value="none">不处理</option>
-                  </select>
-                  {config.missingValueStrategy === 'fill' && (
-                    <input
-                      type="text"
-                      value={config.missingValueFill}
-                      onChange={(e) => handleConfigChange('missingValueFill', e.target.value)}
-                      placeholder="输入填充值"
-                      className="w-full p-2 rounded text-sm mt-2"
-                      style={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-subtle)'
-                      }}
-                    />
-                  )}
-                </div>
-
-                {/* 重复值处理 */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Trash2 className="w-4 h-4 text-[var(--neon-purple)]" />
-                    <label className="text-sm font-medium text-[var(--text-primary)]">重复值处理</label>
-                  </div>
-                  <select
-                    value={config.duplicateStrategy}
-                    onChange={(e) => handleConfigChange('duplicateStrategy', e.target.value as any)}
-                    className="w-full p-2 rounded text-sm"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
-                  >
-                    <option value="drop">删除重复行</option>
-                    <option value="keep_first">保留第一个</option>
-                    <option value="keep_last">保留最后一个</option>
-                    <option value="none">不处理</option>
-                  </select>
-                </div>
-
-                {/* 异常值处理 */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-[var(--neon-orange)]" />
-                    <label className="text-sm font-medium text-[var(--text-primary)]">异常值处理</label>
-                  </div>
-                  <select
-                    value={config.outlierStrategy}
-                    onChange={(e) => handleConfigChange('outlierStrategy', e.target.value as any)}
-                    className="w-full p-2 rounded text-sm"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
-                  >
-                    <option value="none">不处理</option>
-                    <option value="drop">删除异常值所在行</option>
-                    <option value="clip">截断到边界值</option>
-                    <option value="mark">标记但不删除</option>
-                  </select>
-                  {config.outlierStrategy !== 'none' && (
-                    <>
-                      <select
-                        value={config.outlierMethod}
-                        onChange={(e) => handleConfigChange('outlierMethod', e.target.value as any)}
-                        className="w-full p-2 rounded text-sm mt-2"
-                        style={{
-                          backgroundColor: 'var(--bg-secondary)',
-                          color: 'var(--text-primary)',
-                          border: '1px solid var(--border-subtle)'
-                        }}
-                      >
-                        <option value="iqr">IQR 方法（四分位距）</option>
-                        <option value="zscore">Z-Score 方法</option>
-                      </select>
-                      {config.outlierMethod === 'iqr' && (
-                        <div className="mt-2">
-                          <label className="text-xs text-[var(--text-muted)]">IQR 倍数: {config.outlierThreshold}</label>
-                          <input
-                            type="range"
-                            min="1"
-                            max="3"
-                            step="0.1"
-                            value={config.outlierThreshold}
-                            onChange={(e) => handleConfigChange('outlierThreshold', parseFloat(e.target.value))}
-                            className="w-full mt-1"
-                          />
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* 数据标准化 */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-[var(--neon-pink)]" />
-                    <label className="text-sm font-medium text-[var(--text-primary)]">数据标准化</label>
-                  </div>
-                  <select
-                    value={config.standardization}
-                    onChange={(e) => handleConfigChange('standardization', e.target.value as any)}
-                    className="w-full p-2 rounded text-sm"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
-                  >
-                    <option value="none">不处理</option>
-                    <option value="zscore">Z-Score 标准化</option>
-                    <option value="minmax">Min-Max 归一化</option>
-                    <option value="log">对数变换</option>
-                  </select>
-                </div>
-
-                {/* 数据类型转换 */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-secondary)]">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="w-4 h-4 text-[var(--neon-green)]" />
-                    <span className="text-sm text-[var(--text-primary)]">自动类型转换</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={config.typeConversion}
-                      onChange={(e) => handleConfigChange('typeConversion', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-[var(--bg-tertiary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--neon-cyan)]"></div>
-                  </label>
-                </div>
-
-              </div>
-
-              {/* 处理按钮 */}
-              <button
+    <AnalysisPageShell
+      title="智能处理"
+      description="自定义数据处理流程，生成高质量数据集"
+    >
+      <div className="flex flex-col lg:flex-row gap-6">
+        <AnalysisConfigPanel
+          footer={
+            <>
+              <Button
                 onClick={handleProcess}
                 disabled={isProcessing || !selectedDataset}
-                className="w-full font-medium py-2 px-4 rounded transition-all flex items-center justify-center"
-                style={{
-                  backgroundColor: selectedDataset ? 'var(--neon-cyan)' : 'var(--bg-tertiary)',
-                  color: selectedDataset ? 'var(--bg-primary)' : 'var(--text-muted)',
-                  cursor: selectedDataset ? 'pointer' : 'not-allowed',
-                  border: 'none',
-                  opacity: selectedDataset ? 1 : 0.5
-                }}
+                className="w-full"
               >
                 {isProcessing ? (
                   <>
@@ -464,31 +261,204 @@ export function SmartProcess() {
                     开始处理
                   </>
                 )}
-              </button>
-
+              </Button>
               {isProcessing && (
                 <p className="text-xs text-center text-[var(--text-muted)]">
                   正在处理数据，请稍候...
                 </p>
               )}
-            </CardContent>
-          )}
-        </Card>
+            </>
+          }
+        >
+          {/* 数据集选择 */}
+          <div className="space-y-2">
+            <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
+            <DatasetSelector 
+              value={selectedDataset}
+              onChange={setSelectedDataset}
+            />
+            {datasetInfo && (
+              <p className="text-xs text-[var(--neon-cyan)]">
+                {datasetInfo.row_count?.toLocaleString()} 行 · {datasetInfo.col_count} 列
+              </p>
+            )}
+          </div>
 
-        {/* 结果展示 */}
-        <div className="lg:col-span-2 space-y-6">
-          {!showResult ? (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
-              <div className="text-center">
-                <Sparkles className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
-                <p className="text-[var(--text-muted)]">选择数据集并配置处理选项</p>
-                <p className="text-xs text-[var(--text-muted)] mt-2">处理后将生成新的数据集</p>
+          <div className="border-t border-[var(--border-subtle)] pt-4 space-y-4">
+            
+            {/* 缺失值处理 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-[var(--neon-cyan)]" />
+                <label className="text-sm font-medium text-[var(--text-primary)]">缺失值处理</label>
               </div>
-            </Card>
-          ) : (
+              <select
+                value={config.missingValueStrategy}
+                onChange={(e) => handleConfigChange('missingValueStrategy', e.target.value as any)}
+                className="w-full p-2 rounded text-sm"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle)'
+                }}
+              >
+                <option value="mean">填充均值（数值列）</option>
+                <option value="median">填充中位数（数值列）</option>
+                <option value="mode">填充众数（分类列）</option>
+                <option value="fill">填充固定值</option>
+                <option value="drop">删除包含缺失值的行</option>
+                <option value="none">不处理</option>
+              </select>
+              {config.missingValueStrategy === 'fill' && (
+                <input
+                  type="text"
+                  value={config.missingValueFill}
+                  onChange={(e) => handleConfigChange('missingValueFill', e.target.value)}
+                  placeholder="输入填充值"
+                  className="w-full p-2 rounded text-sm mt-2"
+                  style={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-subtle)'
+                  }}
+                />
+              )}
+            </div>
+
+            {/* 重复值处理 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-[var(--neon-purple)]" />
+                <label className="text-sm font-medium text-[var(--text-primary)]">重复值处理</label>
+              </div>
+              <select
+                value={config.duplicateStrategy}
+                onChange={(e) => handleConfigChange('duplicateStrategy', e.target.value as any)}
+                className="w-full p-2 rounded text-sm"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle)'
+                }}
+              >
+                <option value="drop">删除重复行</option>
+                <option value="keep_first">保留第一个</option>
+                <option value="keep_last">保留最后一个</option>
+                <option value="none">不处理</option>
+              </select>
+            </div>
+
+            {/* 异常值处理 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-[var(--neon-orange)]" />
+                <label className="text-sm font-medium text-[var(--text-primary)]">异常值处理</label>
+              </div>
+              <select
+                value={config.outlierStrategy}
+                onChange={(e) => handleConfigChange('outlierStrategy', e.target.value as any)}
+                className="w-full p-2 rounded text-sm"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle)'
+                }}
+              >
+                <option value="none">不处理</option>
+                <option value="drop">删除异常值所在行</option>
+                <option value="clip">截断到边界值</option>
+                <option value="mark">标记但不删除</option>
+              </select>
+              {config.outlierStrategy !== 'none' && (
+                <>
+                  <select
+                    value={config.outlierMethod}
+                    onChange={(e) => handleConfigChange('outlierMethod', e.target.value as any)}
+                    className="w-full p-2 rounded text-sm mt-2"
+                    style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-subtle)'
+                    }}
+                  >
+                    <option value="iqr">IQR 方法（四分位距）</option>
+                    <option value="zscore">Z-Score 方法</option>
+                  </select>
+                  {config.outlierMethod === 'iqr' && (
+                    <div className="mt-2">
+                      <label className="text-xs text-[var(--text-muted)]">IQR 倍数: {config.outlierThreshold}</label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="3"
+                        step="0.1"
+                        value={config.outlierThreshold}
+                        onChange={(e) => handleConfigChange('outlierThreshold', parseFloat(e.target.value))}
+                        className="w-full mt-1"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* 数据标准化 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-[var(--neon-pink)]" />
+                <label className="text-sm font-medium text-[var(--text-primary)]">数据标准化</label>
+              </div>
+              <select
+                value={config.standardization}
+                onChange={(e) => handleConfigChange('standardization', e.target.value as any)}
+                className="w-full p-2 rounded text-sm"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle)'
+                }}
+              >
+                <option value="none">不处理</option>
+                <option value="zscore">Z-Score 标准化</option>
+                <option value="minmax">Min-Max 归一化</option>
+                <option value="log">对数变换</option>
+              </select>
+            </div>
+
+            {/* 数据类型转换 */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-secondary)]">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4 text-[var(--neon-green)]" />
+                <span className="text-sm text-[var(--text-primary)]">自动类型转换</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.typeConversion}
+                  onChange={(e) => handleConfigChange('typeConversion', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-[var(--bg-tertiary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--neon-cyan)]"></div>
+              </label>
+            </div>
+
+          </div>
+        </AnalysisConfigPanel>
+
+        <AnalysisResultPanel
+          loading={isProcessing && !showResult}
+          loadingMessage="正在处理数据，请稍候..."
+          empty={!showResult && !isProcessing}
+          emptyTitle="选择数据集并配置处理选项"
+          emptyDescription="处理后将生成新的数据集"
+          actions={showResult && processResult?.outputDatasetId ? (
+            <AnalysisActionBar onDownload={handleDownload} />
+          ) : undefined}
+        >
+          {showResult && (
             <div ref={resultRef} className="space-y-6">
               {/* 处理完成提示 */}
-              <Card className="glass border-[var(--neon-green)]/30">
+              <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] border-[var(--neon-green)]/30">
                 <CardHeader>
                   <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-[var(--neon-green)]" />
@@ -576,40 +546,25 @@ export function SmartProcess() {
 
               {/* 操作按钮 */}
               <div className="flex gap-3">
-                <button
-                  className="flex-1 py-2 px-4 rounded font-medium transition-all flex items-center justify-center gap-2"
-                  style={{
-                    backgroundColor: 'var(--neon-cyan)',
-                    color: 'var(--bg-primary)',
-                  }}
+                <Button
+                  className="flex-1 bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
                   onClick={handleDownload}
                 >
-                  <Download className="w-4 h-4" />
                   下载处理后数据
-                </button>
-                <button
-                  className="flex-1 py-2 px-4 rounded border font-medium transition-all flex items-center justify-center gap-2"
-                  style={{
-                    borderColor: 'var(--border-subtle)',
-                    color: 'var(--text-primary)',
-                    backgroundColor: 'transparent'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
                   onClick={handleReprocess}
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-4 h-4 mr-2" />
                   重新处理
-                </button>
+                </Button>
               </div>
             </div>
           )}
-        </div>
+        </AnalysisResultPanel>
       </div>
-    </div>
+    </AnalysisPageShell>
   );
 }
