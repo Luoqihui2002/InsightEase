@@ -169,6 +169,37 @@ Upload CSV/Excel
 - **设计组件**: 7 个分析专用共享组件（AnalysisPageShell, AnalysisConfigPanel, AnalysisResultPanel, AnalysisActionBar, AnalysisEmptyState, AnalysisResultSummary, AnalysisPollingOverlay）。
 - **验证**: 本阶段为纯设计，未修改代码。
 
+## Phase 4A-4-0: Analysis Template Components
+
+- **目标**: 构建 7 个分析页面模板共享组件，为后续页面迁移提供基础设施。
+- **新增文件**:
+  - `app/src/components/analysis/AnalysisPageShell.tsx`
+  - `app/src/components/analysis/AnalysisConfigPanel.tsx`
+  - `app/src/components/analysis/AnalysisResultPanel.tsx`
+  - `app/src/components/analysis/AnalysisActionBar.tsx`
+  - `app/src/components/analysis/AnalysisEmptyState.tsx`
+  - `app/src/components/analysis/AnalysisResultSummary.tsx`
+  - `app/src/components/analysis/AnalysisPollingOverlay.tsx`
+  - `app/src/components/analysis/index.ts`
+- **组件设计**:
+  - `AnalysisPageShell`: 封装 `PageShell` + `PageHeader`，提供分析页面标准标题区。
+  - `AnalysisConfigPanel`: 基于 `SidePanel`，左侧配置面板，支持标题、图标、footer。
+  - `AnalysisResultPanel`: 基于 `ResultPanel`，通用结果面板，支持 loading/empty/polling/children 多种状态。
+  - `AnalysisActionBar`: 导出按钮组（CSV/JSON/Excel/Download），纯回调，无业务逻辑。
+  - `AnalysisEmptyState`: 基于 shadcn `<Empty>`，提供 `no-dataset` / `no-result` / `no-config` / `custom` 四种预设。
+  - `AnalysisResultSummary`: 基于 `ContentGrid` + `StatCard`，数值摘要卡片网格。
+  - `AnalysisPollingOverlay`: 轮询状态指示器，支持 pending/running/completed/failed + 可选进度条。
+- **约束遵守**:
+  - 零页面文件修改。
+  - 零后端代码修改。
+  - 零 API 客户端修改。
+  - 零新 npm 依赖。
+  - 所有组件导出 props interface，使用 `cn()`。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 19.87s ✅
+  - SelectItem empty value grep — no output ✅
+
 ## 下一步建议
 
 ### 立即执行

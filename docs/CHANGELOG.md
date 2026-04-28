@@ -138,3 +138,15 @@
 - 制定按风险升序的页面迁移计划：Low (Semantic, Clustering) → Medium (Statistics, Attribution, SmartProcess, GoalPlanner) → High (Forecast, PathAnalysis, SmartAnalysis)。
 - SmartAnalysis 为向导模式，不套用标准 2-col 模板，计划 Phase 4A-5 独立重构。
 - 产出 `docs/ANALYSIS_PAGES_TEMPLATE.md` 和阶段日志。本阶段未修改代码。
+
+## Phase 4A-4-0: Analysis Template Components
+
+- 在 `app/src/components/analysis/` 下新建 7 个分析页面模板共享组件 + `index.ts` 轻量 re-export。
+- `AnalysisPageShell`: 封装 `PageShell` + `PageHeader`，提供分析页面标准标题区。
+- `AnalysisConfigPanel`: 基于 `SidePanel`，左侧配置面板，支持标题、图标、底部操作区。
+- `AnalysisResultPanel`: 基于 `ResultPanel`，通用结果面板，支持 chart/table/JSON/download/empty/loading/polling 及自定义操作。
+- `AnalysisActionBar`: 导出按钮组（CSV/JSON/Excel/Download），纯回调，无业务逻辑。
+- `AnalysisEmptyState`: 基于 shadcn `<Empty>`，提供 `no-dataset` / `no-result` / `no-config` / `custom` 四种预设。
+- `AnalysisResultSummary`: 基于 `ContentGrid` + `StatCard`，数值摘要卡片网格（2/3/4 列）。
+- `AnalysisPollingOverlay`: 轮询状态指示器，支持 pending/running/completed/failed + 可选进度条。
+- 零页面修改、零后端修改、零新依赖。`tsc --noEmit` 0 errors，`npm run build` 成功。
