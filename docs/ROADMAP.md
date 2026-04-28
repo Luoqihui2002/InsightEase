@@ -18,25 +18,30 @@
 ### 4A-3: Analysis Pages Template Audit ✅
 - 审计 9 个分析页面，产出统一模板设计
 
-### 4A-4: Analysis Pages 迁移（按风险升序）
-1. **4A-4-0** — 构建 7 个分析专用共享组件
-2. **4A-4-1** — Semantic + Clustering（低风险验证）
-3. **4A-4-2** — Statistics + Attribution（中风险，验证 ECharts + 统计卡片）
-4. **4A-4-3** — SmartProcess + GoalPlanner（中风险，验证文件下载 + 自定义布局）
-5. **4A-4-4** — Forecast（高风险，验证复杂配置面板）
-6. **4A-4-5** — PathAnalysis（高风险，验证多类型选择器 + 子组件）
+### 4A-4: Analysis Pages 迁移（按风险升序）✅
+1. **4A-4-0** — 构建 7 个分析专用共享组件 ✅
+2. **4A-4-1** — Semantic + Clustering（低风险验证）✅
+3. **4A-4-2** — Statistics + Attribution（中风险，验证 ECharts + 统计卡片）✅
+4. **4A-4-3** — SmartProcess + GoalPlanner（中风险，验证文件下载 + 自定义布局）✅
+5. **4A-4-4** — Forecast（高风险，验证复杂配置面板）✅
+6. **4A-4-5** — PathAnalysis（高风险，验证多类型选择器 + 子组件）✅
+7. **4A-4-6** — 迁移收官 + 复杂页面规划（SmartAnalysis / AIWorkspace / DataWorkshop）✅
 
-### 4A-5: 交互一致性治理
-- 原生 `<select>` → shadcn `Select`
+### 4A-5: 交互一致性治理（下一Phase）
+- 原生 `<select>` → shadcn `Select`（分析页面列选择器）
 - 手写 toggle → shadcn `Switch`
 - 手写模态框 → shadcn `Dialog`
 - 原生 `confirm()` / `alert()` → `AlertDialog` + `toast`
+- 原生 `<table>` → `DataTablePreview`（结果区表格）
+- `AnalysisResultSummary` / `AnalysisPollingOverlay` 评估与推广
 
-### 4A-6: 工程优化
+### 4A-6: 工程优化与视觉打磨
 1. **Bundle splitting** — `manualChunks` 拆分 vendor / echarts / radix，解决 3.3MB warning
 2. **API 类型统一** — 修复拦截器解包导致的类型混乱，移除 `as any`
 3. **Alembic 引入** — 数据库版本化管理，替代手动 SQL
 4. **storage.read() 统一** — 修复 analysis.py 后台任务 OSS 兼容性问题
+5. **硬编码颜色清理** — ECharts 选项使用 CSS variable 动态获取
+6. **剩余 glass 类清理** — SmartAnalysis、DataWorkshop
 
 ---
 
@@ -44,11 +49,40 @@
 
 目标：从"意图识别 + 轮询"升级为 Agent 架构
 
-1. **审计 AICompanion / AIWorkspace / ai_service** — 梳理当前 AI 链路边界
-2. **研究 Hermes Agent 接入** — 评估 Agent 架构对现有意图识别流程的替换或增强
-3. **设计 Agent Adapter Layer** — 统一 AI 服务调用接口，支持多模型切换
-4. **基于数据集 schema 主动生成下一步建议** — AI 自动推荐分析路径
-5. **AI 生成 transform / chart / analysis plan** — 自然语言直接生成操作链或可视化配置
+### 4B-0: AI 助手产品形态设计
+- 定义 copilot panel vs modal 方案
+- 设计分析建议卡片、工具调用确认流程
+- 流式响应 vs 轮询决策
+
+### 4B-1: Hermes Adapter 研究/设计
+- 后端适配层 API 契约
+- 多模型支持架构
+- 前端不直接调用 Hermes，通过后端适配层
+
+### 4B-2: AIWorkspace 重构
+- 基于 4B-0/4B-1 决策实施
+- 集成 Hermes 适配层
+
+### 4B-3: SmartAnalysis  mock→real 迁移
+- 将诊断、预处理、分析模拟替换为真实 API
+- 保留向导流程
+
+---
+
+## Phase 4C: DataWorkshop 组件拆分
+
+目标：将 2320 行的单体文件拆分为可维护组件
+
+### 4C-0: 组件审计
+- 梳理所有内联子组件和依赖关系
+
+### 4C-1~3: 逐步提取
+- `DataSourcePanel`、`OperationChain`、`OperationConfigPanel`、`PreviewPanel`、`SaveResultPanel`
+- 零业务逻辑变更
+
+### 4C-4: 视觉优化
+- 移除 glass、替换 `<table>`、标准化输入控件
+- 保留后端 preview/save 路径不变
 
 ---
 
@@ -60,6 +94,7 @@
 2. **AI 图表推荐** — 基于数据特征自动推荐最佳图表类型
 3. **Dashboard 保存** — 多图表组合布局，持久化到后端
 4. **图表导出** — 支持 PNG/SVG/PDF 多格式导出
+5. **ChartCard 组件推广** — 将 ECharts 页面统一纳入 ChartCard 容器
 
 ---
 

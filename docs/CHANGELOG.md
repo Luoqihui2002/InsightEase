@@ -207,3 +207,15 @@
 - 移除可折叠配置面板行为（`showConfig` 状态、`ChevronUp`/`ChevronDown`）。
 - 布局从 `grid grid-cols-4` 切换为 `flex flex-col lg:flex-row gap-6`。
 - 所有业务逻辑（5 种分析类型切换、数据集加载、列选择、ECharts 图表渲染、`AssociationRuleGraph` 子组件、CSV/图表导出、API 调用）零改动。
+
+## Phase 4A-4-6: Analysis Migration Closure & Complex Pages Plan
+
+- Phase 4A-4 分析页面迁移正式收官。
+- 8 个分析页面已完成迁移（Semantic、Clustering、Statistics、Attribution、SmartProcess、GoalPlanner、Forecast、PathAnalysis）。
+- 产出 `docs/PHASE_4A_ANALYSIS_MIGRATION_CLOSURE.md`：
+  - 迁移总结表
+  - 已验证共享组件清单（`AnalysisPageShell`、`AnalysisConfigPanel`、`AnalysisResultPanel`、`AnalysisActionBar`、`AnalysisEmptyState` 已验证；`AnalysisResultSummary`、`AnalysisPollingOverlay` 已实现但未使用）
+  - 技术债分类（Phase 4A-5 交互清理、Phase 4A-6 视觉优化、工程优化）
+  - SmartAnalysis / AIWorkspace / DataWorkshop 分阶段计划
+- 建议下一Phase：4A-5 交互一致性治理。
+- 零代码修改。

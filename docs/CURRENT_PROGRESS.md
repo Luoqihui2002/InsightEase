@@ -338,6 +338,22 @@ Upload CSV/Excel
   - `npm run build` — built in 22.94s ✅
   - SelectItem empty value grep — no output ✅
 
+## Phase 4A-4-6: Analysis Migration Closure & Complex Pages Plan
+
+- **目标**: 总结 Phase 4A-4 分析页面迁移成果，规划剩余复杂页面（SmartAnalysis、AIWorkspace、DataWorkshop）。
+- **范围**: 纯文档阶段，零代码修改。
+- **产出**:
+  - `docs/PHASE_4A_ANALYSIS_MIGRATION_CLOSURE.md` — 迁移总结、已验证组件清单、技术债分类、复杂页面分阶段计划
+  - `docs/phase-logs/PHASE_4A_4_6_ANALYSIS_MIGRATION_CLOSURE.md` — 阶段日志
+- **关键结论**:
+  - 8 个分析页面已完成迁移（Semantic、Clustering、Statistics、Attribution、SmartProcess、GoalPlanner、Forecast、PathAnalysis）
+  - 3 个复杂页面不应盲目套用标准 2-col 模板：SmartAnalysis（向导模式）、AIWorkspace（模态覆盖层）、DataWorkshop（操作链构建器）
+  - `AnalysisResultSummary` 和 `AnalysisPollingOverlay` 已实现但尚未被任何页面使用
+  - 建议下一Phase：4A-5 交互一致性治理（原生 select → shadcn Select 等）
+- **验证**:
+  - 未修改任何源码文件 ✅
+  - 未修改 package.json / package-lock.json ✅
+
 ## 下一步建议
 
 ### 立即执行
@@ -360,4 +376,4 @@ cd app && npx tsc --noEmit    # 0 errors ✅
 cd app && npm run build        # built in 22.94s ✅
 ```
 
-> 警告: JS chunk 3,385 KB，待 Phase 4A 拆分优化。
+> 警告: JS chunk 3,385 KB，待 Phase 4A-6 拆分优化。
