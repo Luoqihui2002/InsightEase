@@ -190,3 +190,9 @@
 - 移除可折叠配置面板行为（`isConfigOpen` 状态、`ChevronUp`/`ChevronDown`）。
 - 布局从 `grid grid-cols-3` 切换为 `flex flex-col lg:flex-row gap-6`，与模板组件体系保持一致。
 - 所有业务逻辑（数据集加载、 Prophet/LightGBM/SARIMA 模型选择、批量预测、大促日历、What-if 分析、营销日历导入、localStorage 写入、CSV 导出、gsap 动画）零改动。
+
+## Hotfix: Duplicate Forecast Start Button
+
+- 修复 Phase 4A-4-4 迁移残留：配置面板底部出现两个相同的 "启动预测" 按钮。
+- 删除原内联按钮块，仅保留 `AnalysisConfigPanel` `footer` 中的按钮。
+- 纯 UI 修复，零业务逻辑影响。

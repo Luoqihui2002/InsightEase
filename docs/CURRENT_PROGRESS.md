@@ -306,6 +306,17 @@ Upload CSV/Excel
   - `npm run build` — built in 20.37s ✅
   - SelectItem empty value grep — no output ✅
 
+## Hotfix: Duplicate Forecast Start Button
+
+- **问题**: Phase 4A-4-4 迁移后，配置面板底部出现两个相同的 "启动预测" 按钮。
+- **根因**: 将按钮移至 `AnalysisConfigPanel` `footer` 时，未同步删除原 `CardContent` 内的内联按钮。
+- **修复**: 删除原内联按钮块（~36 行），仅保留 footer 按钮。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 20.05s ✅
+  - `grep handleAnalyze()` — 仅剩 1 处 ✅
+  - SelectItem empty value grep — no output ✅
+
 ## 下一步建议
 
 ### 立即执行

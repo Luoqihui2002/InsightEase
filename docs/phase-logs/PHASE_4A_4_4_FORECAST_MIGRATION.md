@@ -56,7 +56,19 @@ cd app && npx tsc --noEmit    # 0 errors ✅
 cd app && npm run build        # built in 20.37s ✅
 ```
 
+## Hotfix: Duplicate Forecast Start Button
+
+- **Issue**: 迁移后配置面板底部出现两个相同的 "启动预测" 按钮。
+- **Root cause**: 迁移时将分析按钮移至 `AnalysisConfigPanel` 的 `footer` 时，未同步移除原 `CardContent` 内的内联按钮块。
+- **Fix**: 删除原内联按钮块（约 36 行），仅保留 `footer` 中的按钮。`isAnalyzing` 提示文本已包含在 `footer` 中，无需额外处理。
+- **Validation**:
+  - `tsc --noEmit` 0 errors ✅
+  - `npm run build` built in 20.05s ✅
+  - `grep "handleAnalyze()"` 仅剩 1 处（footer 内）✅
+  - SelectItem empty value grep — no output ✅
+- **影响**: 纯 UI 迁移残留，零业务逻辑影响。
+
 ## 风险说明
 
-- Forecast 是分析页面中复杂度最高的页面（1491 行），包含批量/单预测双模式、What-if 分析、大促日历、自定义导入对话框、localStorage 集成等特性。
+- Forecast 是分析页面中复杂度最高的页面（~1470 行），包含批量/单预测双模式、What-if 分析、大促日历、自定义导入对话框、localStorage 集成等特性。
 - 本次迁移采用保守策略：右侧结果区未套用 `AnalysisResultPanel`，避免对复杂条件渲染结构产生不可预期的布局影响。

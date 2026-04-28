@@ -995,42 +995,6 @@ export function Forecast() {
                 </div>
               )}
 
-              <button
-                onClick={() => {
-                  console.log('Analyze button clicked, selectedDataset:', selectedDataset);
-                  handleAnalyze();
-                }}
-                disabled={isAnalyzing || !selectedDataset || (isBatchMode && selectedBatchColumns.length === 0)}
-                className="w-full font-medium py-2 px-4 rounded transition-all flex items-center justify-center"
-                style={{
-                  backgroundColor: selectedDataset ? 'var(--neon-cyan)' : 'var(--bg-tertiary)',
-                  color: selectedDataset ? 'var(--bg-primary)' : 'var(--text-muted)',
-                  cursor: selectedDataset ? 'pointer' : 'not-allowed',
-                  border: 'none',
-                  opacity: (selectedDataset && (!isBatchMode || selectedBatchColumns.length > 0)) ? 1 : 0.5
-                }}
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {isBatchMode ? `批量预测中 (${selectedBatchColumns.length}个SKU)...` : '预测中...'}
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 mr-2" />
-                    {isBatchMode 
-                      ? `批量预测 (${selectedBatchColumns.length}个SKU)` 
-                      : '启动预测'
-                    }
-                  </>
-                )}
-              </button>
-
-              {isAnalyzing && (
-                <p className="text-xs text-center text-[var(--text-muted)]">
-                  正在预测数据，请稍候...
-                </p>
-              )}
         </AnalysisConfigPanel>
 
         <div className="flex-1 space-y-6 min-w-0">
