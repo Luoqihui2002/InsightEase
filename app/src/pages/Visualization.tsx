@@ -28,6 +28,7 @@ import { analysisApi } from '@/api/analysis';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import * as echarts from 'echarts';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { PageShell } from '@/components/layout/PageShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SidePanel } from '@/components/layout/SidePanel';
@@ -1166,71 +1167,72 @@ export function Visualization() {
             {/* X轴选择 */}
             <div className="space-y-2">
               <label className="text-sm text-[var(--text-muted)]">{axisLabels.x}</label>
-              <select
-                value={chartConfig.xAxis || ''}
-                onChange={(e) => setChartConfig(prev => ({ ...prev, xAxis: e.target.value }))}
-                className="w-full p-2 rounded text-sm bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                disabled={availableXFields.length === 0}
-              >
-                <option value="">选择字段</option>
-                {availableXFields.map(field => (
-                  <option key={field.name} value={field.name}>
-                    {field.name} ({field.type})
-                  </option>
-                ))}
-              </select>
+              <Select value={chartConfig.xAxis || "none"} onValueChange={(v) => setChartConfig(prev => ({ ...prev, xAxis: v === "none" ? "" : v }))} disabled={availableXFields.length === 0}>
+                <SelectTrigger className="w-full bg-[var(--bg-tertiary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue placeholder="选择字段" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">选择字段</SelectItem>
+                  {availableXFields.map(field => (
+                    <SelectItem key={field.name} value={field.name}>
+                      {field.name} ({field.type})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Y轴选择 */}
             <div className="space-y-2">
               <label className="text-sm text-[var(--text-muted)]">{axisLabels.y}</label>
-              <select
-                value={chartConfig.yAxis || ''}
-                onChange={(e) => setChartConfig(prev => ({ ...prev, yAxis: e.target.value }))}
-                className="w-full p-2 rounded text-sm bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                disabled={availableYFields.length === 0}
-              >
-                <option value="">选择字段</option>
-                {availableYFields.map(field => (
-                  <option key={field.name} value={field.name}>
-                    {field.name} ({field.dtype})
-                  </option>
-                ))}
-              </select>
+              <Select value={chartConfig.yAxis || "none"} onValueChange={(v) => setChartConfig(prev => ({ ...prev, yAxis: v === "none" ? "" : v }))} disabled={availableYFields.length === 0}>
+                <SelectTrigger className="w-full bg-[var(--bg-tertiary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue placeholder="选择字段" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">选择字段</SelectItem>
+                  {availableYFields.map(field => (
+                    <SelectItem key={field.name} value={field.name}>
+                      {field.name} ({field.dtype})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* 分组/颜色 */}
             <div className="space-y-2">
               <label className="text-sm text-[var(--text-muted)]">分组（可选）</label>
-              <select
-                value={chartConfig.colorBy || ''}
-                onChange={(e) => setChartConfig(prev => ({ ...prev, colorBy: e.target.value || undefined }))}
-                className="w-full p-2 rounded text-sm bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                disabled={availableColorFields.length === 0}
-              >
-                <option value="">不分组</option>
-                {availableColorFields.map(field => (
-                  <option key={field.name} value={field.name}>
-                    {field.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={chartConfig.colorBy || "none"} onValueChange={(v) => setChartConfig(prev => ({ ...prev, colorBy: v === "none" ? undefined : v }))} disabled={availableColorFields.length === 0}>
+                <SelectTrigger className="w-full bg-[var(--bg-tertiary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue placeholder="不分组" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">不分组</SelectItem>
+                  {availableColorFields.map(field => (
+                    <SelectItem key={field.name} value={field.name}>
+                      {field.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* 聚合方式 */}
             <div className="space-y-2">
               <label className="text-sm text-[var(--text-muted)]">聚合方式</label>
-              <select
-                value={chartConfig.aggregation}
-                onChange={(e) => setChartConfig(prev => ({ ...prev, aggregation: e.target.value as any }))}
-                className="w-full p-2 rounded text-sm bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-              >
-                <option value="sum">求和</option>
-                <option value="avg">平均值</option>
-                <option value="count">计数</option>
-                <option value="min">最小值</option>
-                <option value="max">最大值</option>
-              </select>
+              <Select value={chartConfig.aggregation} onValueChange={(v) => setChartConfig(prev => ({ ...prev, aggregation: v as any }))}>
+                <SelectTrigger className="w-full bg-[var(--bg-tertiary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue placeholder="聚合方式" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sum">求和</SelectItem>
+                  <SelectItem value="avg">平均值</SelectItem>
+                  <SelectItem value="count">计数</SelectItem>
+                  <SelectItem value="min">最小值</SelectItem>
+                  <SelectItem value="max">最大值</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* 聚类分析（仅散点图） */}

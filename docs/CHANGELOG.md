@@ -243,3 +243,17 @@
   - 推荐实施顺序（4A-5-2 → 4A-5-3 → 4A-5-4 → 4A-5-5）
 - DataWorkshop (17 selects) 和 AIWorkspace 推迟到各自专属阶段。
 - 零代码修改。
+
+## Phase 4A-5-3: Dynamic Column Selects with Sentinel Mapping
+
+- 6 个页面的 16 个动态原生 `<select>` 替换为 shadcn `Select`
+- Attribution: 5 个列选择器（userIdCol, touchpointCol, timestampCol, conversionCol, conversionValueCol），哨兵 `none` → `""`
+- Statistics: 1 个分析列选择器（selectedColumn），`"all"` 直接透传，无哨兵
+- Forecast: 2 个列选择器（dateColumn, valueColumn），哨兵 `auto` → `""`
+- PathAnalysis: 3 个列选择器（userIdCol, eventCol, timestampCol），哨兵 `auto` → `""`
+- Visualization: 4 个字段选择器（xAxis, yAxis, colorBy, aggregation），x/y 哨兵 `none` → `""`，colorBy 哨兵 `none` → `undefined`
+- GoalPlanner: 1 个目标层级选择器（targetLevelId），哨兵 `none` → `""`
+- 4 个页面的原生 `<optgroup>` 替换为 `SelectGroup` + `SelectLabel`
+- 所有状态值、API  payload、onChange 行为完全保留
+- 零业务逻辑变更
+- `tsc --noEmit` 0 errors，`npm run build` built in 29.80s ✅

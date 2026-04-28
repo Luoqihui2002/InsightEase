@@ -354,6 +354,24 @@ Upload CSV/Excel
   - 未修改任何源码文件 ✅
   - 未修改 package.json / package-lock.json ✅
 
+## Phase 4A-5-3: Dynamic Column Selects with Sentinel Mapping
+
+- **目标**: 将 6 个页面中的 16 个动态原生 `<select>` 替换为 shadcn `Select`，使用哨兵值映射保留空字符串语义。
+- **修改文件**:
+  - `Attribution.tsx`：5 个列选择器（`none` → `""`）
+  - `Statistics.tsx`：1 个分析列选择器（`"all"` 直接透传，无哨兵）
+  - `Forecast.tsx`：2 个列选择器（`auto` → `""`）
+  - `PathAnalysis.tsx`：3 个列选择器（`auto` → `""`）
+  - `Visualization.tsx`：4 个字段选择器（`none` → `""` / `undefined`）
+  - `GoalPlanner.tsx`：1 个目标层级选择器（`none` → `""`）
+- **Optgroup 迁移**: 4 个页面的原生 `<optgroup>` 替换为 `SelectGroup` + `SelectLabel`。
+- **约束遵守**: 零业务逻辑变更，零 API 调用变更，零 ECharts 选项变更。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 29.80s ✅
+  - SelectItem empty value grep — no output ✅
+  - 6 个页面无剩余原生 `<select` ✅
+
 ## 下一步建议
 
 ### 立即执行
@@ -373,9 +391,9 @@ Upload CSV/Excel
 
 ```bash
 cd app && npx tsc --noEmit    # 0 errors ✅
-cd app && npm run build        # built in 23.85s ✅
+cd app && npm run build        # built in 29.80s ✅
 ```
 
-> 最近构建: built in 23.85s，JS chunk 3,389 KB。
+> 最近构建: built in 29.80s，JS chunk 3,393 KB。
 
-> 警告: JS chunk 3,385 KB，待 Phase 4A-6 拆分优化。
+> 警告: JS chunk 3,393 KB，待 Phase 4A-6 拆分优化。

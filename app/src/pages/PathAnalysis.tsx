@@ -28,6 +28,7 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import * as echarts from 'echarts';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
 
 // 路径分析类型
 type PathType = 'funnel' | 'path' | 'clustering' | 'key_path' | 'sequence_mining';
@@ -926,34 +927,36 @@ export function PathAnalysis() {
                   {/* 列选择 */}
                   <div className="space-y-2">
                     <label className="text-sm text-[var(--text-muted)]">用户ID列</label>
-                    <select
-                      value={userIdCol}
-                      onChange={(e) => setUserIdCol(e.target.value)}
-                      className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                    >
-                      <option value="">选择列</option>
-                      {columns.map(col => (
-                        <option key={col.name} value={col.name}>
-                          {col.name} ({col.type})
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={userIdCol || "auto"} onValueChange={(v) => setUserIdCol(v === "auto" ? "" : v)}>
+                      <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                        <SelectValue placeholder="选择列" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">选择列</SelectItem>
+                        {columns.map(col => (
+                          <SelectItem key={col.name} value={col.name}>
+                            {col.name} ({col.type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="space-y-2">
                     <label className="text-sm text-[var(--text-muted)]">事件/页面列</label>
-                    <select
-                      value={eventCol}
-                      onChange={(e) => setEventCol(e.target.value)}
-                      className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                    >
-                      <option value="">选择列</option>
-                      {columns.filter(c => c.type === 'categorical').map(col => (
-                        <option key={col.name} value={col.name}>
-                          {col.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={eventCol || "auto"} onValueChange={(v) => setEventCol(v === "auto" ? "" : v)}>
+                      <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                        <SelectValue placeholder="选择列" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">选择列</SelectItem>
+                        {columns.filter(c => c.type === 'categorical').map(col => (
+                          <SelectItem key={col.name} value={col.name}>
+                            {col.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   {/* 序列模式挖掘时显示联合事件列选项 - 支持多选 */}
@@ -987,23 +990,26 @@ export function PathAnalysis() {
                   
                   <div className="space-y-2">
                     <label className="text-sm text-[var(--text-muted)]">时间戳列</label>
-                    <select
-                      value={timestampCol}
-                      onChange={(e) => setTimestampCol(e.target.value)}
-                      className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                    >
-                      <option value="">选择列</option>
-                      <optgroup label="推荐的时间列">
-                        {columns.filter(c => isLikelyDateTimeColumn(c)).map(col => (
-                          <option key={col.name} value={col.name}>{col.name}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="其他列">
-                        {columns.filter(c => !isLikelyDateTimeColumn(c)).map(col => (
-                          <option key={col.name} value={col.name}>{col.name}</option>
-                        ))}
-                      </optgroup>
-                    </select>
+                    <Select value={timestampCol || "auto"} onValueChange={(v) => setTimestampCol(v === "auto" ? "" : v)}>
+                      <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                        <SelectValue placeholder="选择列" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">选择列</SelectItem>
+                        <SelectGroup>
+                          <SelectLabel>推荐的时间列</SelectLabel>
+                          {columns.filter(c => isLikelyDateTimeColumn(c)).map(col => (
+                            <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                        <SelectGroup>
+                          <SelectLabel>其他列</SelectLabel>
+                          {columns.filter(c => !isLikelyDateTimeColumn(c)).map(col => (
+                            <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                     <p className="text-[10px] text-[var(--text-muted)]">
                       支持 datetime、string、date 等格式，系统会自动解析
                     </p>

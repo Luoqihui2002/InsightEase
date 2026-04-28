@@ -19,6 +19,7 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
 import * as echarts from 'echarts';
 import {
   AnalysisPageShell,
@@ -536,16 +537,17 @@ export function Attribution() {
                   <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                     <Users className="w-3 h-3" /> 用户ID列
                   </label>
-                  <select
-                    value={userIdCol}
-                    onChange={(e) => setUserIdCol(e.target.value)}
-                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                  >
-                    <option value="">选择列</option>
-                    {columns.map(col => (
-                      <option key={col.name} value={col.name}>{col.name}</option>
-                    ))}
-                  </select>
+                  <Select value={userIdCol || "none"} onValueChange={(v) => setUserIdCol(v === "none" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                      <SelectValue placeholder="选择列" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">选择列</SelectItem>
+                      {columns.map(col => (
+                        <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* 触点列 */}
@@ -553,16 +555,17 @@ export function Attribution() {
                   <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                     <MousePointerClick className="w-3 h-3" /> 触点/渠道列
                   </label>
-                  <select
-                    value={touchpointCol}
-                    onChange={(e) => setTouchpointCol(e.target.value)}
-                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                  >
-                    <option value="">选择列</option>
-                    {columns.map(col => (
-                      <option key={col.name} value={col.name}>{col.name}</option>
-                    ))}
-                  </select>
+                  <Select value={touchpointCol || "none"} onValueChange={(v) => setTouchpointCol(v === "none" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                      <SelectValue placeholder="选择列" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">选择列</SelectItem>
+                      {columns.map(col => (
+                        <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* 联合触点列（可选，支持多选） */}
@@ -602,23 +605,26 @@ export function Attribution() {
                   <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                     <Clock className="w-3 h-3" /> 时间戳列
                   </label>
-                  <select
-                    value={timestampCol}
-                    onChange={(e) => setTimestampCol(e.target.value)}
-                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                  >
-                    <option value="">选择列</option>
-                    <optgroup label="推荐的时间列">
-                      {columns.filter(c => isLikelyDateTimeColumn(c)).map(col => (
-                        <option key={col.name} value={col.name}>{col.name}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="其他列">
-                      {columns.filter(c => !isLikelyDateTimeColumn(c)).map(col => (
-                        <option key={col.name} value={col.name}>{col.name}</option>
-                      ))}
-                    </optgroup>
-                  </select>
+                  <Select value={timestampCol || "none"} onValueChange={(v) => setTimestampCol(v === "none" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                      <SelectValue placeholder="选择列" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">选择列</SelectItem>
+                      <SelectGroup>
+                        <SelectLabel>推荐的时间列</SelectLabel>
+                        {columns.filter(c => isLikelyDateTimeColumn(c)).map(col => (
+                          <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>其他列</SelectLabel>
+                        {columns.filter(c => !isLikelyDateTimeColumn(c)).map(col => (
+                          <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                   <p className="text-[10px] text-[var(--text-muted)]">
                     支持 datetime、string、date 等格式，系统会自动解析
                   </p>
@@ -634,16 +640,17 @@ export function Attribution() {
                   <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                     <Target className="w-3 h-3" /> 转化标记列
                   </label>
-                  <select
-                    value={conversionCol}
-                    onChange={(e) => setConversionCol(e.target.value)}
-                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                  >
-                    <option value="">无</option>
-                    {columns.map(col => (
-                      <option key={col.name} value={col.name}>{col.name}</option>
-                    ))}
-                  </select>
+                  <Select value={conversionCol || "none"} onValueChange={(v) => setConversionCol(v === "none" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                      <SelectValue placeholder="无" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">无</SelectItem>
+                      {columns.map(col => (
+                        <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* 转化价值列 */}
@@ -651,16 +658,17 @@ export function Attribution() {
                   <label className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                     <BarChart3 className="w-3 h-3" /> 转化价值列
                   </label>
-                  <select
-                    value={conversionValueCol}
-                    onChange={(e) => setConversionValueCol(e.target.value)}
-                    className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                  >
-                    <option value="">无</option>
-                    {columns.filter(c => c.type === 'numeric').map(col => (
-                      <option key={col.name} value={col.name}>{col.name}</option>
-                    ))}
-                  </select>
+                  <Select value={conversionValueCol || "none"} onValueChange={(v) => setConversionValueCol(v === "none" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                      <SelectValue placeholder="无" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">无</SelectItem>
+                      {columns.filter(c => c.type === 'numeric').map(col => (
+                        <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

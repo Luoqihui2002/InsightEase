@@ -15,6 +15,7 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
 import {
   AnalysisPageShell,
   AnalysisConfigPanel,
@@ -403,33 +404,32 @@ export function Statistics() {
           {columns.length > 0 && (
             <div className="space-y-2">
               <label className="text-sm text-[var(--text-muted)]">选择分析列</label>
-              <select
-                value={selectedColumn}
-                onChange={(e) => setSelectedColumn(e.target.value)}
-                className="w-full p-2 rounded text-sm"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-subtle)'
-                }}
-              >
-                <option value="all">全部分析 (所有列)</option>
-                <optgroup label="数值型列">
-                  {columns.filter(c => c.type === 'numeric').map(col => (
-                    <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                  ))}
-                </optgroup>
-                <optgroup label="分类型列">
-                  {columns.filter(c => c.type === 'categorical').map(col => (
-                    <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                  ))}
-                </optgroup>
-                <optgroup label="其他列">
-                  {columns.filter(c => c.type !== 'numeric' && c.type !== 'categorical').map(col => (
-                    <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                  ))}
-                </optgroup>
-              </select>
+              <Select value={selectedColumn} onValueChange={(v) => setSelectedColumn(v)}>
+                <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue placeholder="选择分析列" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部分析 (所有列)</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>数值型列</SelectLabel>
+                    {columns.filter(c => c.type === 'numeric').map(col => (
+                      <SelectItem key={col.name} value={col.name}>{col.name} ({col.dtype})</SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>分类型列</SelectLabel>
+                    {columns.filter(c => c.type === 'categorical').map(col => (
+                      <SelectItem key={col.name} value={col.name}>{col.name} ({col.dtype})</SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>其他列</SelectLabel>
+                    {columns.filter(c => c.type !== 'numeric' && c.type !== 'categorical').map(col => (
+                      <SelectItem key={col.name} value={col.name}>{col.name} ({col.dtype})</SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           )}
         </AnalysisConfigPanel>

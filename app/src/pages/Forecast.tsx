@@ -28,6 +28,7 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface ColumnInfo {
   name: string;
@@ -634,28 +635,26 @@ export function Forecast() {
               {columns.length > 0 && (
                 <div className="space-y-2">
                   <label className="text-sm text-[var(--text-muted)]">日期列</label>
-                  <select
-                    value={dateColumn}
-                    onChange={(e) => setDateColumn(e.target.value)}
-                    className="w-full p-2 rounded text-sm"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
-                  >
-                    <option value="">自动检测</option>
-                    <optgroup label="推荐的日期列">
-                      {columns.filter(c => isLikelyDateTimeColumn(c)).map(col => (
-                        <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="其他列">
-                      {columns.filter(c => !isLikelyDateTimeColumn(c)).map(col => (
-                        <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                      ))}
-                    </optgroup>
-                  </select>
+                  <Select value={dateColumn || "auto"} onValueChange={(v) => setDateColumn(v === "auto" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                      <SelectValue placeholder="自动检测" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">自动检测</SelectItem>
+                      <SelectGroup>
+                        <SelectLabel>推荐的日期列</SelectLabel>
+                        {columns.filter(c => isLikelyDateTimeColumn(c)).map(col => (
+                          <SelectItem key={col.name} value={col.name}>{col.name} ({col.dtype})</SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>其他列</SelectLabel>
+                        {columns.filter(c => !isLikelyDateTimeColumn(c)).map(col => (
+                          <SelectItem key={col.name} value={col.name}>{col.name} ({col.dtype})</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                   <p className="text-[10px] text-[var(--text-muted)]">
                     支持 datetime、string、date 等格式，系统会自动解析
                   </p>
@@ -687,24 +686,20 @@ export function Forecast() {
               {columns.length > 0 && !isBatchMode && (
                 <div className="space-y-2">
                   <label className="text-sm text-[var(--text-muted)]">预测目标列</label>
-                  <select
-                    value={valueColumn}
-                    onChange={(e) => setValueColumn(e.target.value)}
-                    className="w-full p-2 rounded text-sm"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
-                  >
-                    <option value="">自动检测</option>
-                    {columns.filter(c => c.type === 'numeric').map(col => (
-                      <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                    ))}
-                    {columns.filter(c => c.type !== 'numeric').map(col => (
-                      <option key={col.name} value={col.name}>{col.name} ({col.dtype})</option>
-                    ))}
-                  </select>
+                  <Select value={valueColumn || "auto"} onValueChange={(v) => setValueColumn(v === "auto" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                      <SelectValue placeholder="自动检测" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">自动检测</SelectItem>
+                      {columns.filter(c => c.type === 'numeric').map(col => (
+                        <SelectItem key={col.name} value={col.name}>{col.name} ({col.dtype})</SelectItem>
+                      ))}
+                      {columns.filter(c => c.type !== 'numeric').map(col => (
+                        <SelectItem key={col.name} value={col.name}>{col.name} ({col.dtype})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 

@@ -18,6 +18,7 @@ import { AnalysisPageShell } from '@/components/analysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 // 漏斗层级配置
 interface FunnelLevel {
@@ -570,15 +571,17 @@ export function GoalPlanner() {
                   
                   <div className="space-y-2">
                     <label className="text-xs text-[var(--text-muted)]">目标层级</label>
-                    <select
-                      value={targetLevelId}
-                      onChange={(e) => setTargetLevelId(e.target.value)}
-                      className="w-full p-2 rounded text-sm bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
-                    >
-                      {funnelLevels.map(level => (
-                        <option key={level.id} value={level.id}>{level.name}</option>
-                      ))}
-                    </select>
+                    <Select value={targetLevelId || "none"} onValueChange={(v) => setTargetLevelId(v === "none" ? "" : v)}>
+                      <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                        <SelectValue placeholder="选择目标层级" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">选择目标层级</SelectItem>
+                        {funnelLevels.map(level => (
+                          <SelectItem key={level.id} value={level.id}>{level.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="space-y-2">
