@@ -20,6 +20,7 @@ import {
 } from '@/components/analysis';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from "@/components/ui/checkbox";
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { DatasetSelector } from '@/components/DatasetSelector';
 import { DataTypeValidation } from '@/components/DataTypeValidation';
@@ -718,11 +719,10 @@ export function Forecast() {
                         key={col.name}
                         className="flex items-center gap-2 p-1.5 rounded cursor-pointer hover:bg-[var(--bg-tertiary)] text-xs"
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={selectedBatchColumns.includes(col.name)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
+                          onCheckedChange={(checked) => {
+                            if (checked) {
                               if (selectedBatchColumns.length < 20) {
                                 setSelectedBatchColumns([...selectedBatchColumns, col.name]);
                               }
@@ -730,8 +730,6 @@ export function Forecast() {
                               setSelectedBatchColumns(selectedBatchColumns.filter(n => n !== col.name));
                             }
                           }}
-                          className="rounded"
-                          style={{ accentColor: 'var(--neon-cyan)' }}
                         />
                         <span className="text-[var(--text-primary)]">{col.name}</span>
                         <span className="text-[var(--text-muted)]">({col.dtype})</span>
@@ -778,26 +776,27 @@ export function Forecast() {
                 <label className="text-sm text-[var(--neon-cyan)] font-medium flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> 预测模型
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <ToggleGroup 
+                  type="single" 
+                  value={selectedModel}
+                  onValueChange={(value) => value && setSelectedModel(value as any)}
+                  className="grid grid-cols-3 gap-2"
+                >
                   {[
                     { key: 'prophet', name: 'Prophet', desc: '适合季节性' },
                     { key: 'lightgbm', name: 'LightGBM', desc: '适合多变量' },
                     { key: 'sarima', name: 'SARIMA', desc: '适合稳定趋势' },
                   ].map((model) => (
-                    <button
+                    <ToggleGroupItem
                       key={model.key}
-                      onClick={() => setSelectedModel(model.key as any)}
-                      className={`p-2 rounded text-xs text-left transition-all ${
-                        selectedModel === model.key
-                          ? 'bg-[var(--neon-cyan)]/20 border border-[var(--neon-cyan)] text-[var(--neon-cyan)]'
-                          : 'bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50'
-                      }`}
+                      value={model.key}
+                      className="flex flex-col items-start h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/20 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"
                     >
                       <div className="font-medium">{model.name}</div>
                       <div className="text-[10px] opacity-70">{model.desc}</div>
-                    </button>
+                    </ToggleGroupItem>
                   ))}
-                </div>
+                </ToggleGroup>
               </div>
 
               {/* 大促日历 */}
@@ -840,18 +839,15 @@ export function Forecast() {
                       key={promo.id}
                       className="flex items-center gap-2 p-1.5 rounded cursor-pointer hover:bg-[var(--bg-tertiary)] text-xs"
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selectedPromotions.includes(promo.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
+                        onCheckedChange={(checked) => {
+                          if (checked) {
                             setSelectedPromotions([...selectedPromotions, promo.id]);
                           } else {
                             setSelectedPromotions(selectedPromotions.filter(id => id !== promo.id));
                           }
                         }}
-                        className="rounded"
-                        style={{ accentColor: 'var(--neon-cyan)' }}
                       />
                       <span className="flex-1">
                         <span className="text-[var(--text-primary)]">{promo.name}</span>
@@ -893,33 +889,36 @@ export function Forecast() {
                 
                 <div className="grid grid-cols-2 gap-2">
                   {AUXILIARY_VARIABLES.map((variable) => (
-                    <button
+                    <label
                       key={variable.key}
-                      onClick={() => {
-                        if (selectedAuxVars.includes(variable.key)) {
-                          setSelectedAuxVars(selectedAuxVars.filter(k => k !== variable.key));
-                          // 移除对应的what-if配置
-                          const newConfig = {...whatIfConfig};
-                          delete newConfig[variable.key];
-                          setWhatIfConfig(newConfig);
-                        } else {
-                          setSelectedAuxVars([...selectedAuxVars, variable.key]);
-                          // 初始化what-if配置
-                          setWhatIfConfig({...whatIfConfig, [variable.key]: 0});
-                        }
-                      }}
-                      className={`p-2 rounded text-xs text-left transition-all ${
+                      htmlFor={`aux-${variable.key}`}
+                      className={`p-2 rounded text-xs text-left cursor-pointer transition-all ${
                         selectedAuxVars.includes(variable.key)
                           ? 'bg-[var(--neon-purple)]/20 border border-[var(--neon-purple)] text-[var(--neon-purple)]'
                           : 'bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-purple)]/50'
                       }`}
                     >
                       <div className="flex items-center gap-1">
+                        <Checkbox
+                          id={`aux-${variable.key}`}
+                          checked={selectedAuxVars.includes(variable.key)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedAuxVars([...selectedAuxVars, variable.key]);
+                              setWhatIfConfig({...whatIfConfig, [variable.key]: 0});
+                            } else {
+                              setSelectedAuxVars(selectedAuxVars.filter(k => k !== variable.key));
+                              const newConfig = {...whatIfConfig};
+                              delete newConfig[variable.key];
+                              setWhatIfConfig(newConfig);
+                            }
+                          }}
+                        />
                         <span>{variable.icon}</span>
                         <span className="font-medium">{variable.name}</span>
                       </div>
                       <div className="text-[10px] opacity-70">{variable.description}</div>
-                    </button>
+                    </label>
                   ))}
                 </div>
               </div>

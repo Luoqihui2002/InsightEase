@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import gsap from 'gsap';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 // 漏斗层级配置
 interface FunnelLevel {
@@ -642,22 +643,23 @@ export function GoalPlanner() {
                     <CalculatorIcon className="w-4 h-4" /> 拆解方式
                   </label>
                   
-                  <div className="grid grid-cols-1 gap-2">
+                  <ToggleGroup 
+                    type="single" 
+                    value={decompositionMethod}
+                    onValueChange={(value) => value && setDecompositionMethod(value as DecompositionMethod)}
+                    className="grid grid-cols-1 gap-2"
+                  >
                     {DECOMPOSITION_METHODS.map((method) => (
-                      <button
+                      <ToggleGroupItem
                         key={method.key}
-                        onClick={() => setDecompositionMethod(method.key)}
-                        className={`p-2 rounded text-xs text-left transition-all ${
-                          decompositionMethod === method.key
-                            ? 'bg-[var(--neon-purple)]/20 border border-[var(--neon-purple)] text-[var(--neon-purple)]'
-                            : 'bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-purple)]/50'
-                        }`}
+                        value={method.key}
+                        className="flex flex-col items-start h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-purple)]/20 data-[state=on]:border-[var(--neon-purple)] data-[state=on]:text-[var(--neon-purple)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-purple)]/50"
                       >
                         <div className="font-medium">{method.name}</div>
                         <div className="text-[10px] opacity-70">{method.desc}</div>
-                      </button>
+                      </ToggleGroupItem>
                     ))}
-                  </div>
+                  </ToggleGroup>
                   
                   {/* 自定义拆解 - 月度目标设置 */}
                   {decompositionMethod === 'custom' && targetDate && targetValue && (

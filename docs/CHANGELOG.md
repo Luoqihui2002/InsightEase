@@ -257,3 +257,13 @@
 - 所有状态值、API  payload、onChange 行为完全保留
 - 零业务逻辑变更
 - `tsc --noEmit` 0 errors，`npm run build` built in 29.80s ✅
+
+## Phase 4A-5-4: ToggleGroup / Checkbox / Button Cleanup
+
+- Forecast: 模型选择器（Prophet/LightGBM/SARIMA）→ `ToggleGroup`；批量预测/大促/辅助变量复选框 → `Checkbox`
+- PathAnalysis: 5 种分析类型选择器（漏斗/路径/聚类/关键路径/序列模式）→ `ToggleGroup`；4 组复选框 → `Checkbox`
+- GoalPlanner: 拆解方式选择器（线性/季节性/动量/自定义）→ `ToggleGroup`
+- GoalPlanner 模板按钮和月份标签：保持自定义（action 按钮 / filter chips）
+- 所有状态值、onChange 行为、选项标签完全保留
+- 零业务逻辑变更
+- `tsc --noEmit` 0 errors，`npm run build` built in 21.32s ✅

@@ -372,6 +372,23 @@ Upload CSV/Excel
   - SelectItem empty value grep — no output ✅
   - 6 个页面无剩余原生 `<select` ✅
 
+## Phase 4A-5-4: ToggleGroup / Checkbox / Button Cleanup
+
+- **目标**: 将 Forecast、PathAnalysis、GoalPlanner 中的手写 toggle / checkbox / button-like 选择器替换为 shadcn 组件。
+- **修改文件**:
+  - `Forecast.tsx`: 模型选择器 → `ToggleGroup`；批量/大促/辅助变量复选框 → `Checkbox`
+  - `PathAnalysis.tsx`: 5 种分析类型选择器 → `ToggleGroup`；4 组复选框 → `Checkbox`
+  - `GoalPlanner.tsx`: 拆解方式选择器 → `ToggleGroup`
+- **保留的控件**:
+  - GoalPlanner 模板按钮：action 按钮而非持久选择状态
+  - GoalPlanner 月份标签：filter chips，替换风险大于收益
+- **约束遵守**: 零业务逻辑变更，零 API 调用变更，零 ECharts 选项变更。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 21.32s ✅
+  - 3 个页面无剩余原生 `type="checkbox"` ✅
+  - SelectItem empty value grep — no output ✅
+
 ## 下一步建议
 
 ### 立即执行
@@ -391,9 +408,9 @@ Upload CSV/Excel
 
 ```bash
 cd app && npx tsc --noEmit    # 0 errors ✅
-cd app && npm run build        # built in 29.80s ✅
+cd app && npm run build        # built in 21.32s ✅
 ```
 
-> 最近构建: built in 29.80s，JS chunk 3,393 KB。
+> 最近构建: built in 21.32s，JS chunk 3,395 KB。
 
-> 警告: JS chunk 3,393 KB，待 Phase 4A-6 拆分优化。
+> 警告: JS chunk 3,395 KB，待 Phase 4A-6 拆分优化。

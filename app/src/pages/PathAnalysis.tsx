@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AnalysisPageShell,
   AnalysisConfigPanel,
@@ -845,33 +847,28 @@ export function PathAnalysis() {
               {/* 分析类型 */}
               <div className="space-y-2">
                 <label className="text-sm text-[var(--text-muted)]">分析类型</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {pathType === 'funnel' ? (
-                    <button onClick={() => setPathType('funnel')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Filter className="w-4 h-4"/>漏斗分析</button>
-                  ) : (
-                    <button onClick={() => setPathType('funnel')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Filter className="w-4 h-4"/>漏斗分析</button>
-                  )}
-                  {pathType === 'path' ? (
-                    <button onClick={() => setPathType('path')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Route className="w-4 h-4"/>路径分析</button>
-                  ) : (
-                    <button onClick={() => setPathType('path')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Route className="w-4 h-4"/>路径分析</button>
-                  )}
-                  {pathType === 'clustering' ? (
-                    <button onClick={() => setPathType('clustering')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Layers className="w-4 h-4"/>路径聚类</button>
-                  ) : (
-                    <button onClick={() => setPathType('clustering')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Layers className="w-4 h-4"/>路径聚类</button>
-                  )}
-                  {pathType === 'key_path' ? (
-                    <button onClick={() => setPathType('key_path')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Target className="w-4 h-4"/>关键路径</button>
-                  ) : (
-                    <button onClick={() => setPathType('key_path')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Target className="w-4 h-4"/>关键路径</button>
-                  )}
-                  {pathType === 'sequence_mining' ? (
-                    <button onClick={() => setPathType('sequence_mining')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]"><Share2 className="w-4 h-4"/>序列模式</button>
-                  ) : (
-                    <button onClick={() => setPathType('sequence_mining')} className="p-2 rounded-lg border text-xs flex flex-col items-center gap-1 border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50"><Share2 className="w-4 h-4"/>序列模式</button>
-                  )}
-                </div>
+                <ToggleGroup 
+                  type="single" 
+                  value={pathType}
+                  onValueChange={(value) => value && setPathType(value as PathType)}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <ToggleGroupItem value="funnel" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Filter className="w-4 h-4"/>漏斗分析
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="path" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Route className="w-4 h-4"/>路径分析
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="clustering" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Layers className="w-4 h-4"/>路径聚类
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="key_path" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Target className="w-4 h-4"/>关键路径
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="sequence_mining" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Share2 className="w-4 h-4"/>序列模式
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
               
               {/* 模块级帮助说明 */}
@@ -966,17 +963,15 @@ export function PathAnalysis() {
                       <div className="max-h-32 overflow-y-auto bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded p-2 space-y-1">
                         {columns.filter(c => c.name !== eventCol && c.type === 'categorical').map(col => (
                           <label key={col.name} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--bg-hover)] p-1 rounded">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={sequenceAdditionalCols.includes(col.name)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
+                              onCheckedChange={(checked) => {
+                                if (checked) {
                                   setSequenceAdditionalCols([...sequenceAdditionalCols, col.name]);
                                 } else {
                                   setSequenceAdditionalCols(sequenceAdditionalCols.filter(c => c !== col.name));
                                 }
                               }}
-                              className="rounded border-[var(--border-subtle)]"
                             />
                             <span className="text-[var(--text-primary)]">{col.name}</span>
                           </label>
@@ -1236,17 +1231,15 @@ export function PathAnalysis() {
                           .filter(c => c.name !== eventCol && c.name !== userIdCol && c.name !== timestampCol)
                           .map(col => (
                             <label key={col.name} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--bg-hover)] p-1 rounded">
-                              <input
-                                type="checkbox"
+                              <Checkbox
                                 checked={additionalEventCols.includes(col.name)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
                                     setAdditionalEventCols([...additionalEventCols, col.name]);
                                   } else {
                                     setAdditionalEventCols(additionalEventCols.filter(c => c !== col.name));
                                   }
                                 }}
-                                className="rounded border-[var(--border-subtle)]"
                               />
                               <span className="text-[var(--text-primary)]">{col.name}</span>
                             </label>
@@ -1292,17 +1285,15 @@ export function PathAnalysis() {
                                 <div className="grid grid-cols-2 gap-1">
                                   {categoryFeatures.map(feature => (
                                     <label key={feature.key} className="flex items-center gap-1 text-xs cursor-pointer hover:bg-[var(--bg-tertiary)] p-1 rounded">
-                                      <input
-                                        type="checkbox"
+                                      <Checkbox
                                         checked={selectedSmartFeatures.includes(feature.key)}
-                                        onChange={(e) => {
-                                          if (e.target.checked) {
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
                                             setSelectedSmartFeatures([...selectedSmartFeatures, feature.key]);
                                           } else {
                                             setSelectedSmartFeatures(selectedSmartFeatures.filter(k => k !== feature.key));
                                           }
                                         }}
-                                        className="rounded border-[var(--border-subtle)]"
                                       />
                                       <span className="text-[var(--text-secondary)]">{feature.name}</span>
                                     </label>
@@ -1342,17 +1333,15 @@ export function PathAnalysis() {
                           .filter(c => c.dtype.includes('int') || c.dtype.includes('float') || c.dtype.includes('number') || c.dtype.includes('double'))
                           .map(col => (
                             <label key={col.name} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--bg-tertiary)] p-1 rounded">
-                              <input
-                                type="checkbox"
+                              <Checkbox
                                 checked={selectedCustomColumns.includes(col.name)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
                                     setSelectedCustomColumns([...selectedCustomColumns, col.name]);
                                   } else {
                                     setSelectedCustomColumns(selectedCustomColumns.filter(c => c !== col.name));
                                   }
                                 }}
-                                className="rounded border-[var(--border-subtle)]"
                               />
                               <span className="text-[var(--text-secondary)]">{col.name}</span>
                               <span className="text-[10px] text-[var(--text-muted)]">({col.dtype})</span>
