@@ -317,6 +317,27 @@ Upload CSV/Excel
   - `grep handleAnalyze()` — 仅剩 1 处 ✅
   - SelectItem empty value grep — no output ✅
 
+## Phase 4A-4-5: PathAnalysis Page Migration
+
+- **目标**: 将高风险的 PathAnalysis 页面迁移到共享布局组件体系，保留 5 种分析类型切换、ECharts 图表生命周期、`AssociationRuleGraph` 子组件及复杂的条件结果渲染。
+- **修改文件**:
+  - `app/src/pages/PathAnalysis.tsx`
+- **PathAnalysis 变更**:
+  - 根布局替换为 `AnalysisPageShell`。
+  - 左侧配置 Card 替换为 `AnalysisConfigPanel`，分析按钮和"重新配置"按钮移至 footer。
+  - 右侧结果区保留自定义 `Card` 结构（漏斗分析、路径分析、路径聚类、关键路径、序列模式），不强制套用 `AnalysisResultPanel` 以避免双层标题冗余。
+  - 移除所有 `glass` 毛玻璃类（31 处）。
+  - 移除可折叠配置面板行为（`showConfig` 状态、`ChevronUp`/`ChevronDown`）。
+  - 布局从 `grid grid-cols-4` 切换为 `flex flex-col lg:flex-row gap-6`。
+- **约束遵守**:
+  - 所有业务逻辑（5 种分析类型切换、数据集加载、列选择、ECharts 图表渲染、`AssociationRuleGraph` 子组件、CSV/图表导出、API 调用）零改动。
+  - 零原生 `<select>` 替换（留在 Phase 4A-5）。
+  - 无 `SelectItem value=""`。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 22.94s ✅
+  - SelectItem empty value grep — no output ✅
+
 ## 下一步建议
 
 ### 立即执行
@@ -336,7 +357,7 @@ Upload CSV/Excel
 
 ```bash
 cd app && npx tsc --noEmit    # 0 errors ✅
-cd app && npm run build        # built in 20.37s ✅
+cd app && npm run build        # built in 22.94s ✅
 ```
 
-> 警告: JS chunk 3,387 KB，待 Phase 4A 拆分优化。
+> 警告: JS chunk 3,385 KB，待 Phase 4A 拆分优化。

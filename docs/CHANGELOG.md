@@ -196,3 +196,14 @@
 - 修复 Phase 4A-4-4 迁移残留：配置面板底部出现两个相同的 "启动预测" 按钮。
 - 删除原内联按钮块，仅保留 `AnalysisConfigPanel` `footer` 中的按钮。
 - 纯 UI 修复，零业务逻辑影响。
+
+## Phase 4A-4-5: PathAnalysis Page Migration
+
+- `PathAnalysis.tsx` 迁移到分析模板组件体系。
+- 根布局替换为 `AnalysisPageShell`（标准标题区）。
+- 左侧配置面板替换为 `AnalysisConfigPanel`，分析按钮和"重新配置"按钮移至 footer。
+- 右侧结果区保留自定义 `Card` 结构（漏斗分析、路径分析、路径聚类、关键路径、序列模式），不强制套用 `AnalysisResultPanel` 以避免双层标题冗余。
+- 移除所有 `glass` 毛玻璃类（31 处）。
+- 移除可折叠配置面板行为（`showConfig` 状态、`ChevronUp`/`ChevronDown`）。
+- 布局从 `grid grid-cols-4` 切换为 `flex flex-col lg:flex-row gap-6`。
+- 所有业务逻辑（5 种分析类型切换、数据集加载、列选择、ECharts 图表渲染、`AssociationRuleGraph` 子组件、CSV/图表导出、API 调用）零改动。

@@ -6,8 +6,6 @@ import {
   ArrowRight,
   Play,
   Settings2,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   Share2,
   Download,
@@ -19,6 +17,10 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  AnalysisPageShell,
+  AnalysisConfigPanel,
+} from '@/components/analysis';
 import { DatasetSelector } from '@/components/DatasetSelector';
 import { DataTypeValidation } from '@/components/DataTypeValidation';
 import { analysisApi } from '@/api/analysis';
@@ -177,7 +179,6 @@ export function PathAnalysis() {
   
   // 结果
   const [result, setResult] = useState<any>(null);
-  const [showConfig, setShowConfig] = useState(true);
   
   // 图表引用
   const funnelChartRef = useRef<HTMLDivElement>(null);
@@ -770,35 +771,50 @@ export function PathAnalysis() {
   };
   
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(21, 27, 61, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-        <h1 className="text-heading-1 text-[var(--text-primary)]">
-          路径分析
-        </h1>
-        <p className="mt-1" style={{ color: '#94a3b8' }}>
-          分析用户行为路径，优化转化漏斗，发现关键路径模式
-        </p>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <AnalysisPageShell
+      title="路径分析"
+      description="分析用户行为路径，优化转化漏斗，发现关键路径模式"
+    >
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* 左侧配置面板 */}
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setShowConfig(!showConfig)}
-          >
-            <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
-                分析配置
-              </div>
-              {showConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </CardTitle>
-          </CardHeader>
-          
-          {showConfig && (
-            <CardContent className="space-y-4">
+        <AnalysisConfigPanel
+          title="分析配置"
+          icon={<Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />}
+          footer={
+            <>
+              <Button
+                className="w-full bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
+                onClick={handleAnalyze}
+                disabled={analyzing || !selectedDataset}
+              >
+                {analyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    分析中...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    开始分析
+                  </>
+                )}
+              </Button>
+              {result && (
+                <Button
+                  variant="outline"
+                  className="w-full border-[var(--border-subtle)]"
+                  onClick={() => {
+                    setResult(null);
+                    setFunnelSteps(['']);
+                  }}
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  重新配置
+                </Button>
+              )}
+            </>
+          }
+        >
               {/* 数据集选择 */}
               <div className="space-y-2">
                 <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
@@ -1377,45 +1393,12 @@ export function PathAnalysis() {
               )}
               
               {/* 分析按钮 */}
-              <Button
-                className="w-full bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
-                onClick={handleAnalyze}
-                disabled={analyzing || !selectedDataset}
-              >
-                {analyzing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    分析中...
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 mr-2" />
-                    开始分析
-                  </>
-                )}
-              </Button>
-              
-              {result && (
-                <Button
-                  variant="outline"
-                  className="w-full border-[var(--border-subtle)]"
-                  onClick={() => {
-                    setResult(null);
-                    setFunnelSteps(['']);
-                  }}
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  重新配置
-                </Button>
-              )}
-            </CardContent>
-          )}
-        </Card>
+        </AnalysisConfigPanel>
         
         {/* 右侧结果区 */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="flex-1 space-y-6 min-w-0">
           {!result && !analyzing && (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
+            <Card className="border-[var(--border-subtle)] h-96 flex items-center justify-center">
               <div className="text-center">
                 <Route className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
                 <p className="text-[var(--text-muted)]">配置分析参数并启动分析</p>
@@ -1427,7 +1410,7 @@ export function PathAnalysis() {
           )}
           
           {analyzing && (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
+            <Card className="border-[var(--border-subtle)] h-96 flex items-center justify-center">
               <div className="text-center">
                 <Loader2 className="w-12 h-12 animate-spin text-[var(--neon-cyan)] mx-auto mb-4" />
                 <p className="text-[var(--text-muted)]">正在分析路径数据...</p>
@@ -1456,7 +1439,7 @@ export function PathAnalysis() {
                 <>
                   {/* 概览卡片 */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">总用户数</p>
                         <p className="text-2xl font-bold text-[var(--neon-cyan)]">
@@ -1464,7 +1447,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">总体转化率</p>
                         <p className="text-2xl font-bold text-[var(--neon-green)]">
@@ -1472,7 +1455,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">步骤数</p>
                         <p className="text-2xl font-bold text-[var(--neon-purple)]">
@@ -1483,7 +1466,7 @@ export function PathAnalysis() {
                   </div>
                   
                   {/* 漏斗图 */}
-                  <Card className="glass border-[var(--border-subtle)]">
+                  <Card className="border-[var(--border-subtle)]">
                     <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                         <Filter className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -1505,7 +1488,7 @@ export function PathAnalysis() {
                   </Card>
                   
                   {/* 步骤详情表 */}
-                  <Card className="glass border-[var(--border-subtle)]">
+                  <Card className="border-[var(--border-subtle)]">
                     <CardHeader>
                       <CardTitle className="text-lg text-[var(--text-primary)]">
                         步骤详情
@@ -1555,7 +1538,7 @@ export function PathAnalysis() {
               {pathType === 'path' && result.top_paths && (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">总用户数</p>
                         <p className="text-2xl font-bold text-[var(--neon-cyan)]">
@@ -1563,7 +1546,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">不同路径数</p>
                         <p className="text-2xl font-bold text-[var(--neon-purple)]">
@@ -1571,7 +1554,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">最大路径长度</p>
                         <p className="text-2xl font-bold text-[var(--neon-orange)]">
@@ -1608,7 +1591,7 @@ export function PathAnalysis() {
                   
                   {/* 可视化切换 */}
                   {result.sankey_data?.nodes?.length > 0 && (
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                           <Share2 className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -1663,7 +1646,7 @@ export function PathAnalysis() {
                   )}
                   
                   {/* 热门路径 */}
-                  <Card className="glass border-[var(--border-subtle)]">
+                  <Card className="border-[var(--border-subtle)]">
                     <CardHeader>
                       <CardTitle className="text-lg text-[var(--text-primary)]">
                         热门路径 TOP 10
@@ -1700,7 +1683,7 @@ export function PathAnalysis() {
                   
                   {/* 节点详情 */}
                   {result.node_details && (
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardHeader>
                         <CardTitle className="text-lg text-[var(--text-primary)]">
                           节点访问统计
@@ -1740,7 +1723,7 @@ export function PathAnalysis() {
                 <>
                   {/* 统计概览 */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">用户旅程数</p>
                         <p className="text-2xl font-bold text-[var(--neon-cyan)]">
@@ -1748,7 +1731,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">平均序列长度</p>
                         <p className="text-2xl font-bold text-[var(--neon-purple)]">
@@ -1756,7 +1739,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">频繁模式数</p>
                         <p className="text-2xl font-bold text-[var(--neon-green)]">
@@ -1764,7 +1747,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">转化率</p>
                         <p className="text-2xl font-bold text-[var(--neon-orange)]">
@@ -1776,7 +1759,7 @@ export function PathAnalysis() {
                   
                   {/* 频繁序列模式 */}
                   {result.frequent_patterns && result.frequent_patterns.length > 0 && (
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardHeader>
                         <CardTitle className="text-lg text-[var(--text-primary)]">
                           频繁序列模式 TOP 20
@@ -1826,7 +1809,7 @@ export function PathAnalysis() {
                   
                   {/* 关联规则网络图 */}
                   {result.association_rules && result.association_rules.length > 0 && (
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardHeader>
                         <CardTitle className="text-lg text-[var(--text-primary)]">
                           关联规则网络图
@@ -1840,7 +1823,7 @@ export function PathAnalysis() {
                   
                   {/* 关联规则表格 */}
                   {result.association_rules && result.association_rules.length > 0 && (
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardHeader>
                         <CardTitle className="text-lg text-[var(--text-primary)]">
                           关联规则 TOP 15
@@ -1893,7 +1876,7 @@ export function PathAnalysis() {
                   
                   {/* 高转化模式 */}
                   {result.high_conversion_patterns && result.high_conversion_patterns.length > 0 && (
-                    <Card className="glass border-[var(--neon-green)]/30">
+                    <Card className="border-[var(--neon-green)]/30">
                       <CardHeader>
                         <CardTitle className="text-lg text-[var(--neon-green)]">
                           高转化序列模式
@@ -1935,7 +1918,7 @@ export function PathAnalysis() {
               {pathType === 'clustering' && result.clusters && (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">总用户数</p>
                         <p className="text-2xl font-bold text-[var(--neon-cyan)]">
@@ -1943,7 +1926,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">聚类数</p>
                         <p className="text-2xl font-bold text-[var(--neon-purple)]">
@@ -1954,7 +1937,7 @@ export function PathAnalysis() {
                   </div>
                   
                   {/* 保存结果按钮 */}
-                  <Card className="glass border-[var(--neon-cyan)]/50 bg-[var(--neon-cyan)]/5">
+                  <Card className="border-[var(--neon-cyan)]/50 bg-[var(--neon-cyan)]/5">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -2011,7 +1994,7 @@ export function PathAnalysis() {
                   {/* 聚类卡片 */}
                   <div className="grid grid-cols-1 gap-4">
                     {result.clusters.map((cluster: any) => (
-                      <Card key={cluster.cluster_id} className="glass border-[var(--border-subtle)]">
+                      <Card key={cluster.cluster_id} className="border-[var(--border-subtle)]">
                         <CardHeader>
                           <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
                             <span>用户群体 {cluster.cluster_id + 1}</span>
@@ -2079,7 +2062,7 @@ export function PathAnalysis() {
               {pathType === 'key_path' && result.complete_path_count !== undefined && (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">完整路径数</p>
                         <p className="text-2xl font-bold text-[var(--neon-cyan)]">
@@ -2087,7 +2070,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">平均步数</p>
                         <p className="text-2xl font-bold text-[var(--neon-purple)]">
@@ -2095,7 +2078,7 @@ export function PathAnalysis() {
                         </p>
                       </CardContent>
                     </Card>
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardContent className="p-4 text-center">
                         <p className="text-xs text-[var(--text-muted)]">平均耗时</p>
                         <p className="text-2xl font-bold text-[var(--neon-green)]">
@@ -2108,7 +2091,7 @@ export function PathAnalysis() {
                   {/* 最优路径 */}
                   {result.optimal_paths && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Card className="glass border-[var(--border-subtle)]">
+                      <Card className="border-[var(--border-subtle)]">
                         <CardHeader>
                           <CardTitle className="text-lg text-[var(--neon-green)]">
                             最短路径（步数最少）
@@ -2138,7 +2121,7 @@ export function PathAnalysis() {
                         </CardContent>
                       </Card>
                       
-                      <Card className="glass border-[var(--border-subtle)]">
+                      <Card className="border-[var(--border-subtle)]">
                         <CardHeader>
                           <CardTitle className="text-lg text-[var(--neon-cyan)]">
                             最快路径（耗时最短）
@@ -2172,7 +2155,7 @@ export function PathAnalysis() {
                   
                   {/* 常见路径 */}
                   {result.top_paths && result.top_paths.length > 0 && (
-                    <Card className="glass border-[var(--border-subtle)]">
+                    <Card className="border-[var(--border-subtle)]">
                       <CardHeader>
                         <CardTitle className="text-lg text-[var(--text-primary)]">
                           常见路径 TOP 10
@@ -2213,7 +2196,7 @@ export function PathAnalysis() {
           )}
         </div>
       </div>
-    </div>
+    </AnalysisPageShell>
   );
 }
 
