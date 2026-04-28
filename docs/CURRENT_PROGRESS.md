@@ -120,6 +120,20 @@ Upload CSV/Excel
   - 原生 `alert()` 替换为 `toast.error()` / `toast.success()`（重命名验证、下载失败、删除反馈）。
 - **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 14.96s，无空 `SelectItem value=""`。
 
+## Phase 4A-3-5: Dashboard 页面骨架与看板容器重构
+
+- **目标**: 将 Dashboard 页面迁移到共享组件体系，仅改动布局/UI，不改变图表业务逻辑。
+- **修改**:
+  - `Dashboard.tsx` 使用 `PageShell` + `PageHeader` + `StatCard` + `ChartCard` + `SectionCard` + `LoadingState` + `ErrorState` + `Empty` + `Dialog` 重构。
+  - 标题从英文 `"Dashboard"` 改为中文 `"看板"`。
+  - 概览统计卡片使用共享 `StatCard` 替代本地定义组件。
+  - 概览图表使用共享 `ChartCard` 替代手写 Card 包装。
+  - 底部快捷操作和最近活动使用 `SectionCard` 替代手写 Card。
+  - 自定义看板空状态使用 shadcn `<Empty>` 组件。
+  - WidgetSelector 弹窗使用 `<Dialog>` + `<DialogContent>` 替代手写 `fixed inset-0` 模态框。
+  - 移除本地 `StatCard` 组件定义。
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 13.14s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行

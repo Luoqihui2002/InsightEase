@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { companionService } from '@/services';
-import { 
-  TrendingUp, 
+import {
+  TrendingUp,
   Database,
   FileSpreadsheet,
   Activity,
@@ -9,7 +9,6 @@ import {
   PieChart,
   LineChart,
   Loader2,
-  AlertCircle,
   ArrowUpRight,
   Clock,
   LayoutDashboard,
@@ -27,17 +26,28 @@ import {
   Sparkles,
   BarChart2,
   CheckCircle2,
-  XCircle,
-  RefreshCw
+  XCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from '@/components/ui/empty';
 import { quickRequest } from '@/lib/request';
 import type { Dataset, Analysis } from '@/types/api';
 import gsap from 'gsap';
 import * as echarts from 'echarts';
 import { toast } from 'sonner';
+import { PageShell } from '@/components/layout/PageShell';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { SectionCard } from '@/components/layout/SectionCard';
+import { LoadingState } from '@/components/feedback/LoadingState';
+import { ErrorState } from '@/components/feedback/ErrorState';
+import { StatCard } from '@/components/data-display/StatCard';
+import { ChartCard } from '@/components/data-display/ChartCard';
 
 // ============ Types ============
 type DashboardView = 'overview' | 'custom';
@@ -137,7 +147,7 @@ export function Dashboard() {
   const [activeDashboardId, setActiveDashboardId] = useState<string>('');
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [editingLayout, setEditingLayout] = useState(false);
-  
+
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [savedVisualizations, setSavedVisualizations] = useState<SavedVisualization[]>([]);
@@ -168,7 +178,7 @@ export function Dashboard() {
         const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
           return Promise.race([
             promise,
-            new Promise<T>((_, reject) => 
+            new Promise<T>((_, reject) =>
               setTimeout(() => reject(new Error('请求超时')), timeoutMs)
             )
           ]);
@@ -186,7 +196,7 @@ export function Dashboard() {
             ]),
             5000
           );
-          
+
           const datasetsData = datasetsRes as any;
           const analysesData = analysesRes as any;
           datasetsItems = datasetsData.items || datasetsData.data?.items || [];
@@ -197,11 +207,11 @@ export function Dashboard() {
           localStorage.setItem('insightease_cached_analyses', JSON.stringify(analysesItems));
         } catch (fetchErr: any) {
           console.warn('API fetch failed or timed out:', fetchErr);
-          
+
           // Try to load from cache
           const cachedDatasets = localStorage.getItem('insightease_cached_datasets');
           const cachedAnalyses = localStorage.getItem('insightease_cached_analyses');
-          
+
           if (cachedDatasets || cachedAnalyses) {
             datasetsItems = cachedDatasets ? JSON.parse(cachedDatasets) : [];
             analysesItems = cachedAnalyses ? JSON.parse(cachedAnalyses) : [];
@@ -211,16 +221,16 @@ export function Dashboard() {
             throw new Error(fetchErr.message || '加载数据失败，且无缓存数据可用');
           }
         }
-        
+
         setDatasets(datasetsItems);
         setAnalyses(analysesItems.filter((a: Analysis) => a.status === 'completed'));
-        
+
         // Load saved visualizations from localStorage
         const savedViz = localStorage.getItem('insightease_visualizations');
         if (savedViz) {
           setSavedVisualizations(JSON.parse(savedViz));
         }
-        
+
         // Load custom dashboards from localStorage
         const saved = localStorage.getItem('insightease_dashboards');
         if (saved) {
@@ -271,7 +281,7 @@ export function Dashboard() {
         setLoadingSlow(false);
       }
     };
-    
+
     loadData();
   }, []);
 
@@ -315,9 +325,9 @@ export function Dashboard() {
 
   const addWidget = (item: Analysis | SavedVisualization, type: 'analysis' | 'visualization') => {
     if (!activeDashboard) return;
-    
+
     let newWidget: DashboardWidget;
-    
+
     if (type === 'analysis') {
       const analysis = item as Analysis;
       const dataset = datasets.find(d => d.id === analysis.dataset_id);
@@ -344,8 +354,8 @@ export function Dashboard() {
       };
     }
 
-    setCustomDashboards(prev => prev.map(d => 
-      d.id === activeDashboardId 
+    setCustomDashboards(prev => prev.map(d =>
+      d.id === activeDashboardId
         ? { ...d, widgets: [...d.widgets, newWidget] }
         : d
     ));
@@ -354,8 +364,8 @@ export function Dashboard() {
   };
 
   const removeWidget = (widgetId: string) => {
-    setCustomDashboards(prev => prev.map(d => 
-      d.id === activeDashboardId 
+    setCustomDashboards(prev => prev.map(d =>
+      d.id === activeDashboardId
         ? { ...d, widgets: d.widgets.filter(w => w.id !== widgetId) }
         : d
     ));
@@ -379,7 +389,7 @@ export function Dashboard() {
   // Render chart for widget
   const renderChart = useCallback((widget: DashboardWidget, container: HTMLDivElement | null) => {
     if (!container) return;
-    
+
     const oldInstance = chartInstancesRef.current.get(widget.id);
     if (oldInstance) oldInstance.dispose();
 
@@ -387,7 +397,7 @@ export function Dashboard() {
     chartInstancesRef.current.set(widget.id, instance);
 
     let option: echarts.EChartsOption;
-    
+
     if (widget.type === 'visualization' && widget.vizConfig && widget.vizData) {
       // 渲染可视化结果
       option = generateVizOption(widget.vizConfig, widget.vizData);
@@ -397,12 +407,12 @@ export function Dashboard() {
       if (!analysis?.result_data) return;
       option = generateChartOption(analysis.type, analysis.result_data);
     }
-    
+
     instance.setOption(option);
 
     const handleResize = () => instance.resize();
     window.addEventListener('resize', handleResize);
-    
+
     return () => window.removeEventListener('resize', handleResize);
   }, [analyses]);
 
@@ -440,7 +450,7 @@ export function Dashboard() {
         return baseClass;
     }
   };
-  
+
   // 获取混合布局下widget的高度
   const getWidgetHeight = (layoutType: LayoutType, index: number): string => {
     if (layoutType === 'mixed') {
@@ -508,10 +518,10 @@ export function Dashboard() {
   const exportSingleChart = (widgetId: string) => {
     const instance = chartInstancesRef.current.get(widgetId);
     if (!instance) return;
-    
+
     const url = instance.getDataURL({ type: 'png', pixelRatio: 2 });
     const widget = activeDashboard?.widgets.find(w => w.id === widgetId);
-    
+
     // 生成文件名：数据集_图表名称
     let filename: string;
     if (widget?.type === 'visualization') {
@@ -525,10 +535,10 @@ export function Dashboard() {
     } else {
       filename = widget?.title || 'chart';
     }
-    
+
     // 清理文件名中的非法字符
     filename = filename.replace(/[\\/:*?"<>|]/g, '_');
-    
+
     const link = document.createElement('a');
     link.download = `${filename}.png`;
     link.href = url;
@@ -549,72 +559,53 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--neon-cyan)]" />
-        <div className="text-center">
-          <p className="text-[var(--text-secondary)]">
-            {loadingSlow ? '加载较慢，请稍候...' : '加载中...'}
-          </p>
-          {loadingSlow && (
-            <p className="text-xs text-[var(--text-muted)] mt-1">
-              数据量较大或网络延迟
-            </p>
-          )}
-        </div>
-      </div>
+      <PageShell>
+        <LoadingState message={loadingSlow ? '加载较慢，请稍候...' : '加载中...'} className="h-64" />
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-[var(--neon-pink)] gap-4">
-        <AlertCircle className="w-12 h-12" />
-        <p>{error}</p>
-        <div className="flex gap-2">
-          <Button onClick={() => window.location.reload()} variant="outline" className="border-[var(--neon-pink)] text-[var(--neon-pink)]">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            重试
-          </Button>
-        </div>
-      </div>
+      <PageShell>
+        <ErrorState title="加载失败" message={error} onRetry={() => window.location.reload()} className="h-64" />
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-6" ref={containerRef}>
+    <PageShell ref={containerRef}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-heading-1 text-[var(--text-primary)]">Dashboard</h1>
-          <p className="text-[var(--text-secondary)] mt-1">数据概览与自定义看板</p>
-        </div>
-
-        {/* View Tabs */}
-        <div className="flex items-center gap-2 p-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-          <button
-            onClick={() => setCurrentView('overview')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              currentView === 'overview'
-                ? 'bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            概览
-          </button>
-          <button
-            onClick={() => setCurrentView('custom')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              currentView === 'custom'
-                ? 'bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <Grid3X3 className="w-4 h-4" />
-            自定义看板
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="看板"
+        subtitle="查看核心指标、图表组件和自定义数据看板。"
+        actions={
+          <div className="flex items-center gap-2 p-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+            <button
+              onClick={() => setCurrentView('overview')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                currentView === 'overview'
+                  ? 'bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              概览
+            </button>
+            <button
+              onClick={() => setCurrentView('custom')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                currentView === 'custom'
+                  ? 'bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <Grid3X3 className="w-4 h-4" />
+              自定义看板
+            </button>
+          </div>
+        }
+      />
 
       {/* Overview Dashboard */}
       {currentView === 'overview' && (
@@ -636,12 +627,12 @@ export function Dashboard() {
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
-              
+
               <Button size="sm" variant="ghost" onClick={createDashboard} className="text-[var(--neon-cyan)]">
                 <Plus className="w-4 h-4 mr-1" />
                 新建
               </Button>
-              
+
               {activeDashboard && customDashboards.length > 1 && (
                 <Button size="sm" variant="ghost" onClick={() => deleteDashboard(activeDashboardId)} className="text-[var(--neon-pink)]">
                   <Trash2 className="w-4 h-4 mr-1" />
@@ -657,8 +648,8 @@ export function Dashboard() {
                   value={activeDashboard.layoutType}
                   onChange={(e) => {
                     const newLayoutType = e.target.value as LayoutType;
-                    setCustomDashboards(prev => prev.map(d => 
-                      d.id === activeDashboardId 
+                    setCustomDashboards(prev => prev.map(d =>
+                      d.id === activeDashboardId
                         ? { ...d, layoutType: newLayoutType }
                         : d
                     ));
@@ -671,12 +662,12 @@ export function Dashboard() {
                   <option value="free">自由布局</option>
                 </select>
               )}
-              
+
               <Button size="sm" variant="outline" onClick={() => setEditingLayout(!editingLayout)} className={editingLayout ? 'border-[var(--neon-cyan)] text-[var(--neon-cyan)]' : ''}>
                 <Move className="w-4 h-4 mr-1" />
                 {editingLayout ? '完成' : '调整布局'}
               </Button>
-              
+
               <Button size="sm" onClick={() => setShowWidgetSelector(true)} className="bg-[var(--neon-cyan)] text-[var(--bg-primary)]">
                 <Plus className="w-4 h-4 mr-1" />
                 添加图表
@@ -699,22 +690,26 @@ export function Dashboard() {
           {activeDashboard && (
             <>
               {activeDashboard.widgets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 rounded-lg border-2 border-dashed border-[var(--border-subtle)]">
-                  <Grid3X3 className="w-16 h-16 text-[var(--text-muted)] mb-4" />
-                  <p className="text-[var(--text-secondary)] mb-2">看板为空</p>
-                  <p className="text-sm text-[var(--text-muted)] mb-4">添加图表来创建您的自定义看板</p>
+                <Empty className="py-20">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Grid3X3 className="text-[var(--text-muted)]" />
+                    </EmptyMedia>
+                    <EmptyTitle className="text-[var(--text-primary)]">看板为空</EmptyTitle>
+                    <EmptyDescription>添加图表来创建您的自定义看板</EmptyDescription>
+                  </EmptyHeader>
                   <Button onClick={() => setShowWidgetSelector(true)} className="bg-[var(--neon-cyan)] text-[var(--bg-primary)]">
                     <Plus className="w-4 h-4 mr-2" />
                     添加图表
                   </Button>
-                </div>
+                </Empty>
               ) : (
                 <div className={getLayoutClass(activeDashboard.layoutType)}>
                   {activeDashboard.widgets.map((widget, index) => (
-                    <div 
-                      key={widget.id} 
+                    <div
+                      key={widget.id}
                       className={getWidgetClass(activeDashboard.layoutType, index)}
-                      style={{ 
+                      style={{
                         animationDelay: `${index * 0.1}s`,
                         ...(activeDashboard.layoutType === 'free' ? {
                           gridColumn: widget.size.w > 1 ? `span ${widget.size.w}` : undefined,
@@ -729,16 +724,16 @@ export function Dashboard() {
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               {editingLayout && activeDashboard.layoutType === 'free' && (
                                 <>
-                                  <button 
-                                    onClick={() => resizeWidget(widget.id, 'enlarge')} 
-                                    className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--neon-cyan)] hover:bg-[var(--bg-tertiary)]" 
+                                  <button
+                                    onClick={() => resizeWidget(widget.id, 'enlarge')}
+                                    className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--neon-cyan)] hover:bg-[var(--bg-tertiary)]"
                                     title="放大"
                                   >
                                     <Plus className="w-3 h-3" />
                                   </button>
-                                  <button 
-                                    onClick={() => resizeWidget(widget.id, 'shrink')} 
-                                    className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--neon-orange)] hover:bg-[var(--bg-tertiary)]" 
+                                  <button
+                                    onClick={() => resizeWidget(widget.id, 'shrink')}
+                                    className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--neon-orange)] hover:bg-[var(--bg-tertiary)]"
                                     title="缩小"
                                   >
                                     <X className="w-3 h-3" />
@@ -756,14 +751,14 @@ export function Dashboard() {
                           <p className="text-xs text-[var(--text-muted)]">{typeLabels[widget.analysisType || ''] || widget.analysisType || '可视化'} · {widget.datasetName}</p>
                         </CardHeader>
                         <CardContent className="p-4 pt-0 flex-1">
-                          <div 
-                            ref={(el) => renderChart(widget, el)} 
-                            className="w-full h-full" 
-                            style={{ 
-                              height: activeDashboard.layoutType === 'free' && widget.size.h > 1 
-                                ? `${widget.size.h * 250}px` 
+                          <div
+                            ref={(el) => renderChart(widget, el)}
+                            className="w-full h-full"
+                            style={{
+                              height: activeDashboard.layoutType === 'free' && widget.size.h > 1
+                                ? `${widget.size.h * 250}px`
                                 : getWidgetHeight(activeDashboard.layoutType, index)
-                            }} 
+                            }}
                           />
                         </CardContent>
                       </Card>
@@ -776,18 +771,20 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Widget Selector Modal */}
-      {showWidgetSelector && (
-        <WidgetSelector 
-          analyses={analyses} 
-          datasets={datasets} 
-          visualizations={savedVisualizations}
-          onSelect={addWidget} 
-          onClose={() => setShowWidgetSelector(false)} 
-          onDeleteViz={deleteVisualization}
-        />
-      )}
-    </div>
+      {/* Widget Selector Dialog */}
+      <Dialog open={showWidgetSelector} onOpenChange={(open) => { if (!open) setShowWidgetSelector(false); }}>
+        <DialogContent className="max-w-3xl max-h-[80vh] p-0 flex flex-col gap-0 overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-subtle)]" showCloseButton={false}>
+          <WidgetSelector
+            analyses={analyses}
+            datasets={datasets}
+            visualizations={savedVisualizations}
+            onSelect={addWidget}
+            onClose={() => setShowWidgetSelector(false)}
+            onDeleteViz={deleteVisualization}
+          />
+        </DialogContent>
+      </Dialog>
+    </PageShell>
   );
 }
 
@@ -800,7 +797,7 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
   const trendChartRef = useRef<HTMLDivElement>(null);
   const typeChartRef = useRef<HTMLDivElement>(null);
   const bottomSectionRef = useRef<HTMLDivElement>(null);
-  
+
   const storageChartInstance = useRef<echarts.ECharts | null>(null);
   const trendChartInstance = useRef<echarts.ECharts | null>(null);
   const typeChartInstance = useRef<echarts.ECharts | null>(null);
@@ -809,7 +806,7 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
   const totalRows = datasets.reduce((acc, d) => acc + (d.row_count || 0), 0);
   const totalAnalyses = analyses.length;
   const completedAnalyses = analyses.filter(a => a.status === 'completed').length;
-  
+
   // 获取最近的活动（数据集和分析）
   const recentActivities = [
     ...datasets.slice(0, 3).map(d => ({ type: 'dataset' as const, name: d.filename, date: d.created_at, id: d.id })),
@@ -826,7 +823,7 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
         name: d.filename.length > 15 ? d.filename.substring(0, 15) + '...' : d.filename,
         value: d.file_size || 0
       }));
-      
+
       storageChartInstance.current.setOption({
         backgroundColor: 'transparent',
         tooltip: {
@@ -856,7 +853,7 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
         return d.toISOString().split('T')[0];
       });
       const dailyCounts = last7Days.map(date => analyses.filter(a => a.created_at?.startsWith(date)).length);
-      
+
       trendChartInstance.current.setOption({
         backgroundColor: 'transparent',
         tooltip: { trigger: 'axis', backgroundColor: COLORS.bgSecondary, borderColor: COLORS.cyan, textStyle: { color: COLORS.textPrimary } },
@@ -883,7 +880,7 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
       analyses.forEach(a => { typeCount[a.type] = (typeCount[a.type] || 0) + 1; });
       const types = Object.keys(typeCount);
       const counts = Object.values(typeCount);
-      
+
       typeChartInstance.current.setOption({
         backgroundColor: 'transparent',
         tooltip: { trigger: 'axis', backgroundColor: COLORS.bgSecondary, borderColor: COLORS.purple, textStyle: { color: COLORS.textPrimary } },
@@ -905,7 +902,7 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
       typeChartInstance.current?.resize();
     };
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       window.removeEventListener('resize', handleResize);
       storageChartInstance.current?.dispose();
@@ -927,40 +924,71 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
     <div className="space-y-6">
       {/* Stat Cards */}
       <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Database} label="数据集" value={totalDatasets} color="cyan" />
-        <StatCard icon={FileSpreadsheet} label="总数据行数" value={totalRows.toLocaleString()} color="purple" />
-        <StatCard icon={Activity} label="分析任务" value={totalAnalyses} color="green" />
-        <StatCard icon={Clock} label="已完成" value={completedAnalyses} color="pink" />
+        <StatCard
+          label="数据集"
+          value={totalDatasets}
+          icon={
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[var(--neon-cyan)] bg-[var(--neon-cyan)]/20">
+              <Database className="w-6 h-6" />
+            </div>
+          }
+        />
+        <StatCard
+          label="总数据行数"
+          value={totalRows.toLocaleString()}
+          icon={
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[var(--neon-purple)] bg-[var(--neon-purple)]/20">
+              <FileSpreadsheet className="w-6 h-6" />
+            </div>
+          }
+        />
+        <StatCard
+          label="分析任务"
+          value={totalAnalyses}
+          icon={
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[var(--neon-green)] bg-[var(--neon-green)]/20">
+              <Activity className="w-6 h-6" />
+            </div>
+          }
+        />
+        <StatCard
+          label="已完成"
+          value={completedAnalyses}
+          icon={
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-[var(--neon-pink)] bg-[var(--neon-pink)]/20">
+              <Clock className="w-6 h-6" />
+            </div>
+          }
+        />
       </div>
 
       {/* Charts */}
       <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="glass border-[var(--border-subtle)]">
-          <CardHeader><CardTitle className="text-base text-[var(--text-primary)]">存储分布</CardTitle></CardHeader>
-          <CardContent><div ref={storageChartRef} className="h-64" /></CardContent>
-        </Card>
-        <Card className="glass border-[var(--border-subtle)]">
-          <CardHeader><CardTitle className="text-base text-[var(--text-primary)]">分析趋势 (7天)</CardTitle></CardHeader>
-          <CardContent><div ref={trendChartRef} className="h-64" /></CardContent>
-        </Card>
-        <Card className="glass border-[var(--border-subtle)]">
-          <CardHeader><CardTitle className="text-base text-[var(--text-primary)]">分析类型分布</CardTitle></CardHeader>
-          <CardContent><div ref={typeChartRef} className="h-64" /></CardContent>
-        </Card>
+        <ChartCard title="存储分布" height="h-64">
+          <div ref={storageChartRef} className="h-full" />
+        </ChartCard>
+        <ChartCard title="分析趋势 (7天)" height="h-64">
+          <div ref={trendChartRef} className="h-full" />
+        </ChartCard>
+        <ChartCard title="分析类型分布" height="h-64">
+          <div ref={typeChartRef} className="h-full" />
+        </ChartCard>
       </div>
-      
+
       {/* Bottom Section: Quick Actions & Recent Activity */}
       <div ref={bottomSectionRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base text-[var(--text-primary)] flex items-center gap-2">
+        <SectionCard
+          title={
+            <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-[var(--neon-cyan)]" />
               快捷操作
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <button 
+            </div>
+          }
+          className="lg:col-span-1"
+        >
+          <div className="space-y-3">
+            <button
               onClick={() => navigate('/app/upload')}
               className="w-full flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-subtle)] hover:border-[var(--neon-cyan)]/50 transition-all text-left group"
             >
@@ -972,8 +1000,8 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
                 <p className="text-xs text-[var(--text-muted)]">导入 CSV / Excel 文件</p>
               </div>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => navigate('/app/smart-analysis')}
               className="w-full flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-subtle)] hover:border-[var(--neon-purple)]/50 transition-all text-left group"
             >
@@ -985,8 +1013,8 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
                 <p className="text-xs text-[var(--text-muted)]">AI 驱动的数据分析</p>
               </div>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => navigate('/app/visualization')}
               className="w-full flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-subtle)] hover:border-[var(--neon-green)]/50 transition-all text-left group"
             >
@@ -998,96 +1026,72 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
                 <p className="text-xs text-[var(--text-muted)]">创建图表和看板</p>
               </div>
             </button>
-          </CardContent>
-        </Card>
-        
+          </div>
+        </SectionCard>
+
         {/* Recent Activity */}
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base text-[var(--text-primary)] flex items-center gap-2">
+        <SectionCard
+          title={
+            <div className="flex items-center gap-2">
               <History className="w-4 h-4 text-[var(--neon-purple)]" />
               最近活动
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentActivities.length === 0 ? (
-              <div className="text-center py-8 text-[var(--text-muted)]">
-                <p>暂无活动记录</p>
-                <p className="text-sm mt-1">开始上传数据或创建分析</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentActivities.map((activity, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-tertiary)]">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        activity.type === 'dataset' 
-                          ? 'bg-[var(--neon-cyan)]/20' 
-                          : activity.status === 'completed'
-                          ? 'bg-[var(--neon-green)]/20'
-                          : activity.status === 'failed'
-                          ? 'bg-[var(--neon-pink)]/20'
-                          : 'bg-[var(--neon-orange)]/20'
-                      }`}>
-                        {activity.type === 'dataset' ? (
-                          <Database className="w-4 h-4 text-[var(--neon-cyan)]" />
-                        ) : activity.status === 'completed' ? (
-                          <CheckCircle2 className="w-4 h-4 text-[var(--neon-green)]" />
-                        ) : activity.status === 'failed' ? (
-                          <XCircle className="w-4 h-4 text-[var(--neon-pink)]" />
-                        ) : (
-                          <Loader2 className="w-4 h-4 text-[var(--neon-orange)] animate-spin" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[var(--text-primary)]">{activity.name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">
-                          {activity.type === 'dataset' ? '数据集' : '分析任务'} · {new Date(activity.date).toLocaleString('zh-CN')}
-                        </p>
-                      </div>
+            </div>
+          }
+          className="lg:col-span-2"
+        >
+          {recentActivities.length === 0 ? (
+            <Empty className="py-8">
+              <EmptyHeader>
+                <EmptyTitle className="text-[var(--text-primary)]">暂无活动记录</EmptyTitle>
+                <EmptyDescription>开始上传数据或创建分析</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <div className="space-y-3">
+              {recentActivities.map((activity, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-tertiary)]">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      activity.type === 'dataset'
+                        ? 'bg-[var(--neon-cyan)]/20'
+                        : activity.status === 'completed'
+                        ? 'bg-[var(--neon-green)]/20'
+                        : activity.status === 'failed'
+                        ? 'bg-[var(--neon-pink)]/20'
+                        : 'bg-[var(--neon-orange)]/20'
+                    }`}>
+                      {activity.type === 'dataset' ? (
+                        <Database className="w-4 h-4 text-[var(--neon-cyan)]" />
+                      ) : activity.status === 'completed' ? (
+                        <CheckCircle2 className="w-4 h-4 text-[var(--neon-green)]" />
+                      ) : activity.status === 'failed' ? (
+                        <XCircle className="w-4 h-4 text-[var(--neon-pink)]" />
+                      ) : (
+                        <Loader2 className="w-4 h-4 text-[var(--neon-orange)] animate-spin" />
+                      )}
                     </div>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={() => navigate(activity.type === 'dataset' ? '/app/datasets' : '/app/history')}
-                      className="text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
-                    >
-                      查看
-                    </Button>
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{activity.name}</p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {activity.type === 'dataset' ? '数据集' : '分析任务'} · {new Date(activity.date).toLocaleString('zh-CN')}
+                      </p>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => navigate(activity.type === 'dataset' ? '/app/datasets' : '/app/history')}
+                    className="text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
+                  >
+                    查看
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
       </div>
     </div>
-  );
-}
-
-// ============ Stat Card Component ============
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: 'cyan' | 'purple' | 'green' | 'pink' }) {
-  const colorMap = {
-    cyan: 'text-[var(--neon-cyan)] bg-[var(--neon-cyan)]/20',
-    purple: 'text-[var(--neon-purple)] bg-[var(--neon-purple)]/20',
-    green: 'text-[var(--neon-green)] bg-[var(--neon-green)]/20',
-    pink: 'text-[var(--neon-pink)] bg-[var(--neon-pink)]/20',
-  };
-  
-  return (
-    <Card className="glass border-[var(--border-subtle)]">
-      <CardContent className="p-6">
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorMap[color]}`}>
-            <Icon className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm text-[var(--text-muted)]">{label}</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mono">{value}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -1096,152 +1100,150 @@ function WidgetSelector({ analyses, datasets, visualizations, onSelect, onClose,
   const [activeTab, setActiveTab] = useState<'analysis' | 'visualization'>('analysis');
   const [filter, setFilter] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
-  
+
   const completedAnalyses = analyses.filter(a => a.status === 'completed');
   const analysisTypes = ['all', ...new Set(completedAnalyses.map(a => a.type))];
-  
+
   const filteredAnalyses = completedAnalyses.filter(a => {
     const matchesType = selectedType === 'all' || a.type === selectedType;
     const dataset = datasets.find(d => d.id === a.dataset_id);
     const matchesFilter = !filter || (typeLabels[a.type] || a.type).toLowerCase().includes(filter.toLowerCase()) || dataset?.filename.toLowerCase().includes(filter.toLowerCase());
     return matchesType && matchesFilter;
   });
-  
-  const filteredVisualizations = visualizations.filter(v => 
+
+  const filteredVisualizations = visualizations.filter(v =>
     !filter || v.name.toLowerCase().includes(filter.toLowerCase()) || v.datasetName.toLowerCase().includes(filter.toLowerCase())
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="w-full max-w-3xl max-h-[80vh] flex flex-col rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between p-6 border-b border-[var(--border-subtle)]">
-          <div>
-            <h2 className="text-xl font-bold text-[var(--text-primary)]">选择要展示的图表</h2>
-            <p className="text-sm text-[var(--text-muted)] mt-1">
-              {activeTab === 'analysis' ? `${completedAnalyses.length} 个分析结果` : `${visualizations.length} 个可视化结果`}
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></Button>
+    <>
+      <div className="flex items-center justify-between p-6 border-b border-[var(--border-subtle)]">
+        <div>
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">选择要展示的图表</h2>
+          <p className="text-sm text-[var(--text-muted)] mt-1">
+            {activeTab === 'analysis' ? `${completedAnalyses.length} 个分析结果` : `${visualizations.length} 个可视化结果`}
+          </p>
         </div>
-        
-        {/* Tab Switch */}
-        <div className="flex border-b border-[var(--border-subtle)]">
-          <button
-            onClick={() => setActiveTab('analysis')}
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${
-              activeTab === 'analysis'
-                ? 'text-[var(--neon-cyan)] border-b-2 border-[var(--neon-cyan)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4 inline mr-2" />
-            分析结果
-          </button>
-          <button
-            onClick={() => setActiveTab('visualization')}
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${
-              activeTab === 'visualization'
-                ? 'text-[var(--neon-cyan)] border-b-2 border-[var(--neon-cyan)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <PieChart className="w-4 h-4 inline mr-2" />
-            可视化结果
-          </button>
-        </div>
+        <Button variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></Button>
+      </div>
 
-        <div className="p-4 border-b border-[var(--border-subtle)] space-y-3">
-          <input 
-            type="text" 
-            placeholder={activeTab === 'analysis' ? "搜索分析或数据集..." : "搜索可视化..."} 
-            value={filter} 
-            onChange={(e) => setFilter(e.target.value)} 
-            className="w-full px-4 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]" 
-          />
-          {activeTab === 'analysis' && (
-            <div className="flex flex-wrap gap-2">
-              {analysisTypes.map(type => (
-                <button key={type} onClick={() => setSelectedType(type)} className={`px-3 py-1 rounded-full text-xs transition-all ${selectedType === type ? 'bg-[var(--neon-cyan)] text-[var(--bg-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}>
-                  {type === 'all' ? '全部' : (typeLabels[type] || type)}
-                </button>
+      {/* Tab Switch */}
+      <div className="flex border-b border-[var(--border-subtle)]">
+        <button
+          onClick={() => setActiveTab('analysis')}
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${
+            activeTab === 'analysis'
+              ? 'text-[var(--neon-cyan)] border-b-2 border-[var(--neon-cyan)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4 inline mr-2" />
+          分析结果
+        </button>
+        <button
+          onClick={() => setActiveTab('visualization')}
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${
+            activeTab === 'visualization'
+              ? 'text-[var(--neon-cyan)] border-b-2 border-[var(--neon-cyan)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          <PieChart className="w-4 h-4 inline mr-2" />
+          可视化结果
+        </button>
+      </div>
+
+      <div className="p-4 border-b border-[var(--border-subtle)] space-y-3">
+        <input
+          type="text"
+          placeholder={activeTab === 'analysis' ? "搜索分析或数据集..." : "搜索可视化..."}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="w-full px-4 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+        />
+        {activeTab === 'analysis' && (
+          <div className="flex flex-wrap gap-2">
+            {analysisTypes.map(type => (
+              <button key={type} onClick={() => setSelectedType(type)} className={`px-3 py-1 rounded-full text-xs transition-all ${selectedType === type ? 'bg-[var(--neon-cyan)] text-[var(--bg-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}>
+                {type === 'all' ? '全部' : (typeLabels[type] || type)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {activeTab === 'analysis' ? (
+          filteredAnalyses.length === 0 ? (
+            <div className="text-center py-12 text-[var(--text-muted)]"><p>没有找到匹配的分析结果</p></div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredAnalyses.map(analysis => {
+                const Icon = typeIcons[analysis.type] || BarChart3;
+                const dataset = datasets.find(d => d.id === analysis.dataset_id);
+                return (
+                  <button key={analysis.id} onClick={() => onSelect(analysis, 'analysis')} className="flex items-start gap-3 p-4 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/20 flex items-center justify-center flex-shrink-0"><Icon className="w-5 h-5 text-[var(--neon-cyan)]" /></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-[var(--text-primary)]">{typeLabels[analysis.type] || analysis.type}</p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">{dataset?.filename || '未知数据集'}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">{new Date(analysis.created_at).toLocaleDateString('zh-CN')}</p>
+                    </div>
+                    <Plus className="w-4 h-4 text-[var(--neon-green)] flex-shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          filteredVisualizations.length === 0 ? (
+            <div className="text-center py-12 text-[var(--text-muted)]">
+              <p>暂无保存的可视化结果</p>
+              <p className="text-sm mt-2">在「可视化分析」页面创建并保存图表</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredVisualizations.map(viz => (
+                <div key={viz.id} className="flex items-start gap-3 p-4 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] group">
+                  <button
+                    onClick={() => onSelect(viz, 'visualization')}
+                    className="flex items-start gap-3 flex-1 text-left"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-[var(--neon-purple)]/20 flex items-center justify-center flex-shrink-0"><PieChart className="w-5 h-5 text-[var(--neon-purple)]" /></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-[var(--text-primary)]">{viz.name}</p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">{viz.datasetName}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">{new Date(viz.createdAt).toLocaleDateString('zh-CN')}</p>
+                    </div>
+                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => onSelect(viz, 'visualization')}
+                      className="p-2 rounded-lg text-[var(--neon-green)] hover:bg-[var(--neon-green)]/20 transition-colors"
+                      title="添加到看板"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    {onDeleteViz && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteViz(viz.id);
+                        }}
+                        className="p-2 rounded-lg text-[var(--neon-pink)] hover:bg-[var(--neon-pink)]/20 transition-colors opacity-0 group-hover:opacity-100"
+                        title="删除"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
-          )}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4">
-          {activeTab === 'analysis' ? (
-            filteredAnalyses.length === 0 ? (
-              <div className="text-center py-12 text-[var(--text-muted)]"><p>没有找到匹配的分析结果</p></div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredAnalyses.map(analysis => {
-                  const Icon = typeIcons[analysis.type] || BarChart3;
-                  const dataset = datasets.find(d => d.id === analysis.dataset_id);
-                  return (
-                    <button key={analysis.id} onClick={() => onSelect(analysis, 'analysis')} className="flex items-start gap-3 p-4 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left">
-                      <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/20 flex items-center justify-center flex-shrink-0"><Icon className="w-5 h-5 text-[var(--neon-cyan)]" /></div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[var(--text-primary)]">{typeLabels[analysis.type] || analysis.type}</p>
-                        <p className="text-xs text-[var(--text-muted)] truncate">{dataset?.filename || '未知数据集'}</p>
-                        <p className="text-[10px] text-[var(--text-muted)] mt-1">{new Date(analysis.created_at).toLocaleDateString('zh-CN')}</p>
-                      </div>
-                      <Plus className="w-4 h-4 text-[var(--neon-green)] flex-shrink-0" />
-                    </button>
-                  );
-                })}
-              </div>
-            )
-          ) : (
-            filteredVisualizations.length === 0 ? (
-              <div className="text-center py-12 text-[var(--text-muted)]">
-                <p>暂无保存的可视化结果</p>
-                <p className="text-sm mt-2">在「可视化分析」页面创建并保存图表</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredVisualizations.map(viz => (
-                  <div key={viz.id} className="flex items-start gap-3 p-4 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] group">
-                    <button 
-                      onClick={() => onSelect(viz, 'visualization')} 
-                      className="flex items-start gap-3 flex-1 text-left"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-[var(--neon-purple)]/20 flex items-center justify-center flex-shrink-0"><PieChart className="w-5 h-5 text-[var(--neon-purple)]" /></div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[var(--text-primary)]">{viz.name}</p>
-                        <p className="text-xs text-[var(--text-muted)] truncate">{viz.datasetName}</p>
-                        <p className="text-[10px] text-[var(--text-muted)] mt-1">{new Date(viz.createdAt).toLocaleDateString('zh-CN')}</p>
-                      </div>
-                    </button>
-                    <div className="flex flex-col gap-2">
-                      <button 
-                        onClick={() => onSelect(viz, 'visualization')}
-                        className="p-2 rounded-lg text-[var(--neon-green)] hover:bg-[var(--neon-green)]/20 transition-colors"
-                        title="添加到看板"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                      {onDeleteViz && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteViz(viz.id);
-                          }}
-                          className="p-2 rounded-lg text-[var(--neon-pink)] hover:bg-[var(--neon-pink)]/20 transition-colors opacity-0 group-hover:opacity-100"
-                          title="删除"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-        </div>
+          )
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -1395,37 +1397,37 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
   const chartType = config.type || 'bar';
   const xField = config.xAxis;
   const yField = config.yAxis;
-  
+
   // Process data based on chart type
   switch (chartType) {
     case 'bar':
     case 'line':
       return {
         ...baseOption,
-        xAxis: { 
-          type: 'category', 
-          data: data.map((d: any) => d[xField]), 
-          axisLine: { lineStyle: { color: COLORS.borderSubtle } }, 
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 } 
+        xAxis: {
+          type: 'category',
+          data: data.map((d: any) => d[xField]),
+          axisLine: { lineStyle: { color: COLORS.borderSubtle } },
+          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
         },
-        yAxis: { 
-          type: 'value', 
-          axisLine: { show: false }, 
-          splitLine: { lineStyle: { color: COLORS.borderSubtle } }, 
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 } 
+        yAxis: {
+          type: 'value',
+          axisLine: { show: false },
+          splitLine: { lineStyle: { color: COLORS.borderSubtle } },
+          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
         },
         series: [{
           type: chartType,
           data: data.map((d: any) => d[yField]),
-          itemStyle: { 
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: COLORS.cyan }, { offset: 1, color: 'rgba(0, 245, 255, 0.3)' }]), 
-            borderRadius: [4, 4, 0, 0] 
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: COLORS.cyan }, { offset: 1, color: 'rgba(0, 245, 255, 0.3)' }]),
+            borderRadius: [4, 4, 0, 0]
           },
           lineStyle: { color: COLORS.cyan, width: 2 },
           areaStyle: chartType === 'line' ? { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 245, 255, 0.3)' }, { offset: 1, color: 'rgba(0, 245, 255, 0)' }]) } : undefined
         }]
       };
-      
+
     case 'pie':
       // Aggregate data for pie chart
       const pieData: Record<string, number> = {};
@@ -1442,29 +1444,29 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
           center: ['50%', '50%'],
           itemStyle: { borderRadius: 8, borderColor: COLORS.bgPrimary, borderWidth: 2 },
           label: { color: COLORS.textSecondary, fontSize: 10 },
-          data: Object.entries(pieData).map(([name, value], i) => ({ 
-            name, 
-            value, 
-            itemStyle: { color: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.pink, COLORS.orange, COLORS.yellow, COLORS.indigo, COLORS.blue][i % 8] } 
+          data: Object.entries(pieData).map(([name, value], i) => ({
+            name,
+            value,
+            itemStyle: { color: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.pink, COLORS.orange, COLORS.yellow, COLORS.indigo, COLORS.blue][i % 8] }
           }))
         }]
       };
-      
+
     case 'scatter':
       return {
         ...baseOption,
         tooltip: { trigger: 'item' },
-        xAxis: { 
-          type: 'value', 
-          axisLine: { lineStyle: { color: COLORS.borderSubtle } }, 
-          splitLine: { lineStyle: { color: COLORS.borderSubtle } }, 
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 } 
+        xAxis: {
+          type: 'value',
+          axisLine: { lineStyle: { color: COLORS.borderSubtle } },
+          splitLine: { lineStyle: { color: COLORS.borderSubtle } },
+          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
         },
-        yAxis: { 
-          type: 'value', 
-          axisLine: { lineStyle: { color: COLORS.borderSubtle } }, 
-          splitLine: { lineStyle: { color: COLORS.borderSubtle } }, 
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 } 
+        yAxis: {
+          type: 'value',
+          axisLine: { lineStyle: { color: COLORS.borderSubtle } },
+          splitLine: { lineStyle: { color: COLORS.borderSubtle } },
+          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
         },
         series: [{
           type: 'scatter',
@@ -1473,7 +1475,7 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
           itemStyle: { color: COLORS.cyan }
         }]
       };
-      
+
     case 'histogram':
       // For histogram, use yField values
       const values = data.map((d: any) => parseFloat(d[yField]) || 0);
@@ -1488,35 +1490,35 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
       });
       return {
         ...baseOption,
-        xAxis: { 
-          type: 'category', 
-          data: histogram.map((_, i) => `${(min + i * step).toFixed(1)}-${(min + (i + 1) * step).toFixed(1)}`), 
-          axisLine: { lineStyle: { color: COLORS.borderSubtle } }, 
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 } 
+        xAxis: {
+          type: 'category',
+          data: histogram.map((_, i) => `${(min + i * step).toFixed(1)}-${(min + (i + 1) * step).toFixed(1)}`),
+          axisLine: { lineStyle: { color: COLORS.borderSubtle } },
+          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
         },
-        yAxis: { 
-          type: 'value', 
-          axisLine: { show: false }, 
-          splitLine: { lineStyle: { color: COLORS.borderSubtle } }, 
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 } 
+        yAxis: {
+          type: 'value',
+          axisLine: { show: false },
+          splitLine: { lineStyle: { color: COLORS.borderSubtle } },
+          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
         },
         series: [{
           type: 'bar',
           data: histogram,
-          itemStyle: { 
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: COLORS.purple }, { offset: 1, color: 'rgba(184, 41, 247, 0.3)' }]), 
-            borderRadius: [4, 4, 0, 0] 
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: COLORS.purple }, { offset: 1, color: 'rgba(184, 41, 247, 0.3)' }]),
+            borderRadius: [4, 4, 0, 0]
           }
         }]
       };
-      
+
     default:
-      return { 
-        ...baseOption, 
-        title: { show: true, text: '不支持的图表类型', left: 'center', textStyle: { color: COLORS.textMuted, fontSize: 14 } }, 
-        xAxis: { type: 'category', data: [], show: false }, 
-        yAxis: { type: 'value', show: false }, 
-        series: [{ type: 'bar', data: [] }] 
+      return {
+        ...baseOption,
+        title: { show: true, text: '不支持的图表类型', left: 'center', textStyle: { color: COLORS.textMuted, fontSize: 14 } },
+        xAxis: { type: 'category', data: [], show: false },
+        yAxis: { type: 'value', show: false },
+        series: [{ type: 'bar', data: [] }]
       };
   }
 }

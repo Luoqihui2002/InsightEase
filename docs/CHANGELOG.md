@@ -107,3 +107,14 @@
 - 表格密度优化为 `py-3 px-3`。
 - 标题国际化：`Datasets` -> `数据集`。
 - 业务逻辑（API 调用、删除、重命名、下载、预览）零改动。
+
+## Phase 4A-3-5: Dashboard 页面迁移
+
+- `Dashboard.tsx` 使用共享组件体系重构页面骨架（PageShell, PageHeader, StatCard, ChartCard, SectionCard, LoadingState, ErrorState, Empty, Dialog）。
+- 概览统计卡片使用共享 `StatCard` 替代本地组件。
+- 概览图表使用共享 `ChartCard` 替代手写 Card 包装。
+- 底部快捷操作和最近活动使用 `SectionCard` 替代手写 Card。
+- 自定义看板空状态替换为 shadcn `<Empty>` 组件。
+- WidgetSelector 弹窗替换为 `<Dialog>` + `<DialogContent>`。
+- 标题国际化：`Dashboard` -> `看板`。
+- 图表业务逻辑、ECharts 配置、gsap 动画、看板状态管理零改动。

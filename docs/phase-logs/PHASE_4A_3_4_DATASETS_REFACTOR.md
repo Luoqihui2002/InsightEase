@@ -1,7 +1,9 @@
 # Phase 4A-3-4: Datasets 页面骨架与交互一致性重构
 
 **日期**: 2026-04-28
-**Commit**: `待填写`
+**Commit**: `02022fe`
+**Commit Message**: `refactor: migrate datasets page to shared layout components`
+**Push Result**: `master -> master` ✅
 **标签**: `refactor: migrate datasets page to shared layout components`
 
 ---
@@ -164,24 +166,30 @@ if (!confirm(`确定要删除选中的 ${selectedRows.size} 个数据集吗？`)
 
 请在浏览器中打开 `http://localhost:5175/datasets` 确认：
 
-- [ ] Datasets 页面正常打开，无错误边界
-- [ ] 页面标题为中文 `数据集`
-- [ ] 数据集列表正常渲染
-- [ ] 搜索/过滤正常工作
-- [ ] 展开行预览正常显示（DataTablePreview）
-- [ ] 详情弹窗正常打开/关闭，大小合适
-- [ ] 重命名正常工作
-- [ ] 单条删除触发 AlertDialog，确认后删除成功
-- [ ] 批量删除触发 AlertDialog，确认后删除成功
-- [ ] 下载正常工作
-- [ ] "去上传数据"按钮可正常跳转 Upload 页面
-- [ ] Console 无新报错
+- [x] Datasets 页面正常打开，无错误边界
+- [x] 页面标题为中文 `数据集`
+- [x] 数据集列表正常渲染
+- [x] 搜索/过滤正常工作
+- [x] 展开行预览正常显示（DataTablePreview）
+- [x] 详情弹窗正常打开/关闭，大小合适
+- [ ] 重命名正常工作 — **失败**（见下方已知问题）
+- [x] 单条删除触发 AlertDialog，确认后删除成功
+- [x] 批量删除触发 AlertDialog，确认后删除成功
+- [x] 下载正常工作
+- [x] "去上传数据"按钮可正常跳转 Upload 页面
+- [x] Console 无新报错
+
+**手动验证摘要**：
+UI/layout 重构项均验证通过。重命名功能因后端 API 返回 405 失败，属后端/前端契约不匹配，非本阶段 UI 回归问题。
 
 ---
 
 ## 7. Known Issues / TODO
 
-- **无已知问题。**
+- Dataset rename currently fails because the frontend sends `PATCH /api/v1/datasets/{dataset_id}`, but the backend returns `405 Method Not Allowed`.
+- This appears to be a backend API / frontend contract mismatch, not a UI layout regression.
+- Track for later backend/API cleanup phase.
+- This issue does not block continuing Phase 4A frontend layout refactors.
 
 ---
 
