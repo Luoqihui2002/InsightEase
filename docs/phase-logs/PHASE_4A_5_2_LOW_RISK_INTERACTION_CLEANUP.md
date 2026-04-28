@@ -110,11 +110,11 @@ git commit -m "refactor: migrate low-risk selects and switches to shadcn"
 
 ### Commit Hash
 
-`TBD`
+`8fad47e`
 
 ### Push Result
 
-`TBD`
+`master` → `origin/master` ✅
 
 ---
 
