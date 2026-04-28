@@ -134,6 +134,23 @@ Upload CSV/Excel
   - 移除本地 `StatCard` 组件定义。
 - **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 13.14s，无空 `SelectItem value=""`。
 
+## Phase 4A-3-6: Visualization 页面骨架与图表容器重构
+
+- **目标**: 将 Visualization 页面迁移到共享组件体系，统一配置面板和图表容器体验。
+- **修改**:
+  - `Visualization.tsx` 使用 `PageShell` + `PageHeader` + `SidePanel` + `ResultPanel` + `ChartCard` + `SectionCard` + `LoadingState` + `Empty` 重构。
+  - 根布局从手写 `space-y-6` div 替换为 `PageShell`。
+  - 标题区使用 `PageHeader`，标题为中文 `"可视化分析"`。
+  - 左侧配置面板使用 `SidePanel`（移动端 `w-full`，桌面端固定 `384px`）。
+  - 右侧图表区域使用 `ResultPanel` + `ChartCard`。
+  - 空状态使用 shadcn `<Empty>` 组件替代手写 div（未选数据集、字段未配置）。
+  - 数据加载状态使用 `<LoadingState>` 替代手写 spinner。
+  - 底部智能推荐和字段概览使用 `SectionCard` 替代 `Card className="glass"`。
+  - 按钮层级调整：`保存到看板` 改为 `variant="default"`（主操作），`下载图表` 保持 `variant="outline"`（次操作）。
+  - 图表类型选择网格增加响应式：`grid-cols-3` → `grid-cols-2 sm:grid-cols-3`。
+  - 移除未使用的 `Palette` 导入和 `Card` 组件导入。
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 13.30s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行

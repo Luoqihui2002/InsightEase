@@ -118,3 +118,15 @@
 - WidgetSelector 弹窗替换为 `<Dialog>` + `<DialogContent>`。
 - 标题国际化：`Dashboard` -> `看板`。
 - 图表业务逻辑、ECharts 配置、gsap 动画、看板状态管理零改动。
+
+## Phase 4A-3-6: Visualization 页面迁移
+
+- `Visualization.tsx` 使用共享组件体系重构页面骨架（PageShell, PageHeader, SidePanel, ResultPanel, ChartCard, SectionCard, LoadingState, Empty）。
+- 左侧配置面板替换为 `SidePanel`，右侧图表区域替换为 `ResultPanel` + `ChartCard`。
+- 空状态替换为 shadcn `<Empty>` 组件（未选数据集、字段未配置）。
+- 数据加载状态替换为 `<LoadingState>`。
+- 底部推荐和字段概览替换为 `SectionCard`。
+- 按钮层级调整：`保存到看板` 为主操作，`下载图表` 为次操作。
+- 图表类型网格增加响应式：`grid-cols-2 sm:grid-cols-3`。
+- 标题国际化：`Visualization` -> `可视化分析`。
+- 图表业务逻辑、ECharts 配置、字段推断、智能推荐、聚类分析零改动。
