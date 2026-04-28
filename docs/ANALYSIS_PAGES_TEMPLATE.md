@@ -147,7 +147,7 @@ Built on `SidePanel` (or `SectionCard` if not a side panel).
 
 ### 3.3 `AnalysisResultPanel`
 
-Replaces the right `Card` in the 2-col grid.
+Replaces the right `Card` in the 2-col grid. **Must be generic** — do not assume every result is a chart.
 
 ```tsx
 interface AnalysisResultPanelProps {
@@ -164,7 +164,14 @@ interface AnalysisResultPanelProps {
 }
 ```
 
-Built on `ResultPanel` + `ChartCard`.
+**Supported content types**:
+- ECharts chart (via `ChartCard` when appropriate)
+- Data table (via `DataTablePreview`)
+- JSON / structured result (plain render)
+- File download result (download button + metadata)
+- Empty / loading / polling states (built-in)
+
+Built on `ResultPanel`. Uses `ChartCard` **only when the result is actually a chart** — pages with table, JSON, or download results should render children directly without forcing `ChartCard`.
 
 ### 3.4 `AnalysisActionBar`
 
@@ -237,16 +244,17 @@ interface AnalysisPollingOverlayProps {
 
 ## 5. Recommended Refactor Order
 
-Follow **risk-ascending order** to build confidence and validate components incrementally:
+Follow **risk-ascending order** to build confidence and validate components incrementally.
 
-1. **Phase 4A-4-1**: Semantic + Clustering (Low risk, validate template components)
-2. **Phase 4A-4-2**: Statistics + Attribution (Medium risk, validate `AnalysisResultSummary`, ECharts integration)
-3. **Phase 4A-4-3**: SmartProcess + GoalPlanner (Medium risk, validate file download, custom layouts)
-4. **Phase 4A-4-4**: Forecast (High risk, validate complex config panels)
-5. **Phase 4A-4-5**: PathAnalysis (High risk, validate multi-type selector + sub-components)
-6. **Phase 4A-5**: SmartAnalysis (Dedicated wizard refactor, outside this template)
+**Scope boundary**: Phase 4A-4 migrations are **layout/template-only**. Native `<select>` and other interaction controls stay as-is until Phase 4A-5.
 
-**Parallel track**: Build the 7 template components in Phase 4A-4-0 before touching any page.
+1. **Phase 4A-4-0**: Build 7 template components (shared infra first)
+2. **Phase 4A-4-1**: Semantic + Clustering (Low risk, validate template components)
+3. **Phase 4A-4-2**: Statistics + Attribution (Medium risk, validate `AnalysisResultSummary`, ECharts integration)
+4. **Phase 4A-4-3**: SmartProcess + GoalPlanner (Medium risk, validate file download, custom layouts)
+5. **Phase 4A-4-4**: Forecast (High risk, validate complex config panels)
+6. **Phase 4A-4-5**: PathAnalysis (High risk, validate multi-type selector + sub-components)
+7. **Phase 4A-5**: SmartAnalysis (Dedicated wizard refactor, outside this template) + interaction control replacement (native `<select>` → shadcn `Select`, etc.)
 
 ---
 
@@ -270,7 +278,7 @@ Follow **risk-ascending order** to build confidence and validate components incr
 - Handwritten export button groups → `AnalysisActionBar`
 - Handwritten empty states → `AnalysisEmptyState` (built on shadcn `<Empty>`)
 - Handwritten `fixed inset-0` modals → shadcn `Dialog`
-- Native `<select>` → shadcn `Select` (Phase 4A-5)
+- Native `<select>` → shadcn `Select` (Phase 4A-5 **only** — do not mix into Phase 4A-4 layout migrations)
 
 ### 6.3 Build Gate
 
@@ -304,6 +312,7 @@ app/src/components/analysis/
 ├── AnalysisActionBar.tsx
 ├── AnalysisEmptyState.tsx
 ├── AnalysisResultSummary.tsx
+├── AnalysisPollingOverlay.tsx
 └── index.ts
 ```
 
