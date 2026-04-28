@@ -157,6 +157,18 @@ Upload CSV/Excel
 - **修复**: 为旋钮显式添加 `left-0.5`，disabled 状态改为 `translate-x-0`，enabled 状态保持 `translate-x-5`。
 - **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 14.38s。
 
+## Phase 4A-3-7: Analysis Pages Template Audit
+
+- **目标**: 审计所有分析功能页面，识别共同布局模式，设计统一页面模板。
+- **范围**: 审计 9 个分析页面（Semantic, Clustering, Statistics, Attribution, SmartProcess, GoalPlanner, Forecast, PathAnalysis, SmartAnalysis）。
+- **产出**:
+  - `docs/ANALYSIS_PAGES_TEMPLATE.md` — 统一模板设计文档
+  - `docs/phase-logs/PHASE_4A_3_7_ANALYSIS_PAGES_TEMPLATE_AUDIT.md` — 阶段日志
+- **关键发现**: 所有页面共享同一 2-col 骨架（配置面板 + 结果面板），仅 SmartAnalysis 为向导模式。
+- **风险排序**: Low (Semantic, Clustering) → Medium (Statistics, Attribution, SmartProcess, GoalPlanner) → High (Forecast, PathAnalysis, SmartAnalysis)。
+- **设计组件**: 7 个分析专用共享组件（AnalysisPageShell, AnalysisConfigPanel, AnalysisResultPanel, AnalysisActionBar, AnalysisEmptyState, AnalysisResultSummary, AnalysisPollingOverlay）。
+- **验证**: 本阶段为纯设计，未修改代码。
+
 ## 下一步建议
 
 ### 立即执行

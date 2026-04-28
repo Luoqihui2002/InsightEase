@@ -130,3 +130,11 @@
 - 图表类型网格增加响应式：`grid-cols-2 sm:grid-cols-3`。
 - 标题国际化：`Visualization` -> `可视化分析`。
 - 图表业务逻辑、ECharts 配置、字段推断、智能推荐、聚类分析零改动。
+
+## Phase 4A-3-7: Analysis Pages Template Audit
+
+- 审计 9 个分析页面，识别统一布局模式（标题栏 → 数据集选择器 → 2-col 网格 → 底部区块）。
+- 设计 7 个分析专用共享组件（AnalysisPageShell, AnalysisConfigPanel, AnalysisResultPanel, AnalysisActionBar, AnalysisEmptyState, AnalysisResultSummary, AnalysisPollingOverlay）。
+- 制定按风险升序的页面迁移计划：Low (Semantic, Clustering) → Medium (Statistics, Attribution, SmartProcess, GoalPlanner) → High (Forecast, PathAnalysis, SmartAnalysis)。
+- SmartAnalysis 为向导模式，不套用标准 2-col 模板，计划 Phase 4A-5 独立重构。
+- 产出 `docs/ANALYSIS_PAGES_TEMPLATE.md` 和阶段日志。本阶段未修改代码。
