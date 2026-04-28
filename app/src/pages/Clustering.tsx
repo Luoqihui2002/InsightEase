@@ -3,16 +3,10 @@ import { companionService } from '@/services';
 import { 
   Users, 
   Play, 
-  Settings2, 
-  Download,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
-  Rotate3D,
   Loader2,
   BarChart3
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { DatasetSelector } from '@/components/DatasetSelector';
@@ -22,6 +16,12 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import {
+  AnalysisPageShell,
+  AnalysisConfigPanel,
+  AnalysisResultPanel,
+  AnalysisActionBar,
+} from '@/components/analysis';
 
 interface ColumnInfo {
   name: string;
@@ -36,7 +36,6 @@ export function Clustering() {
     companionService.setPage('clustering');
   }, []);
 
-  const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [kValue, setKValue] = useState(3);
@@ -192,130 +191,21 @@ export function Clustering() {
     setTimeout(checkResult, 1000);
   };
 
+  const canRun = selectedDataset && numericColumns.filter(c => c.selected).length >= 2;
+
   return (
-    <div className="space-y-6">
-      <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: 'rgba(21, 27, 61, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-        <h1 className="text-heading-1 text-[var(--text-primary)]">
-          聚类分析
-        </h1>
-        <p className="mt-1" style={{ color: '#94a3b8' }}>
-          使用 K-Means 算法对数据进行分群，发现数据中的潜在模式
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setIsConfigOpen(!isConfigOpen)}
-          >
-            <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
-                分析配置
-              </div>
-              {isConfigOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </CardTitle>
-          </CardHeader>
-          
-          {isConfigOpen && (
-            <CardContent className="space-y-4">
-              {/* 数据集选择 */}
-              <div className="space-y-2">
-                <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
-                <DatasetSelector 
-                  value={selectedDataset}
-                  onChange={setSelectedDataset}
-                />
-                {datasetInfo && (
-                  <p className="text-xs text-[var(--neon-cyan)]">
-                    {datasetInfo.row_count?.toLocaleString()} 行 · {datasetInfo.col_count} 列
-                  </p>
-                )}
-              </div>
-
-              {/* 数据类型验证提示 */}
-              {allColumns.length > 0 && (
-                <DataTypeValidation 
-                  columns={allColumns} 
-                  analysisType="clustering_analysis" 
-                />
-              )}
-
-              {/* 数值型列选择 */}
-              {numericColumns.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm text-[var(--text-muted)]">
-                    选择特征列 (至少2个)
-                  </label>
-                  <div className="max-h-40 overflow-y-auto space-y-1 p-2 rounded"
-                    style={{ backgroundColor: 'var(--bg-secondary)' }}
-                  >
-                    {numericColumns.map((col, index) => (
-                      <label 
-                        key={col.name}
-                        className="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={col.selected}
-                          onChange={() => toggleColumn(index)}
-                          className="w-4 h-4 rounded"
-                          style={{ accentColor: 'var(--neon-cyan)' }}
-                        />
-                        <span className="text-sm text-[var(--text-primary)]">{col.name}</span>
-                        <span className="text-xs text-[var(--text-muted)]">({col.dtype})</span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    已选择 {numericColumns.filter(c => c.selected).length} 个列
-                  </p>
-                </div>
-              )}
-
-              {numericColumns.length === 0 && selectedDataset && (
-                <div className="p-3 rounded text-sm text-[var(--neon-orange)]"
-                  style={{ backgroundColor: 'rgba(255, 170, 0, 0.1)' }}
-                >
-                  该数据集没有数值型列，无法进行聚类分析
-                </div>
-              )}
-
-              {/* K值选择 */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <label className="text-sm text-[var(--text-muted)]">聚类数量 (K)</label>
-                  <span className="text-sm text-[var(--neon-cyan)] mono">{kValue}</span>
-                </div>
-                <Slider
-                  value={[kValue]}
-                  onValueChange={(value) => setKValue(value[0])}
-                  min={2}
-                  max={10}
-                  step={1}
-                  className="w-full"
-                />
-                <p className="text-xs text-[var(--text-muted)]">
-                  建议: 2-5 个聚类通常效果最好
-                </p>
-              </div>
-
-              {/* 分析按钮 */}
-              <button
+    <AnalysisPageShell
+      title="聚类分析"
+      description="使用 K-Means 算法对数据进行分群，发现数据中的潜在模式"
+    >
+      <div className="flex flex-col lg:flex-row gap-6">
+        <AnalysisConfigPanel
+          footer={
+            <>
+              <Button
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || !selectedDataset || numericColumns.filter(c => c.selected).length < 2}
-                className="w-full font-medium py-2 px-4 rounded transition-all flex items-center justify-center"
-                style={{
-                  backgroundColor: selectedDataset && numericColumns.filter(c => c.selected).length >= 2 
-                    ? 'var(--neon-cyan)' : 'var(--bg-tertiary)',
-                  color: selectedDataset && numericColumns.filter(c => c.selected).length >= 2 
-                    ? 'var(--bg-primary)' : 'var(--text-muted)',
-                  cursor: selectedDataset && numericColumns.filter(c => c.selected).length >= 2 
-                    ? 'pointer' : 'not-allowed',
-                  border: 'none',
-                  opacity: selectedDataset && numericColumns.filter(c => c.selected).length >= 2 ? 1 : 0.5
-                }}
+                disabled={isAnalyzing || !canRun}
+                className="w-full"
               >
                 {isAnalyzing ? (
                   <>
@@ -328,102 +218,168 @@ export function Clustering() {
                     启动聚类
                   </>
                 )}
-              </button>
-
+              </Button>
               {isAnalyzing && (
                 <p className="text-xs text-center text-[var(--text-muted)]">
                   正在进行聚类分析，请稍候...
                 </p>
               )}
-            </CardContent>
-          )}
-        </Card>
+            </>
+          }
+        >
+          {/* 数据集选择 */}
+          <div className="space-y-2">
+            <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
+            <DatasetSelector 
+              value={selectedDataset}
+              onChange={setSelectedDataset}
+            />
+            {datasetInfo && (
+              <p className="text-xs text-[var(--neon-cyan)]">
+                {datasetInfo.row_count?.toLocaleString()} 行 · {datasetInfo.col_count} 列
+              </p>
+            )}
+          </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          {!showResult ? (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
-              <div className="text-center">
-                <Rotate3D className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
-                <p className="text-[var(--text-muted)]">选择数据集和特征列并启动分析</p>
-                <p className="text-xs text-[var(--text-muted)] mt-2">聚类结果将在此显示</p>
+          {/* 数据类型验证提示 */}
+          {allColumns.length > 0 && (
+            <DataTypeValidation 
+              columns={allColumns} 
+              analysisType="clustering_analysis" 
+            />
+          )}
+
+          {/* 数值型列选择 */}
+          {numericColumns.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm text-[var(--text-muted)]">
+                选择特征列 (至少2个)
+              </label>
+              <div className="max-h-40 overflow-y-auto space-y-1 p-2 rounded"
+                style={{ backgroundColor: 'var(--bg-secondary)' }}
+              >
+                {numericColumns.map((col, index) => (
+                  <label 
+                    key={col.name}
+                    className="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-[var(--bg-tertiary)]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={col.selected}
+                      onChange={() => toggleColumn(index)}
+                      className="w-4 h-4 rounded"
+                      style={{ accentColor: 'var(--neon-cyan)' }}
+                    />
+                    <span className="text-sm text-[var(--text-primary)]">{col.name}</span>
+                    <span className="text-xs text-[var(--text-muted)]">({col.dtype})</span>
+                  </label>
+                ))}
               </div>
-            </Card>
-          ) : (
+              <p className="text-xs text-[var(--text-muted)]">
+                已选择 {numericColumns.filter(c => c.selected).length} 个列
+              </p>
+            </div>
+          )}
+
+          {numericColumns.length === 0 && selectedDataset && (
+            <div className="p-3 rounded text-sm text-[var(--neon-orange)]"
+              style={{ backgroundColor: 'rgba(255, 170, 0, 0.1)' }}
+            >
+              该数据集没有数值型列，无法进行聚类分析
+            </div>
+          )}
+
+          {/* K值选择 */}
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm text-[var(--text-muted)]">聚类数量 (K)</label>
+              <span className="text-sm text-[var(--neon-cyan)] mono">{kValue}</span>
+            </div>
+            <Slider
+              value={[kValue]}
+              onValueChange={(value) => setKValue(value[0])}
+              min={2}
+              max={10}
+              step={1}
+              className="w-full"
+            />
+            <p className="text-xs text-[var(--text-muted)]">
+              建议: 2-5 个聚类通常效果最好
+            </p>
+          </div>
+        </AnalysisConfigPanel>
+
+        <AnalysisResultPanel
+          loading={isAnalyzing && !showResult}
+          loadingMessage="正在分析数据，请稍候..."
+          empty={!showResult && !isAnalyzing}
+          emptyTitle="选择数据集和特征列并启动分析"
+          emptyDescription="聚类结果将在此显示"
+          actions={showResult ? (
+            <AnalysisActionBar onDownload={() => toast.info('导出功能开发中')} />
+          ) : undefined}
+        >
+          {showResult && (
             <div ref={resultRef} className="space-y-6">
               {/* 聚类结果 */}
-              <Card className="glass border-[var(--border-subtle)]">
-                <CardHeader>
-                  <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
-                    <Users className="w-5 h-5 text-[var(--neon-cyan)]" />
-                    聚类结果
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {analysisResult?.descriptive?.column_stats ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {analysisResult.descriptive.column_stats.slice(0, kValue * 2).map((col: any, index: number) => (
-                        <div 
-                          key={index}
-                          className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-[var(--text-primary)]">{col.name}</span>
-                            <span className="text-xs text-[var(--neon-cyan)]">{col.dtype}</span>
+              <div>
+                <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)] mb-4">
+                  <Users className="w-5 h-5 text-[var(--neon-cyan)]" />
+                  聚类结果
+                </div>
+                {analysisResult?.descriptive?.column_stats ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {analysisResult.descriptive.column_stats.slice(0, kValue * 2).map((col: any, index: number) => (
+                      <div 
+                        key={index}
+                        className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-[var(--text-primary)]">{col.name}</span>
+                          <span className="text-xs text-[var(--neon-cyan)]">{col.dtype}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="text-[var(--text-muted)]">均值: </span>
+                            <span className="text-[var(--neon-cyan)]">{col.mean?.toFixed(2)}</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="text-[var(--text-muted)]">均值: </span>
-                              <span className="text-[var(--neon-cyan)]">{col.mean?.toFixed(2)}</span>
-                            </div>
-                            <div>
-                              <span className="text-[var(--text-muted)]">标准差: </span>
-                              <span className="text-[var(--neon-cyan)]">{col.std?.toFixed(2)}</span>
-                            </div>
+                          <div>
+                            <span className="text-[var(--text-muted)]">标准差: </span>
+                            <span className="text-[var(--neon-cyan)]">{col.std?.toFixed(2)}</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-[var(--text-muted)]">
-                      <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                      <p>聚类分析已完成</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-[var(--text-muted)]">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p>聚类分析已完成</p>
+                  </div>
+                )}
+              </div>
 
               {analysisResult?.ai_summary && (
-                <Card className="glass border-[var(--neon-cyan)]/30">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
+                <div className="rounded-xl border border-[var(--neon-cyan)]/30 bg-[var(--bg-secondary)] overflow-hidden">
+                  <div className="p-4 border-b border-[var(--border-subtle)]">
+                    <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
                       <Sparkles className="w-5 h-5 text-[var(--neon-cyan)]" />
                       AI 智能解读
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                    </div>
+                  </div>
+                  <div className="p-4">
                     <div className="p-4 rounded-lg bg-gradient-to-r from-[var(--neon-purple)]/10 to-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/30">
                       <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">
                         {analysisResult.ai_summary}
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
-
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline"
-                  className="flex-1 border-[var(--neon-cyan)] text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/10"
-                  onClick={() => toast.info('导出功能开发中')}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  导出结果
-                </Button>
-              </div>
             </div>
           )}
-        </div>
+        </AnalysisResultPanel>
       </div>
-    </div>
+    </AnalysisPageShell>
   );
 }

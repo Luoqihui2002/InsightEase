@@ -150,3 +150,13 @@
 - `AnalysisResultSummary`: 基于 `ContentGrid` + `StatCard`，数值摘要卡片网格（2/3/4 列）。
 - `AnalysisPollingOverlay`: 轮询状态指示器，支持 pending/running/completed/failed + 可选进度条。
 - 零页面修改、零后端修改、零新依赖。`tsc --noEmit` 0 errors，`npm run build` 成功。
+
+## Phase 4A-4-1: Semantic + Clustering Pages Migration
+
+- `Semantic.tsx` 和 `Clustering.tsx` 迁移到分析模板组件体系。
+- 根布局替换为 `AnalysisPageShell`（标准标题区）。
+- 左侧配置面板替换为 `AnalysisConfigPanel`（基于 `SidePanel`），分析按钮移至 footer。
+- 右侧结果面板替换为 `AnalysisResultPanel`（基于 `ResultPanel`），支持 loading/empty/result 状态自动切换。
+- 导出按钮替换为 `AnalysisActionBar`。
+- 所有业务逻辑（数据集选择、特征列选择、K 值、API 调用、轮询、gsap 动画）零改动。
+- 零原生 `<select>` 替换。无 `SelectItem value=""`。

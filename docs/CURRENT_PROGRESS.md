@@ -200,6 +200,33 @@ Upload CSV/Excel
   - `npm run build` — built in 19.87s ✅
   - SelectItem empty value grep — no output ✅
 
+## Phase 4A-4-1: Semantic + Clustering Pages Migration
+
+- **目标**: 将两个低风险分析页面迁移到分析模板组件体系，验证模板组件在真实页面中的可用性。
+- **修改文件**:
+  - `app/src/pages/Semantic.tsx`
+  - `app/src/pages/Clustering.tsx`
+- **Semantic 变更**:
+  - 根布局从手写 `<div className="space-y-6">` + 标题栏替换为 `AnalysisPageShell`。
+  - 左侧配置 Card 替换为 `AnalysisConfigPanel`，分析按钮移至 footer。
+  - 右侧结果 Card 替换为 `AnalysisResultPanel`，支持 loading/empty/result 状态切换。
+  - 导出按钮替换为 `AnalysisActionBar`（`onExportJSON`）。
+  - 移除未使用的 `Settings2`、`ChevronDown`、`ChevronUp`、`Card` / `CardHeader` / `CardTitle` / `CardContent`、`Download` 导入。
+- **Clustering 变更**:
+  - 根布局从手写 `<div className="space-y-6">` + 标题栏替换为 `AnalysisPageShell`。
+  - 左侧配置 Card 替换为 `AnalysisConfigPanel`，分析按钮移至 footer。
+  - 右侧结果 Card 替换为 `AnalysisResultPanel`，支持 loading/empty/result 状态切换。
+  - 导出按钮替换为 `AnalysisActionBar`（`onDownload` 占位）。
+  - 移除未使用的 `Settings2`、`ChevronDown`、`ChevronUp`、`Card` / `CardHeader` / `CardTitle` / `CardContent`、`Rotate3D` 导入。
+- **约束遵守**:
+  - 所有业务逻辑（数据集选择、列选择、K 值、API 调用、轮询、gsap 动画）零改动。
+  - 零原生 `<select>` 替换（留在 Phase 4A-5）。
+  - 无 `SelectItem value=""`。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 19.65s ✅
+  - SelectItem empty value grep — no output ✅
+
 ## 下一步建议
 
 ### 立即执行
