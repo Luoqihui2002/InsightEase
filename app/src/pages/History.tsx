@@ -20,14 +20,11 @@ import {
   FileSpreadsheet,
   FileText,
   ChevronDown,
-  ChevronUp,
-  Copy,
-  Check
+  ChevronUp
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { analysisApi } from '@/api/analysis';
-import { datasetApi } from '@/api/datasets';
 import { quickRequest } from '@/lib/request';
 import type { Analysis, Dataset } from '@/types/api';
 import gsap from 'gsap';
@@ -333,7 +330,7 @@ export function History() {
       dataSheet = result.data;
     } else {
       // 将对象转换为表格
-      dataSheet = Object.entries(result).map(([k, v]) => ({ key: k, value: JSON.stringify(v) }));
+      dataSheet = Object.entries(result).map(([k, v]) => [k, JSON.stringify(v)]);
     }
     
     const ws1 = XLSX.utils.json_to_sheet(dataSheet);

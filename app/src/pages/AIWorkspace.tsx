@@ -12,15 +12,15 @@ import {
   X, Send, Sparkles, BarChart3, TrendingUp, 
   Users, Target, Lightbulb, GitBranch,
   ChevronDown, ChevronUp, Database, MessageSquare,
-  Loader2, LayoutTemplate, Columns2, Rows2,
-  History, Trash2, PanelRightClose
+  Loader2, Columns2, Rows2,
+  History, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KimiAvatar } from '@/components/KimiAvatar';
 import { AnalysisResultRenderer } from '@/components/AnalysisResultRenderer';
-import { aiApi } from '@/api/ai';
 import { datasetApi } from '@/api';
+import type { DatasetPreview } from '@/types/api';
 import { intentRecognitionService, type AnalysisType } from '@/services/intent-recognition.service';
 import { analysisExecutionService, type AnalysisResult as ExecutionResult } from '@/services/analysis-execution.service';
 
@@ -131,10 +131,11 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       // 所以 res 直接就是 { code: 200, data: { items: [...] } }
       let items: Dataset[] = [];
       
-      if (res?.code === 200 && res.data?.items) {
-        items = res.data.items;
-      } else if (res?.code === 200 && Array.isArray(res.data)) {
-        items = res.data;
+      const response = res as unknown as { code?: number; data?: { items?: Dataset[] } | Dataset[] };
+      if (response?.code === 200 && response.data && 'items' in response.data && Array.isArray(response.data.items)) {
+        items = response.data.items;
+      } else if (response?.code === 200 && Array.isArray(response.data)) {
+        items = response.data;
       }
       
       console.log('解析后的数据集:', items);
@@ -271,7 +272,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
     try {
       // 1. AI 意图识别
-      const currentDataset = datasets.find(d => d?.id === selectedDataset);
       const datasetSchemas = datasets
         .filter(d => d && d.id)
         .map(d => ({
@@ -281,6 +281,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           columns: (d.schema || []).map((col: any) => ({
             name: col?.name || '',
             type: col?.type || 'other',
+            dtype: col?.dtype || col?.type || 'other',
+            unique_count: col?.unique_count || 0,
+            sample_values: col?.sample_values || [],
           }))
         }));
 
@@ -290,7 +293,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       );
 
       // 2. 数据验证
-      if (intent.type === 'unknown') {
+      if ((intent.type as string) === 'unknown') {
         addMessage({
           role: 'assistant',
           content: `抱歉，我没太理解你的需求。\n\n你可以这样描述：\n• "统计销售额的平均值和标准差"\n• "预测下个月的业绩"\n• "看一下相关性热力图"`,
@@ -309,17 +312,17 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         type: 'analysis'
       });
 
-      const result = await analysisExecutionService.executeByIntent(
+      await analysisExecutionService.executeByIntent(
         intent,
         {
           datasetId: selectedDataset,
           onProgress: (status, progress) => {
-            setAnalysisProgress({ status, progress });
+            setAnalysisProgress({ status, progress: progress ?? 0 });
           },
           onSuccess: (analysisResult) => {
             setAnalysisResult(analysisResult);
             setShowResult(true);
-            
+
             updateLastMessage({
               content: `${intent.description}完成！\n\n${analysisResult.summary || ''}`,
               isStreaming: false,
@@ -329,7 +332,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           },
           onError: (error) => {
             updateLastMessage({
-              content: `分析失败：${error.message}`,
+              content: `分析失败：${error}`,
               isStreaming: false,
               type: 'error'
             });
@@ -351,26 +354,26 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   };
 
   // 普通对话（不走分析流程）
-  const handleGeneralChat = async (prompt: string) => {
-    addMessage({ role: 'assistant', content: '', isStreaming: true, type: 'text' });
+  // const handleGeneralChat = async (prompt: string) => {
+  //   addMessage({ role: 'assistant', content: '', isStreaming: true, type: 'text' });
 
-    // 构建上下文
-    const history = messages
-      .filter(m => m.role !== 'assistant' || !m.isStreaming)
-      .slice(-6)
-      .map(m => ({
-        role: m.role,
-        content: m.content
-      }));
+  //   // 构建上下文
+  //   const history = messages
+  //     .filter(m => m.role !== 'assistant' || !m.isStreaming)
+  //     .slice(-6)
+  //     .map(m => ({
+  //       role: m.role,
+  //       content: m.content
+  //     }));
 
-    await aiApi.chatStream(prompt, (_chunk, text) => {
-      updateLastMessage({ content: text });
-    }, {
-      history,
-      onFinish: () => updateLastMessage({ isStreaming: false }),
-      onError: (err) => updateLastMessage({ content: `抱歉：${err}`, isStreaming: false, type: 'error' }),
-    });
-  };
+  //   await aiApi.chatStream(prompt, (_chunk, text) => {
+  //     updateLastMessage({ content: text });
+  //   }, {
+  //     history,
+  //     onFinish: () => updateLastMessage({ isStreaming: false }),
+  //     onError: (err) => updateLastMessage({ content: `抱歉：${err}`, isStreaming: false, type: 'error' }),
+  //   });
+  // };
 
   // 添加消息
   const addMessage = (msg: Partial<Message>) => {
@@ -461,8 +464,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       
       // 注意：拦截器已经解包了 response.data
       let responseData = null;
-      if (res?.code === 200 && res.data) {
-        responseData = res.data;
+      const response = res as unknown as { code?: number; data?: DatasetPreview };
+      if (response?.code === 200 && response.data) {
+        responseData = response.data;
       }
       
       if (responseData) {

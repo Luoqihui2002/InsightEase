@@ -266,7 +266,7 @@ function ChartRenderer({ config }: { config: any }) {
               dataKey="value"
               nameKey="name"
             >
-              {normalizedData.map((entry, index) => (
+              {normalizedData.map((_entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>

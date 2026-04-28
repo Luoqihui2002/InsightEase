@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Database,
   Upload,
@@ -28,22 +28,18 @@ import {
   SeparatorHorizontal,
   Combine,
   Calendar,
-  HardDrive,
-  Zap,
   AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { datasetApi } from '@/api/datasets';
+import { workshopApi } from '@/api/workshop';
 import type { Dataset } from '@/types/api';
+import type { TransformPreview, TransformResult, WorkshopOperation } from '@/types/workshop';
+import { mapDataWorkshopOperationsToBackend } from '@/utils/workshop-adapter';
 
-// Phase 2.1: 安全模式导入
-import { EngineIndicator } from '@/components/SecurityBadge';
 import { companionService } from '@/services';
-import { localStorageService } from '@/legacy/browser-processing/local-storage.service';
-import { engineSelector } from '@/legacy/browser-processing/engine-selector';
-import type { EngineDecision } from '@/legacy/browser-processing/engine-selector';
 
 // 操作类型
 type OperationType = 
@@ -73,25 +69,7 @@ interface DataTable {
   columns: string[];
   data: any[];
   rowCount: number;
-}
-
-// JOIN操作配置
-interface JoinConfig {
-  leftTable: string;
-  rightTable: string;
-  joinType: 'inner' | 'left' | 'right' | 'full';
-  leftKey: string;
-  rightKey: string;
-}
-
-// 筛选操作配置
-interface FilterConfig {
-  conditions: {
-    column: string;
-    operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'startswith' | 'endswith';
-    value: string;
-  }[];
-  logic: 'and' | 'or';
+  backendDatasetId?: string; // Phase 3D: 关联后端数据集ID
 }
 
 // 列处理操作配置
@@ -128,36 +106,6 @@ interface ReshapeConfig {
   values?: string;              // 值列
 }
 
-// 数据透视配置
-interface PivotConfig {
-  rows: string[];               // 行维度
-  columns: string[];            // 列维度
-  values: {                     // 值字段
-    column: string;
-    aggregation: 'sum' | 'avg' | 'count' | 'max' | 'min' | 'first' | 'last';
-  }[];
-  // 可选：过滤条件
-  filters?: { column: string; operator: string; value: any }[];
-}
-
-// 衍生计算配置
-interface DeriveConfig {
-  newColumn: string;            // 新列名
-  formula: string;              // 公式表达式
-  // 支持的运算符: +, -, *, /, %, //, **
-  // 支持的函数: UPPER, LOWER, TRIM, LEN, SUBSTR, REPLACE, CONCAT
-  //            DATE, YEAR, MONTH, DAY, DATEDIFF
-  //            IF, AND, OR, NOT
-}
-
-// 随机抽样配置
-interface SampleConfig {
-  method: 'count' | 'percentage';  // 抽样方式
-  count?: number;                  // 指定数量
-  percentage?: number;             // 指定百分比 (0-100)
-  seed?: number;                   // 随机种子（可选，保证可重复）
-}
-
 // 操作类型定义
 const OPERATION_TYPES: { type: OperationType; name: string; icon: any; desc: string }[] = [
   { type: 'join', name: 'JOIN合并', icon: GitMerge, desc: '基于共同键合并多个表' },
@@ -178,21 +126,23 @@ export function DataWorkshop() {
   const [tables, setTables] = useState<DataTable[]>([]);
   const [activeTableId, setActiveTableId] = useState<string>('');
   
-  // Phase 2.1: 本地数据集
-  const [localDatasets, setLocalDatasets] = useState<Array<{ id: string; name: string; rowCount: number; createdAt: string }>>([]);
-  const [showLocalDatasets, setShowLocalDatasets] = useState(false);
-  const [storageStats, setStorageStats] = useState<{ usedSpace: string; compressionRatio: string } | null>(null);
-  
   // 操作链
   const [operations, setOperations] = useState<Operation[]>([]);
   const [showAddOperation, setShowAddOperation] = useState(false);
-  
-  // Phase 2.1: 引擎决策显示
-  const [engineDecision, setEngineDecision] = useState<EngineDecision | null>(null);
-  
+
   // 预览
   const [previewData, setPreviewData] = useState<DataTable | null>(null);
-  
+
+  // Phase 3D: 当前活跃的后端数据集ID（用于 transform preview API）
+  const [activeBackendDatasetId, setActiveBackendDatasetId] = useState<string | null>(null);
+
+  // Phase 3D-3: 保存为新数据集状态
+  const [isSavingTransform, setIsSavingTransform] = useState(false);
+  const [lastPreviewBackendOps, setLastPreviewBackendOps] = useState<WorkshopOperation[] | null>(null);
+  const [lastPreviewDatasetId, setLastPreviewDatasetId] = useState<string | null>(null);
+  const [lastPreviewOperationsJson, setLastPreviewOperationsJson] = useState<string | null>(null);
+  const [saveResult, setSaveResult] = useState<TransformResult | null>(null);
+
   // Datasets 相关
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [showDatasetSelector, setShowDatasetSelector] = useState(false);
@@ -212,33 +162,12 @@ export function DataWorkshop() {
     }
   }, []);
   
-  // Phase 2.1: 加载本地数据集列表
-  const loadLocalDatasets = useCallback(async () => {
-    try {
-      const metadata = await localStorageService.listDatasets();
-      setLocalDatasets(metadata.map(m => ({
-        id: m.id,
-        name: m.name,
-        rowCount: m.rowCount,
-        createdAt: m.createdAt,
-      })));
-      
-      // 加载存储统计
-      const stats = await localStorageService.getStatus();
-      const ratio = await localStorageService.getCompressionRatio();
-      setStorageStats({
-        usedSpace: localStorageService.formatStorageSize(stats.usedSpace),
-        compressionRatio: ratio,
-      });
-    } catch (error) {
-      console.error('加载本地数据集失败:', error);
-    }
-  }, []);
-  
-  useEffect(() => {
-    loadLocalDatasets();
-  }, [loadLocalDatasets]);
-  
+  /*
+  // Phase 2.1 (Legacy): 本地数据集 helpers — 已隐藏，主路径改用后端 Dataset API
+  const loadLocalDatasets = useCallback(async () => { ... });
+  useEffect(() => { loadLocalDatasets(); }, [loadLocalDatasets]);
+  */
+
   // AI Companion: 页面加载时通知
   useEffect(() => {
     companionService.setPage('workshop');
@@ -257,16 +186,11 @@ export function DataWorkshop() {
     }
   }, [tables, activeTableId]);
   
-  // Phase 2.1: 更新引擎决策
+  // Phase 3D: 切换活跃表时同步后端数据集ID
   useEffect(() => {
     const activeTable = tables.find(t => t.id === activeTableId);
-    if (activeTable && operations.length > 0) {
-      const decision = engineSelector.chooseForChain(activeTable, operations);
-      setEngineDecision(decision);
-    } else {
-      setEngineDecision(null);
-    }
-  }, [tables, activeTableId, operations]);
+    setActiveBackendDatasetId(activeTable?.backendDatasetId || null);
+  }, [activeTableId, tables]);
   
 
 
@@ -302,7 +226,8 @@ export function DataWorkshop() {
         fileName: dataset.filename,
         columns: previewData.columns || Object.keys(previewData.data[0]),
         data: previewData.data,
-        rowCount: previewData.total_rows || previewData.data.length
+        rowCount: previewData.total_rows || previewData.data.length,
+        backendDatasetId: dataset.id,
       };
       
       setTables(prev => [...prev, newTable]);
@@ -375,14 +300,6 @@ export function DataWorkshop() {
             setActiveTableId(newTable.id);
           }
           
-          // Phase 2.1: 同时保存到 IndexedDB
-          localStorageService.importDataset(file).then(() => {
-            loadLocalDatasets(); // 刷新列表
-            toast.success(`已导入 ${file.name} (${parsedData.length} 行) 并保存到本地`);
-          }).catch(() => {
-            toast.success(`已导入 ${file.name} (${parsedData.length} 行)`);
-          });
-          
           // AI Companion: 记录上传动作，触发引导
           companionService.recordAction('upload', {
             rowCount: parsedData.length,
@@ -411,41 +328,11 @@ export function DataWorkshop() {
     }
   };
   
-  // Phase 2.1: 从本地 IndexedDB 加载数据集
-  const loadFromLocalStorage = useCallback(async (datasetId: string) => {
-    try {
-      const table = await localStorageService.loadDataset(datasetId);
-      if (!table) {
-        toast.error('本地数据集不存在');
-        return;
-      }
-      
-      // 检查是否已加载
-      if (tables.some(t => t.id === table.id)) {
-        toast.info('该数据集已加载');
-        setActiveTableId(table.id);
-        return;
-      }
-      
-      setTables(prev => [...prev, table]);
-      setActiveTableId(table.id);
-      setShowLocalDatasets(false);
-      toast.success(`已加载本地数据集 "${table.name}" (${table.rowCount} 行)`);
-    } catch (error) {
-      toast.error('加载本地数据集失败');
-    }
-  }, [tables]);
-  
-  // Phase 2.1: 删除本地数据集
-  const deleteLocalDataset = useCallback(async (datasetId: string) => {
-    try {
-      await localStorageService.deleteDataset(datasetId);
-      loadLocalDatasets();
-      toast.success('本地数据集已删除');
-    } catch (error) {
-      toast.error('删除失败');
-    }
-  }, [loadLocalDatasets]);
+  /*
+  // Phase 2.1 (Legacy): 从本地 IndexedDB 加载数据集 — 已隐藏，主路径改用后端 Dataset API
+  const loadFromLocalStorage = useCallback(async (datasetId: string) => { ... });
+  const deleteLocalDataset = useCallback(async (datasetId: string) => { ... });
+  */
 
   // 添加操作
   const addOperation = (type: OperationType) => {
@@ -546,599 +433,125 @@ export function DataWorkshop() {
     toast.success('操作链已删除');
   };
 
-  // 执行操作链
+  // 执行操作链（Phase 3D: 主路径已切换为后端 transform preview API）
   const executeOperations = async () => {
     if (operations.length === 0) {
       toast.error('请先添加操作');
       return;
     }
 
-    setIsProcessing(true);
-    let currentData = activeTableId ? tables.find(t => t.id === activeTableId) : null;
-    
-    if (!currentData && tables.length > 0) {
-      currentData = tables[0];
-    }
+    const activeTable = activeTableId
+      ? tables.find(t => t.id === activeTableId)
+      : tables.length > 0
+        ? tables[0]
+        : null;
 
-    if (!currentData) {
-      toast.error('请先上传数据文件');
-      setIsProcessing(false);
+    if (!activeTable) {
+      toast.error('请先上传或导入数据');
       return;
     }
 
-    // 模拟处理延迟
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Phase 3D: 后端处理仅支持后端数据集
+    if (!activeBackendDatasetId) {
+      toast.error('当前后端处理仅支持后端数据集，请先上传到后端数据集后再执行。');
+      return;
+    }
+
+    // 转换前端操作 -> 后端操作
+    const { operations: backendOps, unsupported } = mapDataWorkshopOperationsToBackend(
+      operations,
+      activeTable.columns
+    );
+
+    if (unsupported.length > 0) {
+      toast.error(`以下操作暂不支持后端处理: ${unsupported.join(', ')}`);
+      return;
+    }
+
+    if (backendOps.length === 0) {
+      toast.error('没有可执行的后端操作');
+      return;
+    }
+
+    setIsProcessing(true);
 
     try {
-      let result = { ...currentData };
+      const response = await workshopApi.preview(activeBackendDatasetId, backendOps) as any;
+      const result = response.data as TransformPreview;
 
-      for (const operation of operations) {
-        switch (operation.type) {
-          case 'join':
-            result = executeJoin(result, operation.config as JoinConfig, tables);
-            break;
-          case 'filter':
-            result = executeFilter(result, operation.config as FilterConfig);
-            break;
-          case 'transform':
-            result = executeTransform(result, operation.config as TransformConfig);
-            break;
-          case 'dedup':
-            result = executeDedup(result, operation.config as DedupConfig);
-            break;
-          case 'reshape':
-            result = executeReshape(result, operation.config as ReshapeConfig);
-            break;
-          case 'pivot':
-            result = executePivot(result, operation.config as PivotConfig);
-            break;
-          case 'derive':
-            result = executeDerive(result, operation.config as DeriveConfig);
-            break;
-          case 'sample':
-            result = executeSample(result, operation.config as SampleConfig);
-            break;
-          case 'output':
-            // 输出操作不修改数据，只影响最终导出
-            break;
-          default:
-            break;
-        }
-      }
+      setPreviewData({
+        id: `preview_${Date.now()}`,
+        name: 'Preview Result',
+        fileName: 'preview.csv',
+        columns: result.columns,
+        data: result.data,
+        rowCount: result.total_rows,
+      });
 
-      setPreviewData(result);
-      toast.success('处理完成');
+      // 记录最近一次成功的 preview 状态（用于保存）
+      setLastPreviewBackendOps(backendOps);
+      setLastPreviewDatasetId(activeBackendDatasetId);
+      setLastPreviewOperationsJson(JSON.stringify(operations));
+      setSaveResult(null);
+
+      toast.success(`处理完成，共 ${result.total_rows} 行 · ${result.execution_summary.steps_executed} 步`);
     } catch (error) {
-      toast.error('处理失败: ' + (error as Error).message);
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error('处理失败: ' + msg);
+      // 清除可保存状态
+      setLastPreviewBackendOps(null);
+      setLastPreviewDatasetId(null);
+      setLastPreviewOperationsJson(null);
+      setSaveResult(null);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // 执行JOIN
-  const executeJoin = (leftTable: DataTable, config: JoinConfig, allTables: DataTable[]): DataTable => {
-    const rightTable = allTables.find(t => t.id === config.rightTable);
-    if (!rightTable) throw new Error('右表不存在');
+  // Phase 3D-3: 保存为新数据集
+  const canSaveTransform = !!(
+    activeBackendDatasetId &&
+    operations.length > 0 &&
+    lastPreviewBackendOps &&
+    lastPreviewDatasetId === activeBackendDatasetId &&
+    lastPreviewOperationsJson === JSON.stringify(operations) &&
+    !isProcessing &&
+    !isSavingTransform
+  );
 
-    // 简化的JOIN实现
-    const joinedData: any[] = [];
-    const rightMap = new Map(rightTable.data.map(row => [row[config.rightKey], row]));
-
-    for (const leftRow of leftTable.data) {
-      const key = leftRow[config.leftKey];
-      const rightRow = rightMap.get(key);
-
-      if (rightRow && config.joinType !== 'left') {
-        joinedData.push({ ...leftRow, ...rightRow });
-      } else if (config.joinType === 'left' || config.joinType === 'full') {
-        joinedData.push({ ...leftRow });
-      }
+  const handleSaveAsDataset = async () => {
+    if (!canSaveTransform || !lastPreviewBackendOps || !lastPreviewDatasetId) {
+      toast.error('当前状态不可保存，请先执行预览');
+      return;
     }
 
-    // 处理右表未匹配的行（FULL JOIN）
-    if (config.joinType === 'full' || config.joinType === 'right') {
-      const leftKeys = new Set(leftTable.data.map(r => r[config.leftKey]));
-      for (const rightRow of rightTable.data) {
-        if (!leftKeys.has(rightRow[config.rightKey])) {
-          joinedData.push({ ...rightRow });
-        }
-      }
-    }
+    setIsSavingTransform(true);
 
-    return {
-      id: `result_${Date.now()}`,
-      name: `${leftTable.name}_${config.joinType}join_${rightTable.name}`,
-      fileName: 'result.csv',
-      columns: [...new Set([...leftTable.columns, ...rightTable.columns])],
-      data: joinedData,
-      rowCount: joinedData.length
-    };
-  };
+    try {
+      const response = await workshopApi.transform(lastPreviewDatasetId, lastPreviewBackendOps, {
+        save_mode: 'new_dataset',
+      }) as any;
+      const result = response.data as TransformResult;
 
-  // 执行筛选
-  const executeFilter = (table: DataTable, config: FilterConfig): DataTable => {
-    const filteredData = table.data.filter(row => {
-      const results = config.conditions.map(cond => {
-        const value = row[cond.column];
-        switch (cond.operator) {
-          case 'eq': return String(value) === cond.value;
-          case 'ne': return String(value) !== cond.value;
-          case 'gt': return Number(value) > Number(cond.value);
-          case 'gte': return Number(value) >= Number(cond.value);
-          case 'lt': return Number(value) < Number(cond.value);
-          case 'lte': return Number(value) <= Number(cond.value);
-          case 'contains': return String(value).includes(cond.value);
-          case 'startswith': return String(value).startsWith(cond.value);
-          case 'endswith': return String(value).endsWith(cond.value);
-          default: return true;
-        }
-      });
-      return config.logic === 'and' ? results.every(r => r) : results.some(r => r);
-    });
+      setSaveResult(result);
+      toast.success(`已保存为新数据集: ${result.filename} (${result.row_count} 行 × ${result.col_count} 列)`);
 
-    return {
-      ...table,
-      data: filteredData,
-      rowCount: filteredData.length
-    };
-  };
-
-  // 执行列处理
-  const executeTransform = (table: DataTable, config: TransformConfig): DataTable => {
-    let result = { ...table };
-    let newColumns = [...table.columns];
-    let newData = [...table.data];
-
-    for (const action of config.actions) {
-      switch (action.type) {
-        case 'rename': {
-          // 重命名列
-          const renameMap = new Map(action.mappings.map(m => [m.oldName, m.newName]));
-          newColumns = newColumns.map(col => renameMap.get(col) || col);
-          newData = newData.map(row => {
-            const newRow: any = {};
-            for (const [key, value] of Object.entries(row)) {
-              const newKey = renameMap.get(key) || key;
-              newRow[newKey] = value;
-            }
-            return newRow;
-          });
-          break;
-        }
-        case 'split': {
-          // 拆分列
-          const { column, delimiter, newColumns: splitCols } = action;
-          if (splitCols.length > 0) {
-            newData = newData.map(row => {
-              const value = String(row[column] || '');
-              const parts = value.split(delimiter);
-              const newRow = { ...row };
-              splitCols.forEach((col, idx) => {
-                newRow[col] = parts[idx] || '';
-              });
-              return newRow;
-            });
-            // 添加新列到列列表
-            const colIndex = newColumns.indexOf(column);
-            if (colIndex !== -1) {
-              newColumns.splice(colIndex + 1, 0, ...splitCols);
-            } else {
-              newColumns.push(...splitCols);
-            }
-          }
-          break;
-        }
-        case 'merge': {
-          // 合并列
-          const { columns, separator, newColumn } = action;
-          newData = newData.map(row => ({
-            ...row,
-            [newColumn]: columns.map(col => row[col]).join(separator)
-          }));
-          // 添加新列
-          if (!newColumns.includes(newColumn)) {
-            const lastColIndex = Math.max(...columns.map(c => newColumns.indexOf(c)));
-            newColumns.splice(lastColIndex + 1, 0, newColumn);
-          }
-          break;
-        }
-        case 'format': {
-          // 格式化列
-          const { column, formatType, formatPattern } = action;
-          newData = newData.map(row => {
-            const value = row[column];
-            let formattedValue = value;
-            
-            if (formatType === 'date' && value) {
-              try {
-                const date = new Date(value);
-                if (!isNaN(date.getTime())) {
-                  formattedValue = date.toISOString().split('T')[0].replace(/-/g, formatPattern.includes('/') ? '/' : '-');
-                }
-              } catch {}
-            } else if (formatType === 'number' && !isNaN(Number(value))) {
-              const num = Number(value);
-              if (formatPattern === '0') {
-                formattedValue = Math.round(num);
-              } else if (formatPattern === '0.00') {
-                formattedValue = num.toFixed(2);
-              } else if (formatPattern === '0.0000') {
-                formattedValue = num.toFixed(4);
-              } else if (formatPattern === '0%') {
-                formattedValue = Math.round(num * 100) + '%';
-              } else if (formatPattern === '0.00%') {
-                formattedValue = (num * 100).toFixed(2) + '%';
-              } else if (formatPattern === '0,000') {
-                formattedValue = Math.round(num).toLocaleString();
-              } else if (formatPattern === '0,000.00') {
-                formattedValue = num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-              }
-            } else if (formatType === 'text' && typeof value === 'string') {
-              switch (formatPattern) {
-                case 'upper': formattedValue = value.toUpperCase(); break;
-                case 'lower': formattedValue = value.toLowerCase(); break;
-                case 'trim': formattedValue = value.trim(); break;
-                case 'capitalize': formattedValue = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(); break;
-              }
-            }
-            
-            return { ...row, [column]: formattedValue };
-          });
-          break;
-        }
-        case 'remove': {
-          // 删除列
-          const colsToRemove = new Set(action.columns);
-          newColumns = newColumns.filter(col => !colsToRemove.has(col));
-          newData = newData.map(row => {
-            const newRow: any = {};
-            for (const col of newColumns) {
-              newRow[col] = row[col];
-            }
-            return newRow;
-          });
-          break;
-        }
-      }
-    }
-
-    return {
-      ...result,
-      columns: newColumns,
-      data: newData,
-      colCount: newColumns.length
-    };
-  };
-
-  // 执行去重
-  const executeDedup = (table: DataTable, config: DedupConfig): DataTable => {
-    const { columns, keep, caseSensitive } = config;
-    
-    // 生成行的唯一键
-    const getRowKey = (row: any): string => {
-      if (columns.length === 0) {
-        // 全局去重：使用所有列
-        return JSON.stringify(row);
-      }
-      // 基于指定列
-      const values = columns.map(col => {
-        const val = row[col];
-        if (typeof val === 'string' && !caseSensitive) {
-          return val.toLowerCase();
-        }
-        return val;
-      });
-      return JSON.stringify(values);
-    };
-
-    const seen = new Map<string, number>(); // key -> index
-    const dedupedData: any[] = [];
-
-    for (let i = 0; i < table.data.length; i++) {
-      const row = table.data[i];
-      const key = getRowKey(row);
-      
-      if (!seen.has(key)) {
-        // 第一次遇到这个键
-        seen.set(key, dedupedData.length);
-        dedupedData.push(row);
-      } else if (keep === 'last') {
-        // 保留最后一条：替换之前的
-        const existingIndex = seen.get(key)!;
-        dedupedData[existingIndex] = row;
-      }
-      // 如果 keep === 'first'，则忽略重复项
-    }
-
-    const removedCount = table.data.length - dedupedData.length;
-    
-    return {
-      ...table,
-      data: dedupedData,
-      rowCount: dedupedData.length,
-      // 可以添加一个属性记录去重信息
-      _dedupInfo: { removedCount, originalCount: table.data.length }
-    } as DataTable;
-  };
-
-  // 执行宽长转换
-  const executeReshape = (table: DataTable, config: ReshapeConfig): DataTable => {
-    const { direction } = config;
-    
-    if (direction === 'melt') {
-      // 宽表 → 长表 (类似 pandas melt)
-      const { idVars = [], valueVars = [], varName = 'variable', valueName = 'value' } = config;
-      
-      // 如果没有指定 valueVars，使用所有非 idVars 的列
-      const meltColumns = valueVars.length > 0 ? valueVars : table.columns.filter(col => !idVars.includes(col));
-      
-      const newData: any[] = [];
-      
-      for (const row of table.data) {
-        for (const col of meltColumns) {
-          const newRow: any = {};
-          // 复制 idVars
-          for (const idVar of idVars) {
-            newRow[idVar] = row[idVar];
-          }
-          // 添加 variable 和 value
-          newRow[varName] = col;
-          newRow[valueName] = row[col];
-          newData.push(newRow);
-        }
-      }
-      
-      const newColumns = [...idVars, varName, valueName];
-      
-      return {
-        ...table,
-        columns: newColumns,
-        data: newData,
-        rowCount: newData.length,
-        colCount: newColumns.length
-      };
-    } else {
-      // 长表 → 宽表 (类似 pandas pivot)
-      const { index, columns, values } = config;
-      
-      if (!index || !columns || !values) {
-        throw new Error('长表转宽表需要指定 index、columns 和 values');
-      }
-      
-      // 收集所有唯一的 index 值和 columns 值
-      const indexValues = [...new Set(table.data.map(row => row[index]))];
-      const columnValues = [...new Set(table.data.map(row => row[columns]))];
-      
-      const newData: any[] = [];
-      
-      for (const idxVal of indexValues) {
-        const newRow: any = { [index]: idxVal };
-        
-        for (const colVal of columnValues) {
-          // 找到匹配的行
-          const matchingRow = table.data.find(
-            row => row[index] === idxVal && row[columns] === colVal
-          );
-          newRow[colVal] = matchingRow ? matchingRow[values] : null;
-        }
-        
-        newData.push(newRow);
-      }
-      
-      const newColumns = [index, ...columnValues];
-      
-      return {
-        ...table,
-        columns: newColumns,
-        data: newData,
-        rowCount: newData.length,
-        colCount: newColumns.length
-      };
-    }
-  };
-
-  // 执行数据透视
-  const executePivot = (table: DataTable, config: PivotConfig): DataTable => {
-    const { rows, columns, values, filters } = config;
-    
-    // 先应用过滤器
-    let filteredData = table.data;
-    if (filters && filters.length > 0) {
-      filteredData = filteredData.filter(row => {
-        return filters.every(filter => {
-          const rowValue = row[filter.column];
-          const filterValue = filter.value;
-          switch (filter.operator) {
-            case 'eq': return String(rowValue) === String(filterValue);
-            case 'ne': return String(rowValue) !== String(filterValue);
-            case 'gt': return Number(rowValue) > Number(filterValue);
-            case 'gte': return Number(rowValue) >= Number(filterValue);
-            case 'lt': return Number(rowValue) < Number(filterValue);
-            case 'lte': return Number(rowValue) <= Number(filterValue);
-            case 'contains': return String(rowValue).includes(String(filterValue));
-            default: return true;
-          }
-        });
-      });
-    }
-    
-    // 按 rows 和 columns 分组
-    const groups = new Map<string, any[]>();
-    
-    for (const row of filteredData) {
-      const rowKey = rows.map(r => row[r]).join('_|_');
-      const colKey = columns.map(c => row[c]).join('_|_');
-      const key = `${rowKey}__COL__${colKey}`;
-      
-      if (!groups.has(key)) {
-        groups.set(key, []);
-      }
-      groups.get(key)!.push(row);
-    }
-    
-    // 获取所有唯一的列维度值
-    const uniqueColValues = [...new Set(filteredData.map(row => columns.map(c => row[c]).join('_|_')))];
-    
-    // 聚合计算
-    const aggregate = (group: any[], aggType: string, valueCol: string): number => {
-      const values = group.map(r => r[valueCol]).filter(v => v !== null && v !== undefined && v !== '');
-      const nums = values.map(v => Number(v)).filter(v => !isNaN(v));
-      
-      switch (aggType) {
-        case 'sum': return nums.reduce((a, b) => a + b, 0);
-        case 'avg': return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
-        case 'count': return values.length;
-        case 'max': return nums.length ? Math.max(...nums) : 0;
-        case 'min': return nums.length ? Math.min(...nums) : 0;
-        case 'first': return values[0] ?? 0;
-        case 'last': return values[values.length - 1] ?? 0;
-        default: return 0;
-      }
-    };
-    
-    // 构建结果
-    const rowGroups = new Map<string, any>();
-    
-    for (const [key, group] of groups) {
-      const [rowKey, colKey] = key.split('__COL__');
-      
-      if (!rowGroups.has(rowKey)) {
-        const row: any = {};
-        rows.forEach((r, i) => {
-          row[r] = rowKey.split('_|_')[i];
-        });
-        rowGroups.set(rowKey, row);
-      }
-      
-      const row = rowGroups.get(rowKey);
-      
-      // 对每个值字段进行聚合
-      for (const valConfig of values) {
-        const aggValue = aggregate(group, valConfig.aggregation, valConfig.column);
-        const colName = columns.length > 0 
-          ? `${colKey}_${valConfig.column}_${valConfig.aggregation}`
-          : `${valConfig.column}_${valConfig.aggregation}`;
-        row[colName] = aggValue;
-      }
-    }
-    
-    const newData = Array.from(rowGroups.values());
-    const newColumns = [...rows, ...uniqueColValues.flatMap(cv => 
-      values.map(v => columns.length > 0 
-        ? `${cv}_${v.column}_${v.aggregation}`
-        : `${v.column}_${v.aggregation}`
-      )
-    )];
-    
-    return {
-      ...table,
-      columns: newColumns,
-      data: newData,
-      rowCount: newData.length,
-      colCount: newColumns.length
-    };
-  };
-
-  // 执行衍生计算
-  const executeDerive = (table: DataTable, config: DeriveConfig): DataTable => {
-    const { newColumn, formula } = config;
-    
-    // 解析并执行公式
-    const evaluateFormula = (row: any, expr: string): any => {
-      // 替换列引用为实际值
-      let processedExpr = expr;
-      table.columns.forEach(col => {
-        const value = row[col];
-        const safeValue = typeof value === 'string' ? `"${value}"` : value;
-        processedExpr = processedExpr.replace(new RegExp(`\\b${col}\\b`, 'g'), safeValue ?? 'null');
-      });
-      
+      // 刷新数据集列表，使新数据集可被后续选择
       try {
-        // 安全执行：使用 Function 构造器
-        // 支持常用函数
-        const func = new Function('UPPER', 'LOWER', 'TRIM', 'LEN', 'SUBSTR', 'REPLACE', 'CONCAT', 'IF', 'AND', 'OR', 'NOT', 
-          `return ${processedExpr}`);
-        
-        return func(
-          (s: string) => String(s).toUpperCase(),
-          (s: string) => String(s).toLowerCase(),
-          (s: string) => String(s).trim(),
-          (s: string) => String(s).length,
-          (s: string, start: number, len?: number) => String(s).substr(start, len),
-          (s: string, search: string, replace: string) => String(s).replace(search, replace),
-          (...args: any[]) => args.join(''),
-          (cond: boolean, t: any, f: any) => cond ? t : f,
-          (...args: boolean[]) => args.every(a => a),
-          (...args: boolean[]) => args.some(a => a),
-          (a: boolean) => !a
-        );
-      } catch (e) {
-        return null;
+        const listRes = await datasetApi.list(1, 100) as any;
+        const items = listRes?.items || listRes?.data?.items || [];
+        setDatasets(items);
+      } catch {
+        // 列表刷新失败不影响主流程
       }
-    };
-    
-    const newData = table.data.map(row => ({
-      ...row,
-      [newColumn]: evaluateFormula(row, formula)
-    }));
-    
-    const newColumns = [...table.columns];
-    if (!newColumns.includes(newColumn)) {
-      newColumns.push(newColumn);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error('保存失败: ' + msg);
+    } finally {
+      setIsSavingTransform(false);
     }
-    
-    return {
-      ...table,
-      columns: newColumns,
-      data: newData,
-      rowCount: newData.length,
-      colCount: newColumns.length
-    };
   };
 
-  // 执行随机抽样
-  const executeSample = (table: DataTable, config: SampleConfig): DataTable => {
-    const { method, count, percentage, seed } = config;
-    
-    // 简单的伪随机数生成器（可选种子）
-    const seededRandom = (() => {
-      let s = seed ?? Date.now();
-      return () => {
-        s = (s * 9301 + 49297) % 233280;
-        return s / 233280;
-      };
-    })();
-    
-    const data = [...table.data];
-    
-    // Fisher-Yates 洗牌
-    for (let i = data.length - 1; i > 0; i--) {
-      const j = Math.floor(seededRandom() * (i + 1));
-      [data[i], data[j]] = [data[j], data[i]];
-    }
-    
-    // 计算抽样数量
-    let sampleCount: number;
-    if (method === 'count') {
-      sampleCount = Math.min(count ?? 100, table.rowCount);
-    } else {
-      sampleCount = Math.floor(table.rowCount * (percentage ?? 10) / 100);
-    }
-    
-    const sampledData = data.slice(0, sampleCount);
-    
-    return {
-      ...table,
-      data: sampledData,
-      rowCount: sampledData.length,
-      _sampleInfo: { 
-        originalCount: table.rowCount, 
-        sampledCount: sampleCount,
-        method,
-        seed
-      }
-    } as DataTable;
-  };
 
   // 导出结果
   const exportResult = (format: string) => {
@@ -1210,7 +623,7 @@ export function DataWorkshop() {
           <AlertTriangle className="w-5 h-5 text-[var(--neon-orange)] flex-shrink-0 mt-0.5" />
           <div className="text-sm text-[var(--text-secondary)]">
             <p className="font-medium text-[var(--text-primary)] mb-1">实验性功能</p>
-            <p>数据工坊当前为实验性浏览器处理工作区，操作仅在浏览器临时执行，结果不会保存为后端数据集。正式后端处理能力将在下一阶段迁移。</p>
+            <p>数据工坊支持浏览器临时处理与后端数据集处理。选择后端数据集作为数据源后，执行预览并保存可将结果持久化为新数据集。</p>
           </div>
         </div>
       </div>
@@ -1268,28 +681,6 @@ export function DataWorkshop() {
                 <span className="text-sm">从云端导入</span>
               </button>
               
-              {/* Phase 2.1: 从本地存储导入 */}
-              <button
-                onClick={() => {
-                  loadLocalDatasets();
-                  setShowLocalDatasets(true);
-                }}
-                className="flex items-center justify-center gap-2 w-full p-3 rounded cursor-pointer transition-all hover:bg-[var(--bg-tertiary)]"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px dashed var(--neon-purple)/50',
-                  color: 'var(--neon-purple)'
-                }}
-              >
-                <HardDrive className="w-4 h-4" />
-                <span className="text-sm">从本地导入</span>
-                {localDatasets.length > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--neon-purple)]/20">
-                    {localDatasets.length}
-                  </span>
-                )}
-              </button>
-
               {/* 已上传表列表 */}
               {tables.length > 0 && (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -1384,23 +775,6 @@ export function DataWorkshop() {
                 </div>
               )}
 
-              {/* Phase 2.1: 引擎选择指示器 */}
-              {engineDecision && (
-                <div className="p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-[var(--text-muted)]">处理引擎</span>
-                    <EngineIndicator 
-                      engine={engineDecision.engine}
-                      reason={engineDecision.reason}
-                      estimatedTime={engineDecision.estimatedTime}
-                    />
-                  </div>
-                  <div className="text-[10px] text-[var(--text-muted)] truncate" title={engineDecision.reason}>
-                    {engineDecision.reason}
-                  </div>
-                </div>
-              )}
-
               {/* 操作列表 */}
               {operations.length === 0 ? (
                 <div className="text-center py-4 text-[var(--text-muted)] text-xs">
@@ -1447,6 +821,44 @@ export function DataWorkshop() {
                   )}
                 </button>
               )}
+
+              {/* Phase 3D-3: 保存为新数据集按钮 */}
+              {operations.length > 0 && previewData && (
+                <button
+                  onClick={handleSaveAsDataset}
+                  disabled={!canSaveTransform || isSavingTransform}
+                  title={
+                    !activeBackendDatasetId
+                      ? '本地数据集无法保存为后端数据集'
+                      : !lastPreviewBackendOps
+                        ? '请先执行预览'
+                        : lastPreviewOperationsJson !== JSON.stringify(operations)
+                          ? '操作链已变更，请重新执行预览'
+                          : lastPreviewDatasetId !== activeBackendDatasetId
+                            ? '数据集已切换，请重新执行预览'
+                            : '保存为新数据集'
+                  }
+                  className="w-full font-medium py-2 px-4 rounded transition-all flex items-center justify-center"
+                  style={{
+                    backgroundColor: canSaveTransform ? 'var(--neon-green)' : 'var(--bg-tertiary)',
+                    color: canSaveTransform ? 'var(--bg-primary)' : 'var(--text-muted)',
+                    border: 'none',
+                    opacity: isSavingTransform ? 0.5 : 1,
+                  }}
+                >
+                  {isSavingTransform ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      保存为新数据集
+                    </>
+                  )}
+                </button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1463,6 +875,35 @@ export function DataWorkshop() {
             </Card>
           ) : (
             <div className="space-y-4">
+              {/* Phase 3D-3: 保存成功提示 */}
+              {saveResult && (
+                <Card className="glass border-[var(--neon-green)]/40 bg-[var(--neon-green)]/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg text-[var(--neon-green)] flex items-center gap-2">
+                      <Save className="w-5 h-5" />
+                      已保存为新数据集
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">数据集名称</span>
+                      <span className="text-[var(--text-primary)] font-medium">{saveResult.filename}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">行数 × 列数</span>
+                      <span className="text-[var(--text-primary)]">{saveResult.row_count} × {saveResult.col_count}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">父数据集 ID</span>
+                      <span className="text-[var(--text-primary)] font-mono text-xs">{saveResult.parent_dataset_id}</span>
+                    </div>
+                    <div className="pt-2 text-xs text-[var(--text-muted)]">
+                      可在数据集列表中查看新数据集
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* 结果概览 */}
               <Card className="glass border-[var(--border-subtle)]">
                 <CardHeader>
@@ -1489,6 +930,23 @@ export function DataWorkshop() {
                       >
                         <Code className="w-3 h-3 inline mr-1" />
                         SQL IN
+                      </button>
+                      <button
+                        onClick={handleSaveAsDataset}
+                        disabled={!canSaveTransform || isSavingTransform}
+                        className="text-xs px-3 py-1.5 rounded bg-[var(--neon-green)] text-[var(--bg-primary)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {isSavingTransform ? (
+                          <>
+                            <Loader2 className="w-3 h-3 inline mr-1 animate-spin" />
+                            保存中...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-3 h-3 inline mr-1" />
+                            保存为新数据集
+                          </>
+                        )}
                       </button>
                     </div>
                   </CardTitle>
@@ -1668,79 +1126,7 @@ export function DataWorkshop() {
         </div>
       )}
       
-      {/* Phase 2.1: 本地数据集选择器 */}
-      {showLocalDatasets && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-md max-h-[80vh] flex flex-col rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-            <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">本地数据集</h3>
-                {storageStats && (
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    已用空间: {storageStats.usedSpace} · 压缩率: {storageStats.compressionRatio}
-                  </p>
-                )}
-              </div>
-              <button onClick={() => setShowLocalDatasets(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              {localDatasets.length === 0 ? (
-                <div className="text-center py-8 text-[var(--text-muted)]">
-                  <HardDrive className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>暂无本地数据集</p>
-                  <p className="text-xs mt-1">上传文件时将自动保存到本地</p>
-                  <button
-                    onClick={() => {
-                      setShowLocalDatasets(false);
-                      document.getElementById('file-upload')?.click();
-                    }}
-                    className="mt-4 text-xs px-4 py-2 rounded bg-[var(--neon-purple)]/20 text-[var(--neon-purple)] hover:bg-[var(--neon-purple)]/30"
-                  >
-                    上传文件
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {localDatasets.map((dataset) => (
-                    <div
-                      key={dataset.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]"
-                    >
-                      <HardDrive className="w-5 h-5 text-[var(--neon-purple)] flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm text-[var(--text-primary)] truncate">
-                          {dataset.name}
-                        </div>
-                        <div className="text-xs text-[var(--text-muted)]">
-                          {dataset.rowCount.toLocaleString()} 行 · {new Date(dataset.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => loadFromLocalStorage(dataset.id)}
-                          className="p-1.5 rounded hover:bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]"
-                          title="加载"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteLocalDataset(dataset.id)}
-                          className="p-1.5 rounded hover:bg-[var(--neon-pink)]/20 text-[var(--neon-pink)]"
-                          title="删除"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Phase 2.1 (Legacy): 本地数据集选择器 — 已隐藏，主路径改用后端 Dataset API */}
     </div>
   );
 }
@@ -1769,11 +1155,11 @@ function OperationConfig({
       case 'filter':
         return <FilterConfigPanel config={operation.config} table={tables[0]} onUpdate={onUpdate} />;
       case 'transform':
-        return <TransformConfigPanel config={operation.config} table={tables[0]} onUpdate={onUpdate} />;
+        return <TransformConfigPanel config={operation.config as TransformConfig} table={tables[0]} onUpdate={onUpdate} />;
       case 'dedup':
-        return <DedupConfigPanel config={operation.config} table={tables[0]} onUpdate={onUpdate} />;
+        return <DedupConfigPanel config={operation.config as DedupConfig} table={tables[0]} onUpdate={onUpdate} />;
       case 'reshape':
-        return <ReshapeConfigPanel config={operation.config} table={tables[0]} onUpdate={onUpdate} />;
+        return <ReshapeConfigPanel config={operation.config as ReshapeConfig} table={tables[0]} onUpdate={onUpdate} />;
       case 'pivot':
         return <PivotConfigPanel config={operation.config} table={tables[0]} onUpdate={onUpdate} />;
       case 'derive':

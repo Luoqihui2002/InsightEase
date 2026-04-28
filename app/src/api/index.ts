@@ -2,6 +2,7 @@ export { datasetApi } from './datasets';
 export { analysisApi } from './analysis';
 export { aiApi } from './ai';
 export { authApi, authStorage } from './auth';
+export { workshopApi } from './workshop';
 export type * from '@/types/api';
 
 // 显式导出类型

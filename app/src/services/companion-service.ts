@@ -4,8 +4,6 @@
  * 策略：平衡触发（关键节点提示）+ 混合内容（规则+AI）
  */
 
-import { aiApi } from '@/api/ai';
-
 export type CompanionMood = 'idle' | 'thinking' | 'happy' | 'tip';
 export type CompanionPosition = 'bottom-right' | 'dock';
 
@@ -75,7 +73,7 @@ const CONTENT_TEMPLATES: Record<string, (ctx: UserContext) => CompanionState> = 
     canDismiss: true,
   }),
 
-  'idle-with-data': (ctx) => ({
+  'idle-with-data': (_ctx) => ({
     visible: true,
     mood: 'tip',
     message: '💡 小提示：你可以用「数据工坊」进行多步骤处理，或者用「分析」功能快速获取洞察。',
@@ -126,21 +124,6 @@ const CONTENT_TEMPLATES: Record<string, (ctx: UserContext) => CompanionState> = 
 
 // AI 动态生成内容
 async function generateAIContent(ctx: UserContext): Promise<CompanionState> {
-  const prompt = `作为 InsightEase 数据助手，根据以下用户状态，生成一句友好的提示语（不超过50字）和2-3个操作建议：
-
-用户状态：
-- 当前页面：${ctx.page}
-- 是否有数据：${ctx.hasData ? '是' : '否'}
-- 数据规模：${ctx.dataInfo ? `${ctx.dataInfo.rowCount}行×${ctx.dataInfo.colCount}列` : '无'}
-- 最近操作：${ctx.recentAction || '无'}
-- 闲置时间：${Math.round(ctx.idleTime / 1000)}秒
-
-请返回JSON格式：
-{
-  "message": "提示语",
-  "suggestions": [{"label": "按钮文字", "action": "操作标识"}]
-}`;
-
   try {
     // 这里可以调用AI API，暂时用模拟实现
     // const response = await aiApi.chat(prompt);
@@ -185,12 +168,12 @@ class CompanionService {
       condition: (ctx) => ctx.visitCount === 1 && ctx.page === 'dashboard',
       cooldown: Infinity, // 只触发一次
       priority: 10,
-      getContent: () => CONTENT_TEMPLATES['first-visit'](),
+      getContent: (_ctx) => CONTENT_TEMPLATES['first-visit'](_ctx),
     },
     {
       id: 'upload-complete',
       condition: (ctx) => ctx.recentAction === 'upload' && ctx.hasData,
-      cooldown: process.env.NODE_ENV === 'development' ? 10000 : 5 * 60 * 1000, // 开发环境10秒，生产5分钟
+      cooldown: import.meta.env.DEV ? 10000 : 5 * 60 * 1000, // 开发环境10秒，生产5分钟
       priority: 9,
       getContent: (ctx) => CONTENT_TEMPLATES['upload-complete'](ctx),
     },
@@ -206,7 +189,7 @@ class CompanionService {
       condition: (ctx) => ctx.recentAction === 'enable-security-mode',
       cooldown: 24 * 60 * 60 * 1000, // 24小时
       priority: 8,
-      getContent: () => CONTENT_TEMPLATES['security-mode-enabled'](),
+      getContent: (_ctx) => CONTENT_TEMPLATES['security-mode-enabled'](_ctx),
     },
     {
       id: 'idle-with-data',

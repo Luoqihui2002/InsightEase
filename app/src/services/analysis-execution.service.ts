@@ -10,7 +10,7 @@
 
 import { analysisApi } from '@/api/analysis';
 import type { IntentResult, AnalysisParams, AnalysisType } from './intent-recognition.service';
-import type { Analysis } from '@/types/api';
+import type { Analysis, ApiResponse } from '@/types/api';
 
 // 分析执行选项
 export interface ExecutionOptions {
@@ -78,11 +78,11 @@ class AnalysisExecutionService {
       onProgress?.('创建分析任务...', 20);
 
       // 创建分析任务
-      const createRes = await analysisApi.create(analysisParams);
+      const createRes = (await analysisApi.create(analysisParams)) as unknown as ApiResponse<Analysis>;
       console.log('创建分析任务响应:', createRes);
-      
+
       // 解析分析ID（拦截器已解包）
-      const analysisId = createRes?.code === 200 ? createRes.data?.id : createRes?.id;
+      const analysisId = createRes?.code === 200 ? createRes.data?.id : (createRes as any)?.id;
       
       if (!analysisId) {
         console.error('无效响应:', createRes);
@@ -144,11 +144,6 @@ class AnalysisExecutionService {
     params: Record<string, any>;
   } {
     const { type, params } = intent;
-
-    // 基础参数
-    const baseParams: Record<string, any> = {
-      ...params,
-    };
 
     // 根据分析类型调整参数
     switch (type) {
@@ -311,12 +306,12 @@ class AnalysisExecutionService {
         if (abortController.aborted) return;
 
         try {
-          const res = await analysisApi.getResult(analysisId);
+          const res = (await analysisApi.getResult(analysisId)) as unknown as ApiResponse<Analysis>;
           console.log('轮询结果:', res);
-          
+
           // 解析响应数据（拦截器已解包）
-          const analysis = res?.code === 200 ? res.data : res;
-          
+          const analysis = res?.code === 200 ? res.data : (res as any);
+
           if (!analysis) {
             console.error('无法获取分析结果，响应:', res);
             retries++;
@@ -328,8 +323,8 @@ class AnalysisExecutionService {
             setTimeout(checkStatus, pollInterval);
             return;
           }
-          
-          const status = analysis.status;
+
+          const status = analysis.status as string;
           console.log('分析状态:', status);
 
           // 计算进度
@@ -342,17 +337,17 @@ class AnalysisExecutionService {
 
           if (status === 'completed') {
             this.activeTasks.delete(analysisId);
-            const result = this.transformResult(analysis);
+            const result = this.transformResult(analysis as Analysis);
             resolve(result);
           } else if (status === 'failed') {
             this.activeTasks.delete(analysisId);
             const result: AnalysisResult = {
               analysisId,
-              type: analysis.type as AnalysisType,
+              type: (analysis as any).type as AnalysisType,
               status: 'failed',
               data: null,
-              errorMsg: analysis.error_msg || '分析失败',
-              completedAt: analysis.completed_at ? new Date(analysis.completed_at) : undefined
+              errorMsg: (analysis as any).error_msg || '分析失败',
+              completedAt: (analysis as any).completed_at ? new Date((analysis as any).completed_at) : undefined
             };
             resolve(result);
           } else {

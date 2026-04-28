@@ -128,28 +128,28 @@ class IntentRecognitionService {
     // 尝试使用 AI 进行意图识别
     const prompt = this.buildPrompt(message, datasets, currentDataset);
     
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let resultText = '';
       let hasError = false;
-      
+
       aiApi.chatStream(
         prompt,
-        (chunk, fullText) => {
+        (_chunk, fullText) => {
           resultText = fullText;
         },
         {
           onFinish: () => {
             if (hasError) return;
-            
+
             try {
               const result = this.parseResult(resultText);
               resolve(result);
-            } catch (error) {
+            } catch (_error) {
               // 如果解析失败，使用本地匹配结果作为 fallback
               resolve(this.getFallbackResult(localMatch, message, currentDataset, datasets));
             }
           },
-          onError: (error) => {
+          onError: (_error) => {
             hasError = true;
             // AI 服务不可用，使用本地匹配作为 fallback
             resolve(this.getFallbackResult(localMatch, message, currentDataset, datasets));

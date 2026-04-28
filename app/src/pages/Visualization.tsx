@@ -19,8 +19,7 @@ import {
   Info,
   Users,
   Loader2,
-  Save,
-  LayoutDashboard
+  Save
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1039,7 +1038,7 @@ export function Visualization() {
         });
         const link = document.createElement('a');
         // 文件名格式：数据集_图表类型
-        const filename = `${selectedDataset.filename.replace(/[\\/:*?"<>|]/g, '_')}_${chartTypeLabels[chartConfig.type]}.png`;
+        const filename = `${(selectedDataset as any).filename?.replace(/[\\/:*?"<>|]/g, '_') || selectedDataset}_${chartTypeLabels[chartConfig.type]}.png`;
         link.download = filename;
         link.href = url;
         link.click();
@@ -1058,16 +1057,18 @@ export function Visualization() {
     }
     
     // 生成更好的默认名称：数据集_图表类型
-    const defaultName = `${selectedDataset.filename}_${chartTypeLabels[chartConfig.type]}`;
-    const vizName = (chartConfig.title && chartConfig.title !== '数据可视化') 
-      ? chartConfig.title 
+    const datasetName = (selectedDataset as any).filename || selectedDataset;
+    const datasetId = (selectedDataset as any).id || selectedDataset;
+    const defaultName = `${datasetName}_${chartTypeLabels[chartConfig.type]}`;
+    const vizName = (chartConfig.title && chartConfig.title !== '数据可视化')
+      ? chartConfig.title
       : defaultName;
-    
+
     const savedViz = {
       id: `viz_${Date.now()}`,
       name: vizName,
-      datasetId: selectedDataset.id,
-      datasetName: selectedDataset.filename,
+      datasetId: datasetId,
+      datasetName: datasetName,
       config: { ...chartConfig },
       data: chartData.slice(0, 1000), // Limit data size
       createdAt: new Date().toISOString()

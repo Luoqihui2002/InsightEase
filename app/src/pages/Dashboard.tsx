@@ -17,14 +17,10 @@ import {
   Plus,
   X,
   Download,
-  Eye,
   Settings2,
   Move,
   Trash2,
-  Check,
   Image as ImageIcon,
-  ChevronDown,
-  ChevronUp,
   Zap,
   Upload,
   History,
@@ -37,7 +33,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { datasetApi, analysisApi } from '@/api';
 import { quickRequest } from '@/lib/request';
 import type { Dataset, Analysis } from '@/types/api';
 import gsap from 'gsap';
@@ -137,7 +132,6 @@ export function Dashboard() {
     companionService.setPage('dashboard');
   }, []);
 
-  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<DashboardView>('overview');
   const [customDashboards, setCustomDashboards] = useState<CustomDashboard[]>([]);
   const [activeDashboardId, setActiveDashboardId] = useState<string>('');
@@ -150,7 +144,8 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [loadingSlow, setLoadingSlow] = useState(false);
   const [error, setError] = useState('');
-  const [usingCache, setUsingCache] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_usingCache, setUsingCache] = useState(false);
 
   const chartInstancesRef = useRef<Map<string, echarts.ECharts>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -182,7 +177,6 @@ export function Dashboard() {
         // Try to fetch data with 5 second timeout
         let datasetsItems: Dataset[] = [];
         let analysesItems: Analysis[] = [];
-        let fetchSuccess = false;
 
         try {
           const [datasetsRes, analysesRes] = await withTimeout(
@@ -197,7 +191,6 @@ export function Dashboard() {
           const analysesData = analysesRes as any;
           datasetsItems = datasetsData.items || datasetsData.data?.items || [];
           analysesItems = analysesData.items || analysesData.data?.items || [];
-          fetchSuccess = true;
 
           // Cache successful results to localStorage
           localStorage.setItem('insightease_cached_datasets', JSON.stringify(datasetsItems));
@@ -760,7 +753,7 @@ export function Dashboard() {
                               </button>
                             </div>
                           </div>
-                          <p className="text-xs text-[var(--text-muted)]">{typeLabels[widget.analysisType] || widget.analysisType || '可视化'} · {widget.datasetName}</p>
+                          <p className="text-xs text-[var(--text-muted)]">{typeLabels[widget.analysisType || ''] || widget.analysisType || '可视化'} · {widget.datasetName}</p>
                         </CardHeader>
                         <CardContent className="p-4 pt-0 flex-1">
                           <div 
@@ -1324,7 +1317,7 @@ function generateChartOption(type: string, result: any): echarts.EChartsOption {
             lineStyle: { color: 'gradient', curveness: 0.5 },
             itemStyle: { color: COLORS.cyan },
             label: { color: COLORS.textSecondary, fontSize: 10 }
-          }]
+          } as any]
         };
       }
       break;

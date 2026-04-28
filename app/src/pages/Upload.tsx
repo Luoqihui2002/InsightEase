@@ -15,7 +15,6 @@ import gsap from 'gsap';
 import { datasetApi } from '@/api';
 import type { FieldSchema } from '@/types/api';
 import { companionService } from '@/services';
-import { toast } from 'sonner';
 
 interface UploadingFile {
   id: string;
