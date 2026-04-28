@@ -95,3 +95,15 @@
 - 详情弹窗替换为 `<Dialog>` + `<DialogContent>`，移除手写模态框。
 - 标题国际化：`History` -> `历史记录`。
 - 业务逻辑（API 调用、导出函数、状态管理）零改动。
+
+## Phase 4A-3-4: Datasets 页面迁移
+
+- `Datasets.tsx` 使用共享组件体系重构页面骨架（PageShell, PageHeader, ContentGrid, StatCard, SectionCard, LoadingState, ErrorState, Empty, DataTablePreview）。
+- 预览表格替换为 `DataTablePreview`（展开行 + 详情弹窗）。
+- 空状态替换为 shadcn `<Empty>` 组件。
+- 原生 `confirm()` / `alert()` 替换为 `<AlertDialog>` + `toast`。
+- 详情弹窗缩小为 `max-w-4xl max-h-[80vh]`。
+- 底部上传区域简化为"去上传数据"快捷按钮。
+- 表格密度优化为 `py-3 px-3`。
+- 标题国际化：`Datasets` -> `数据集`。
+- 业务逻辑（API 调用、删除、重命名、下载、预览）零改动。

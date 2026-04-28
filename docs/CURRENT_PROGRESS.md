@@ -103,6 +103,23 @@ Upload CSV/Excel
   - 将 `Dialog` 条件渲染改为 `{selectedAnalysis && (<Dialog open={true}>...)}`，消除 `possibly null` 错误。
 - **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 13.06s，无空 `SelectItem value=""`。
 
+## Phase 4A-3-4: Datasets 页面骨架与交互一致性重构
+
+- **目标**: 将 Datasets 页面迁移到共享组件体系，提升交互一致性。
+- **修改**:
+  - `Datasets.tsx` 使用 `PageShell` + `PageHeader` + `ContentGrid` + `StatCard` + `SectionCard` + `LoadingState` + `ErrorState` + `Empty` + `DataTablePreview` + `AlertDialog` 重构。
+  - 标题从英文 `"Datasets"` 改为中文 `"数据集"`。
+  - 统计卡片使用 `ContentGrid(cols=4)` + `StatCard` 替代手写 Card。
+  - 空状态使用 shadcn `<Empty>` 组件替代表格内手写 td。
+  - 预览表格使用 `DataTablePreview` 替代手写 `<table>`（展开行 + 详情弹窗）。
+  - 详情弹窗缩小为 `max-w-4xl max-h-[80vh]`（原 `90vw/90vh`）。
+  - 底部上传区域简化为"去上传数据"快捷按钮。
+  - 表格密度优化：`py-4 px-4` → `py-3 px-3`。
+- **交互改进**:
+  - 原生 `confirm()` 替换为 `<AlertDialog>`（单条删除 + 批量删除）。
+  - 原生 `alert()` 替换为 `toast.error()` / `toast.success()`（重命名验证、下载失败、删除反馈）。
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` built in 14.96s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行
@@ -122,7 +139,7 @@ Upload CSV/Excel
 
 ```bash
 cd app && npx tsc --noEmit    # 0 errors ✅
-cd app && npm run build        # built in 13.06s ✅
+cd app && npm run build        # built in 14.96s ✅
 ```
 
 > 警告: JS chunk 3,365 KB，待 Phase 4A 拆分优化。
