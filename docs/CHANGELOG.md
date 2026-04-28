@@ -220,6 +220,16 @@
 - 建议下一Phase：4A-5 交互一致性治理。
 - 零代码修改。
 
+## Phase 4A-5-2: Low-Risk Static Selects & Switches
+
+- SmartProcess: 5 个静态 enum select（缺失值/重复值/异常值/异常值方法/标准化）→ shadcn `Select`
+- Dashboard: 自定义 view tab 按钮（概览/自定义看板）→ shadcn `Tabs`
+- Forecast: 批量预测模式自定义按钮 → shadcn `Switch`
+- GoalPlanner: 动态 funnel level 选择器，非静态 select，推迟到 4A-5-3
+- 所有状态值、onChange 行为、选项标签完全保留
+- 零业务逻辑变更
+- `tsc --noEmit` 0 errors，`npm run build` built in 23.85s ✅
+
 ## Phase 4A-5-1: Interaction Cleanup Audit
 
 - 审计 15 个页面的交互不一致问题。

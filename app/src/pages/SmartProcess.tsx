@@ -11,6 +11,13 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { DatasetSelector } from '@/components/DatasetSelector';
 import { analysisApi } from '@/api/analysis';
 import { datasetApi } from '@/api/datasets';
@@ -292,23 +299,22 @@ export function SmartProcess() {
                 <Filter className="w-4 h-4 text-[var(--neon-cyan)]" />
                 <label className="text-sm font-medium text-[var(--text-primary)]">缺失值处理</label>
               </div>
-              <select
+              <Select
                 value={config.missingValueStrategy}
-                onChange={(e) => handleConfigChange('missingValueStrategy', e.target.value as any)}
-                className="w-full p-2 rounded text-sm"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-subtle)'
-                }}
+                onValueChange={(value) => handleConfigChange('missingValueStrategy', value as any)}
               >
-                <option value="mean">填充均值（数值列）</option>
-                <option value="median">填充中位数（数值列）</option>
-                <option value="mode">填充众数（分类列）</option>
-                <option value="fill">填充固定值</option>
-                <option value="drop">删除包含缺失值的行</option>
-                <option value="none">不处理</option>
-              </select>
+                <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mean">填充均值（数值列）</SelectItem>
+                  <SelectItem value="median">填充中位数（数值列）</SelectItem>
+                  <SelectItem value="mode">填充众数（分类列）</SelectItem>
+                  <SelectItem value="fill">填充固定值</SelectItem>
+                  <SelectItem value="drop">删除包含缺失值的行</SelectItem>
+                  <SelectItem value="none">不处理</SelectItem>
+                </SelectContent>
+              </Select>
               {config.missingValueStrategy === 'fill' && (
                 <input
                   type="text"
@@ -331,21 +337,20 @@ export function SmartProcess() {
                 <Trash2 className="w-4 h-4 text-[var(--neon-purple)]" />
                 <label className="text-sm font-medium text-[var(--text-primary)]">重复值处理</label>
               </div>
-              <select
+              <Select
                 value={config.duplicateStrategy}
-                onChange={(e) => handleConfigChange('duplicateStrategy', e.target.value as any)}
-                className="w-full p-2 rounded text-sm"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-subtle)'
-                }}
+                onValueChange={(value) => handleConfigChange('duplicateStrategy', value as any)}
               >
-                <option value="drop">删除重复行</option>
-                <option value="keep_first">保留第一个</option>
-                <option value="keep_last">保留最后一个</option>
-                <option value="none">不处理</option>
-              </select>
+                <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="drop">删除重复行</SelectItem>
+                  <SelectItem value="keep_first">保留第一个</SelectItem>
+                  <SelectItem value="keep_last">保留最后一个</SelectItem>
+                  <SelectItem value="none">不处理</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* 异常值处理 */}
@@ -354,36 +359,34 @@ export function SmartProcess() {
                 <AlertTriangle className="w-4 h-4 text-[var(--neon-orange)]" />
                 <label className="text-sm font-medium text-[var(--text-primary)]">异常值处理</label>
               </div>
-              <select
+              <Select
                 value={config.outlierStrategy}
-                onChange={(e) => handleConfigChange('outlierStrategy', e.target.value as any)}
-                className="w-full p-2 rounded text-sm"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-subtle)'
-                }}
+                onValueChange={(value) => handleConfigChange('outlierStrategy', value as any)}
               >
-                <option value="none">不处理</option>
-                <option value="drop">删除异常值所在行</option>
-                <option value="clip">截断到边界值</option>
-                <option value="mark">标记但不删除</option>
-              </select>
+                <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">不处理</SelectItem>
+                  <SelectItem value="drop">删除异常值所在行</SelectItem>
+                  <SelectItem value="clip">截断到边界值</SelectItem>
+                  <SelectItem value="mark">标记但不删除</SelectItem>
+                </SelectContent>
+              </Select>
               {config.outlierStrategy !== 'none' && (
                 <>
-                  <select
+                  <Select
                     value={config.outlierMethod}
-                    onChange={(e) => handleConfigChange('outlierMethod', e.target.value as any)}
-                    className="w-full p-2 rounded text-sm mt-2"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
+                    onValueChange={(value) => handleConfigChange('outlierMethod', value as any)}
                   >
-                    <option value="iqr">IQR 方法（四分位距）</option>
-                    <option value="zscore">Z-Score 方法</option>
-                  </select>
+                    <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)] mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="iqr">IQR 方法（四分位距）</SelectItem>
+                      <SelectItem value="zscore">Z-Score 方法</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {config.outlierMethod === 'iqr' && (
                     <div className="mt-2">
                       <label className="text-xs text-[var(--text-muted)]">IQR 倍数: {config.outlierThreshold}</label>
@@ -408,21 +411,20 @@ export function SmartProcess() {
                 <Filter className="w-4 h-4 text-[var(--neon-pink)]" />
                 <label className="text-sm font-medium text-[var(--text-primary)]">数据标准化</label>
               </div>
-              <select
+              <Select
                 value={config.standardization}
-                onChange={(e) => handleConfigChange('standardization', e.target.value as any)}
-                className="w-full p-2 rounded text-sm"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-subtle)'
-                }}
+                onValueChange={(value) => handleConfigChange('standardization', value as any)}
               >
-                <option value="none">不处理</option>
-                <option value="zscore">Z-Score 标准化</option>
-                <option value="minmax">Min-Max 归一化</option>
-                <option value="log">对数变换</option>
-              </select>
+                <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">不处理</SelectItem>
+                  <SelectItem value="zscore">Z-Score 标准化</SelectItem>
+                  <SelectItem value="minmax">Min-Max 归一化</SelectItem>
+                  <SelectItem value="log">对数变换</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* 数据类型转换 */}

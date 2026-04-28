@@ -31,6 +31,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -580,30 +581,18 @@ export function Dashboard() {
         title="看板"
         subtitle="查看核心指标、图表组件和自定义数据看板。"
         actions={
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-            <button
-              onClick={() => setCurrentView('overview')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                currentView === 'overview'
-                  ? 'bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              概览
-            </button>
-            <button
-              onClick={() => setCurrentView('custom')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                currentView === 'custom'
-                  ? 'bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <Grid3X3 className="w-4 h-4" />
-              自定义看板
-            </button>
-          </div>
+          <Tabs value={currentView} onValueChange={(value) => setCurrentView(value as 'overview' | 'custom')}>
+            <TabsList className="bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-[var(--neon-cyan)]/20 data-[state=active]:text-[var(--neon-cyan)]">
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                概览
+              </TabsTrigger>
+              <TabsTrigger value="custom" className="data-[state=active]:bg-[var(--neon-cyan)]/20 data-[state=active]:text-[var(--neon-cyan)]">
+                <Grid3X3 className="w-4 h-4 mr-2" />
+                自定义看板
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         }
       />
 

@@ -19,6 +19,7 @@ import {
   AnalysisConfigPanel,
 } from '@/components/analysis';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { DatasetSelector } from '@/components/DatasetSelector';
 import { DataTypeValidation } from '@/components/DataTypeValidation';
@@ -665,21 +666,20 @@ export function Forecast() {
               {columns.length > 0 && (
                 <div className="flex items-center justify-between p-2 rounded bg-[var(--bg-secondary)]">
                   <span className="text-sm text-[var(--text-muted)]">批量预测模式</span>
-                  <button
-                    onClick={() => {
-                      setIsBatchMode(!isBatchMode);
-                      if (!isBatchMode) {
-                        setSelectedBatchColumns([]);
-                      }
-                    }}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-all ${
-                      isBatchMode 
-                        ? 'bg-[var(--neon-cyan)] text-[var(--bg-primary)]' 
-                        : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)]'
-                    }`}
-                  >
-                    {isBatchMode ? '已开启' : '关闭'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={isBatchMode}
+                      onCheckedChange={(checked) => {
+                        setIsBatchMode(checked);
+                        if (!checked) {
+                          setSelectedBatchColumns([]);
+                        }
+                      }}
+                    />
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {isBatchMode ? '已开启' : '关闭'}
+                    </span>
+                  </div>
                 </div>
               )}
 
