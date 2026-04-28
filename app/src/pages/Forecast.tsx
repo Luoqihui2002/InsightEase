@@ -6,8 +6,6 @@ import {
   Settings2, 
   Download,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   Brain,
   Calendar,
@@ -16,6 +14,10 @@ import {
   Upload
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AnalysisPageShell,
+  AnalysisConfigPanel,
+} from '@/components/analysis';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { DatasetSelector } from '@/components/DatasetSelector';
@@ -124,7 +126,6 @@ export function Forecast() {
     companionService.setPage('forecast');
   }, []);
 
-  const [isConfigOpen, setIsConfigOpen] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [forecastDays, setForecastDays] = useState('30');
@@ -507,33 +508,55 @@ export function Forecast() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: 'rgba(21, 27, 61, 0.8)', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
-        <h1 className="text-heading-1 text-[var(--text-primary)]">
-          趋势预测
-        </h1>
-        <p className="mt-1" style={{ color: '#94a3b8' }}>
-          基于 Prophet 模型的时间序列预测
-        </p>
-      </div>
+    <AnalysisPageShell
+      title="趋势预测"
+      description="基于 Prophet 模型的时间序列预测"
+    >
+      <div className="flex flex-col lg:flex-row gap-6">
+        <AnalysisConfigPanel
+          title="分析配置"
+          icon={<Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />}
+          footer={
+            <>
+              <button
+                onClick={() => {
+                  console.log('Analyze button clicked, selectedDataset:', selectedDataset);
+                  handleAnalyze();
+                }}
+                disabled={isAnalyzing || !selectedDataset || (isBatchMode && selectedBatchColumns.length === 0)}
+                className="w-full font-medium py-2 px-4 rounded transition-all flex items-center justify-center"
+                style={{
+                  backgroundColor: selectedDataset ? 'var(--neon-cyan)' : 'var(--bg-tertiary)',
+                  color: selectedDataset ? 'var(--bg-primary)' : 'var(--text-muted)',
+                  cursor: selectedDataset ? 'pointer' : 'not-allowed',
+                  border: 'none',
+                  opacity: (selectedDataset && (!isBatchMode || selectedBatchColumns.length > 0)) ? 1 : 0.5
+                }}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {isBatchMode ? `批量预测中 (${selectedBatchColumns.length}个SKU)...` : '预测中...'}
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    {isBatchMode 
+                      ? `批量预测 (${selectedBatchColumns.length}个SKU)` 
+                      : '启动预测'
+                    }
+                  </>
+                )}
+              </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => setIsConfigOpen(!isConfigOpen)}
-          >
-            <CardTitle className="text-lg text-[var(--text-primary)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />
-                分析配置
-              </div>
-              {isConfigOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </CardTitle>
-          </CardHeader>
-          
-          {isConfigOpen && (
-            <CardContent className="space-y-4">
+              {isAnalyzing && (
+                <p className="text-xs text-center text-[var(--text-muted)]">
+                  正在预测数据，请稍候...
+                </p>
+              )}
+            </>
+          }
+        >
               <div className="space-y-2">
                 <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
                 <DatasetSelector 
@@ -1008,13 +1031,11 @@ export function Forecast() {
                   正在预测数据，请稍候...
                 </p>
               )}
-            </CardContent>
-          )}
-        </Card>
+        </AnalysisConfigPanel>
 
-        <div className="lg:col-span-2 space-y-6">
+        <div className="flex-1 space-y-6 min-w-0">
           {!showResult ? (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
+            <Card className="border-[var(--border-subtle)] h-96 flex items-center justify-center">
               <div className="text-center">
                 <TrendingUp className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
                 <p className="text-[var(--text-muted)]">选择数据集并启动预测</p>
@@ -1024,7 +1045,7 @@ export function Forecast() {
           ) : batchResult ? (
             // 批量预测结果展示
             <div ref={resultRef} className="space-y-6">
-              <Card className="glass border-[var(--border-subtle)]">
+              <Card className="border-[var(--border-subtle)]">
                 <CardHeader>
                   <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -1113,7 +1134,7 @@ export function Forecast() {
             </div>
           ) : (
             <div ref={resultRef} className="space-y-6">
-              <Card className="glass border-[var(--border-subtle)]">
+              <Card className="border-[var(--border-subtle)]">
                 <CardHeader>
                   <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -1219,7 +1240,7 @@ export function Forecast() {
 
               {/* 预测分解 - 电商特性 */}
               {analysisResult?.decomposition && (
-                <Card className="glass border-[var(--border-subtle)]">
+                <Card className="border-[var(--border-subtle)]">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                       <BarChart3 className="w-5 h-5 text-[var(--neon-purple)]" />
@@ -1259,7 +1280,7 @@ export function Forecast() {
 
               {/* 大促影响分析 */}
               {analysisResult?.promotion_impact && analysisResult.promotion_impact.length > 0 && (
-                <Card className="glass border-[var(--neon-pink)]/30">
+                <Card className="border-[var(--neon-pink)]/30">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-[var(--neon-pink)]" />
@@ -1291,7 +1312,7 @@ export function Forecast() {
 
               {/* What-if 分析结果 */}
               {analysisResult?.what_if && (
-                <Card className="glass border-[var(--neon-purple)]/30">
+                <Card className="border-[var(--neon-purple)]/30">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-[var(--neon-purple)]" />
@@ -1350,7 +1371,7 @@ export function Forecast() {
               )}
 
               {analysisResult?.ai_summary && (
-                <Card className="glass border-[var(--neon-cyan)]/30">
+                <Card className="border-[var(--neon-cyan)]/30">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                       <Brain className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -1486,6 +1507,6 @@ export function Forecast() {
           </div>
         </div>
       )}
-    </div>
+    </AnalysisPageShell>
   );
 }

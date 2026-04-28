@@ -285,6 +285,27 @@ Upload CSV/Excel
   - `npm run build` — built in 24.88s ✅
   - SelectItem empty value grep — no output ✅
 
+## Phase 4A-4-4: Forecast Page Migration
+
+- **目标**: 将高风险 Forecast 页面迁移到共享布局组件体系，保留复杂业务逻辑和自定义结果结构。
+- **修改文件**:
+  - `app/src/pages/Forecast.tsx`
+- **Forecast 变更**:
+  - 根布局替换为 `AnalysisPageShell`。
+  - 左侧配置 Card 替换为 `AnalysisConfigPanel`，分析按钮移至 footer。
+  - 右侧结果区保留自定义 `Card` 结构（预测结果 / 批量预测结果 / 预测分解 / 大促影响 / What-if / AI 解读），不强制套用 `AnalysisResultPanel` 以避免双层标题冗余。
+  - 移除所有 `glass` 毛玻璃类。
+  - 移除可折叠配置面板行为（`isConfigOpen` 状态、`ChevronUp`/`ChevronDown`）。
+  - 布局从 `grid grid-cols-3` 切换为 `flex flex-col lg:flex-row gap-6`。
+- **约束遵守**:
+  - 所有业务逻辑（数据集加载、模型选择、批量预测、大促日历、What-if 分析、营销日历导入、localStorage 写入、CSV 导出、gsap 动画）零改动。
+  - 零原生 `<select>` 替换（留在 Phase 4A-5）。
+  - 无 `SelectItem value=""`。
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 20.37s ✅
+  - SelectItem empty value grep — no output ✅
+
 ## 下一步建议
 
 ### 立即执行
@@ -304,7 +325,7 @@ Upload CSV/Excel
 
 ```bash
 cd app && npx tsc --noEmit    # 0 errors ✅
-cd app && npm run build        # built in 14.96s ✅
+cd app && npm run build        # built in 20.37s ✅
 ```
 
-> 警告: JS chunk 3,365 KB，待 Phase 4A 拆分优化。
+> 警告: JS chunk 3,387 KB，待 Phase 4A 拆分优化。

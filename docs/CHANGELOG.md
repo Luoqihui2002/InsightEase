@@ -179,3 +179,14 @@
 - 移除所有 `glass` 毛玻璃类，替换为标准 `bg-[var(--bg-secondary)]`。
 - 移除可折叠配置面板行为。
 - 所有业务逻辑（预处理配置、漏斗模板、目标拆解、localStorage、预测对比、gsap 动画）零改动。
+
+## Phase 4A-4-4: Forecast Page Migration
+
+- `Forecast.tsx` 迁移到分析模板组件体系。
+- 根布局替换为 `AnalysisPageShell`（标准标题区）。
+- 左侧配置面板替换为 `AnalysisConfigPanel`，分析按钮移至 footer。
+- 右侧结果区保留自定义 `Card` 结构（预测结果 / 批量预测结果 / 预测分解 / 大促影响 / What-if / AI 解读），不强制套用 `AnalysisResultPanel` 以避免双层标题冗余。
+- 移除所有 `glass` 毛玻璃类。
+- 移除可折叠配置面板行为（`isConfigOpen` 状态、`ChevronUp`/`ChevronDown`）。
+- 布局从 `grid grid-cols-3` 切换为 `flex flex-col lg:flex-row gap-6`，与模板组件体系保持一致。
+- 所有业务逻辑（数据集加载、 Prophet/LightGBM/SARIMA 模型选择、批量预测、大促日历、What-if 分析、营销日历导入、localStorage 写入、CSV 导出、gsap 动画）零改动。
