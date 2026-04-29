@@ -95,6 +95,35 @@ export function getChartColors(): ChartColors {
   };
 }
 
+/**
+ * Apply alpha to a hex color string.
+ * Returns original color if parsing fails.
+ */
+export function withAlpha(color: string, alpha: number): string {
+  if (color.startsWith('rgba(') || color.startsWith('rgb(')) {
+    // Try to replace existing alpha
+    const match = color.match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(?:,\s*([\d.]+)\s*)?\)/);
+    if (match) {
+      return `rgba(${color.replace(/rgba?\(/, '').replace(/,\s*[\d.]+\s*\)$/, '')}, ${alpha})`;
+    }
+    return color;
+  }
+  const hex = color.replace('#', '');
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16);
+    const g = parseInt(hex[1] + hex[1], 16);
+    const b = parseInt(hex[2] + hex[2], 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  if (hex.length === 6) {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return color;
+}
+
 export function useChartColors(): ChartColors {
   const [colors, setColors] = useState<ChartColors>(getChartColors);
 

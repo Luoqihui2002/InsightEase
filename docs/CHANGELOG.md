@@ -319,6 +319,14 @@
 - PathAnalysis / Attribution / Forecast 图表颜色推迟到 4A-6-5
 - 零业务逻辑变更，零 API 变更
 
+## Phase 4A-6-5: Complex Chart Color Migration
+
+- `useChartColors.ts` 新增 `withAlpha()` 辅助函数（hex → rgba）
+- `Attribution.tsx`：图表 option 颜色（tooltip、轴线、legend）迁移至 token，保留模型语义色
+- `PathAnalysis.tsx`：漏斗/桑基/网络图/关联规则图颜色全部迁移至 token
+- `Forecast.tsx`：无 ECharts 使用，已使用 CSS 变量，零变更
+- 零业务逻辑变更，零 API 变更
+
 ## Phase 4A-6-3: Page-Level Spacing and Density Pass
 
 - `Attribution.tsx`：移除 7 处 `glass`（汇总统计、对比图表、模型结果、对比表）→ `bg-[var(--bg-secondary)]`

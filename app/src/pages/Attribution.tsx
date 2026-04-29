@@ -27,6 +27,7 @@ import {
   AnalysisResultPanel,
   AnalysisActionBar,
 } from '@/components/analysis';
+import { getChartColors, withAlpha } from '@/hooks/useChartColors';
 
 interface ColumnInfo {
   name: string;
@@ -246,6 +247,7 @@ export function Attribution() {
   }, [analysisResult]);
 
   const renderComparisonChart = () => {
+    const colors = getChartColors();
     if (!chartRef.current || !analysisResult?.models) return;
     
     chartInstance.current?.dispose();
@@ -269,32 +271,32 @@ export function Attribution() {
       backgroundColor: 'transparent',
       title: {
         text: '各模型归因对比',
-        textStyle: { color: '#e2e8f0', fontSize: 14 }
+        textStyle: { color: colors.textPrimary, fontSize: 14 }
       },
       tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(21, 27, 61, 0.95)',
-        borderColor: 'rgba(0, 245, 255, 0.3)',
-        textStyle: { color: '#e2e8f0' }
+        backgroundColor: withAlpha(colors.bgSecondary, 0.95),
+        borderColor: withAlpha(colors.primary, 0.3),
+        textStyle: { color: colors.textPrimary }
       },
       legend: {
         data: series.map(s => s.name),
-        textStyle: { color: '#94a3b8' },
+        textStyle: { color: colors.textSecondary },
         bottom: 0
       },
       grid: { left: '3%', right: '4%', bottom: '15%', top: '15%', containLabel: true },
       xAxis: {
         type: 'category',
         data: touchpoints,
-        axisLabel: { color: '#94a3b8', rotate: 30 },
-        axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.3)' } }
+        axisLabel: { color: colors.textSecondary, rotate: 30 },
+        axisLine: { lineStyle: { color: colors.borderSubtle } }
       },
       yAxis: {
         type: 'value',
         name: '贡献度(%)',
-        nameTextStyle: { color: '#94a3b8' },
-        axisLabel: { color: '#94a3b8' },
-        splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.1)' } }
+        nameTextStyle: { color: colors.textSecondary },
+        axisLabel: { color: colors.textSecondary },
+        splitLine: { lineStyle: { color: colors.borderSubtle } }
       },
       series
     };

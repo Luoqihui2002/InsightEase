@@ -30,6 +30,7 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import * as echarts from 'echarts';
+import { getChartColors, withAlpha } from '@/hooks/useChartColors';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
 
 // 路径分析类型
@@ -272,6 +273,7 @@ export function PathAnalysis() {
   
   // 渲染漏斗图
   useEffect(() => {
+    const colors = getChartColors();
     if (result?.funnel_steps && funnelChartRef.current) {
       if (funnelChartInstance.current) {
         funnelChartInstance.current.dispose();
@@ -315,7 +317,7 @@ export function PathAnalysis() {
             color: '#fff'
           },
           itemStyle: {
-            borderColor: '#0a0e27',
+            borderColor: colors.bgPrimary,
             borderWidth: 1
           },
           emphasis: {
@@ -324,7 +326,7 @@ export function PathAnalysis() {
             }
           },
           data: data,
-          color: ['#00f5ff', '#00d4e6', '#00b3cc', '#0099b3', '#007a99', '#006080']
+          color: [colors.primary, withAlpha(colors.primary, 0.8), withAlpha(colors.primary, 0.65), withAlpha(colors.primary, 0.5), withAlpha(colors.primary, 0.35), withAlpha(colors.primary, 0.2)]
         }]
       };
       
@@ -341,6 +343,7 @@ export function PathAnalysis() {
   
   // 渲染桑基图
   useEffect(() => {
+    const colors = getChartColors();
     if (vizType === 'sankey' && result?.sankey_data && sankeyChartRef.current) {
       if (sankeyChartInstance.current) {
         sankeyChartInstance.current.dispose();
@@ -376,11 +379,11 @@ export function PathAnalysis() {
               curveness: 0.5
             },
             itemStyle: {
-              color: '#00f5ff',
-              borderColor: '#0a0e27'
+              color: colors.primary,
+              borderColor: colors.bgPrimary
             },
             label: {
-              color: '#e2e8f0'
+              color: colors.textPrimary
             }
           }]
         };
@@ -406,6 +409,7 @@ export function PathAnalysis() {
   
   // 渲染力导向图（支持循环）
   useEffect(() => {
+    const colors = getChartColors();
     if (vizType === 'graph' && result?.graph_data && graphChartRef.current) {
       if (graphChartInstance.current) {
         graphChartInstance.current.dispose();
@@ -454,7 +458,7 @@ export function PathAnalysis() {
           },
           legend: {
             data: ['页面节点'],
-            textStyle: { color: '#94a3b8' }
+            textStyle: { color: colors.textSecondary }
           },
           series: [{
             type: 'graph',
@@ -462,13 +466,13 @@ export function PathAnalysis() {
             data: nodes.map((n: any) => ({
               ...n,
               itemStyle: {
-                color: '#00f5ff',
+                color: colors.primary,
                 shadowBlur: 10,
-                shadowColor: 'rgba(0, 245, 255, 0.5)'
+                shadowColor: withAlpha(colors.primary, 0.5)
               },
               label: {
                 show: true,
-                color: '#e2e8f0',
+                color: colors.textPrimary,
                 fontSize: 12
               }
             })),
@@ -516,6 +520,7 @@ export function PathAnalysis() {
   
   // 下载图表
   const handleDownloadChart = (chartType: 'funnel' | 'sankey' | 'graph') => {
+    const colors = getChartColors();
     let instance: echarts.ECharts | null = null;
     let filename = '';
     
@@ -539,7 +544,7 @@ export function PathAnalysis() {
         const url = instance.getDataURL({
           type: 'png',
           pixelRatio: 2,
-          backgroundColor: '#0a0e27'
+          backgroundColor: colors.bgPrimary
         });
         const link = document.createElement('a');
         link.download = filename;
@@ -2201,6 +2206,7 @@ function AssociationRuleGraph({ rules }: { rules: any[] }) {
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
   useEffect(() => {
+    const colors = getChartColors();
     if (!chartRef.current || !rules || rules.length === 0) return;
 
     // 清理旧实例
@@ -2232,13 +2238,13 @@ function AssociationRuleGraph({ rules }: { rules: any[] }) {
         lineStyle: {
           width: Math.max(1, rule.confidence * 5),
           curveness: 0.2,
-          color: rule.lift > 1 ? '#00ff9d' : rule.lift < 1 ? '#ff0080' : '#ffaa00'
+          color: rule.lift > 1 ? colors.success : rule.lift < 1 ? colors.danger : colors.warning
         },
         label: {
           show: true,
           formatter: `${(rule.confidence * 100).toFixed(0)}%`,
           fontSize: 10,
-          color: '#94a3b8'
+          color: colors.textSecondary
         }
       });
     });
@@ -2249,12 +2255,12 @@ function AssociationRuleGraph({ rules }: { rules: any[] }) {
       name,
       symbolSize: Math.max(20, Math.min(60, (nodeWeights[name] || 0.5) * 40)),
       itemStyle: {
-        color: nodeWeights[name] > 0.7 ? '#00f5ff' : nodeWeights[name] > 0.4 ? '#b829f7' : '#3b82f6'
+        color: nodeWeights[name] > 0.7 ? colors.primary : nodeWeights[name] > 0.4 ? colors.secondary : colors.blue
       },
       label: {
         show: true,
         fontSize: 11,
-        color: '#e2e8f0'
+        color: colors.textPrimary
       }
     }));
 
@@ -2262,9 +2268,9 @@ function AssociationRuleGraph({ rules }: { rules: any[] }) {
       backgroundColor: 'transparent',
       tooltip: {
         trigger: 'item',
-        backgroundColor: 'rgba(21, 27, 61, 0.95)',
-        borderColor: 'rgba(0, 245, 255, 0.3)',
-        textStyle: { color: '#e2e8f0' },
+        backgroundColor: withAlpha(colors.bgSecondary, 0.95),
+        borderColor: withAlpha(colors.primary, 0.3),
+        textStyle: { color: colors.textPrimary },
         formatter: (params: any) => {
           if (params.dataType === 'edge') {
             const rule = rules[params.dataIndex];
@@ -2277,7 +2283,7 @@ function AssociationRuleGraph({ rules }: { rules: any[] }) {
       },
       legend: {
         data: ['强关联', '弱关联'],
-        textStyle: { color: '#94a3b8' },
+        textStyle: { color: colors.textSecondary },
         bottom: 0
       },
       series: [{
@@ -2316,19 +2322,19 @@ function AssociationRuleGraph({ rules }: { rules: any[] }) {
       <div ref={chartRef} className="w-full h-80" />
       <div className="flex items-center justify-center gap-6 text-xs">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#00f5ff]" />
+          <span className="w-3 h-3 rounded-full bg-[var(--neon-cyan)]" />
           <span className="text-[var(--text-muted)]">高频节点</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#b829f7]" />
+          <span className="w-3 h-3 rounded-full bg-[var(--neon-purple)]" />
           <span className="text-[var(--text-muted)]">中频节点</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-8 h-0.5 bg-[#00ff9d]" />
+          <span className="w-8 h-0.5 bg-[var(--neon-green)]" />
           <span className="text-[var(--text-muted)]">lift &gt; 1（正相关）</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-8 h-0.5 bg-[#ff0080]" />
+          <span className="w-8 h-0.5 bg-[var(--neon-pink)]" />
           <span className="text-[var(--text-muted)]">lift &lt; 1（负相关）</span>
         </div>
       </div>

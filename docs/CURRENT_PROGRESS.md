@@ -485,6 +485,17 @@ Upload CSV/Excel
 - **推迟**: PathAnalysis / Attribution / Forecast 图表颜色迁移 → Phase 4A-6-5。
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.49s，无空 `SelectItem value=""`，Visualization/Dashboard 无旧硬编码 neon hex。
 
+## Phase 4A-6-5: Complex Chart Color Migration
+
+- **目标**: 将复杂图表页面（Attribution、PathAnalysis）的 ECharts / graph 硬编码颜色迁移到共享 chart color token 工具。
+- **修改**:
+  - `useChartColors.ts`：新增 `withAlpha()` 辅助函数（hex → rgba）。
+  - `Attribution.tsx`：`renderComparisonChart` 中 tooltip、轴线、legend、文字颜色替换为 token；保留 `ATTRIBUTION_MODELS` 语义业务色。
+  - `PathAnalysis.tsx`：漏斗图、桑基图、网络图、AssociationRuleGraph 全部颜色替换为 token；JSX legend 使用 CSS 变量。
+- **未修改**:
+  - `Forecast.tsx` — 无 ECharts 使用，已使用 CSS 变量，零变更。
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 24.62s，无空 `SelectItem value=""`，neon hex 仅 Attribution 模型语义色保留。
+
 ## 下一步建议
 
 ### 立即执行
@@ -493,9 +504,8 @@ Upload CSV/Excel
 
 ### 随后进入 Phase 4A-6 实施
 
-1. **4A-6-5: 空/加载/错误状态打磨** — 迁移内联空状态到共享组件
-2. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
-3. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
+1. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
+2. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
 
 ### 远期规划（不变）
 
@@ -512,6 +522,6 @@ cd app && npx tsc --noEmit    # 0 errors ✅
 cd app && npm run build        # built in 20.50s ✅
 ```
 
-> 最近构建: built in 19.49s，JS chunk 3,396 KB。
+> 最近构建: built in 24.62s，JS chunk 3,397 KB。
 
 > 警告: JS chunk 3,395 KB，待 Phase 4A-6-6 拆分优化。
