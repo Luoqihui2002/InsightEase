@@ -852,26 +852,28 @@ export function PathAnalysis() {
               {/* 分析类型 */}
               <div className="space-y-2">
                 <label className="text-sm text-[var(--text-muted)]">分析类型</label>
-                <ToggleGroup 
-                  type="single" 
+                <ToggleGroup
+                  type="single"
                   value={pathType}
-                  onValueChange={(value) => value && setPathType(value as PathType)}
-                  className="grid grid-cols-2 sm:grid-cols-3 gap-3"
+                  onValueChange={(value) => {
+                    if (value) setPathType(value as PathType);
+                  }}
+                  className="grid w-full grid-cols-2 gap-2"
                 >
-                  <ToggleGroupItem value="funnel" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
-                    <Filter className="w-4 h-4"/>漏斗分析
+                  <ToggleGroupItem value="funnel" className="h-14 w-full justify-start gap-2 px-3 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Filter className="w-4 h-4 shrink-0" />漏斗分析
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="path" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
-                    <Route className="w-4 h-4"/>路径分析
+                  <ToggleGroupItem value="path" className="h-14 w-full justify-start gap-2 px-3 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Route className="w-4 h-4 shrink-0" />路径分析
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="clustering" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
-                    <Layers className="w-4 h-4"/>路径聚类
+                  <ToggleGroupItem value="clustering" className="h-14 w-full justify-start gap-2 px-3 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Layers className="w-4 h-4 shrink-0" />路径聚类
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="key_path" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
-                    <Target className="w-4 h-4"/>关键路径
+                  <ToggleGroupItem value="key_path" className="h-14 w-full justify-start gap-2 px-3 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Target className="w-4 h-4 shrink-0" />关键路径
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="sequence_mining" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
-                    <Share2 className="w-4 h-4"/>序列模式
+                  <ToggleGroupItem value="sequence_mining" className="h-14 w-full justify-start gap-2 px-3 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
+                    <Share2 className="w-4 h-4 shrink-0" />序列模式
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>

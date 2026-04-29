@@ -505,6 +505,16 @@ Upload CSV/Excel
 - **修复策略**: 共享复选框修复（覆盖 Forecast + PathAnalysis 全部 7 处使用），而非局部覆盖。
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.94s，无空 `SelectItem value=""`。
 
+## Phase 4A-6-5.2: PathAnalysis Analysis Type Grid Layout Hotfix
+
+- **目标**: 修复分析类型选择器仍拥挤在左上角的问题。
+- **根因**: ToggleGroup 缺 `w-full`，ToggleGroupItem 使用 `flex flex-col items-center` 导致收缩至内容宽度，`h-auto` 高度不一致。
+- **修改**:
+  - `ToggleGroup`: `grid w-full grid-cols-2 gap-2`（移除 `sm:grid-cols-3`）。
+  - `ToggleGroupItem`: `w-full justify-start gap-2 px-3 h-14`（移除 `flex-col items-center h-auto`）。
+- **未修改**: checkbox.tsx（4A-6-5.1 修复保持不变）。
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 26.93s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行

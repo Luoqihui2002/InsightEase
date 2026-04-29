@@ -333,6 +333,12 @@
 - `checkbox.tsx`：未选中边框从 `border-input` 改为 `border-slate-400/40`，提升暗色背景可见性
 - 零业务逻辑变更
 
+## Phase 4A-6-5.2: PathAnalysis Analysis Type Grid Layout Hotfix
+
+- `PathAnalysis.tsx`：分析类型 ToggleGroup 改为 `grid w-full grid-cols-2 gap-2`
+- `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
+- 零业务逻辑变更
+
 ## Phase 4A-6-3: Page-Level Spacing and Density Pass
 
 - `Attribution.tsx`：移除 7 处 `glass`（汇总统计、对比图表、模型结果、对比表）→ `bg-[var(--bg-secondary)]`
