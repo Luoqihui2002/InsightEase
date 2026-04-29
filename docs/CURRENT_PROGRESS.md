@@ -460,6 +460,19 @@ Upload CSV/Excel
   - `layout/index.ts`：补全 `SectionCard` 导出。
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.11s，无空 `SelectItem value=""`。
 
+## Phase 4A-6-3: Page-Level Spacing and Density Pass
+
+- **目标**: 移除普通数据卡片上的不当 `glass` 使用，标准化卡片背景。
+- **修改**:
+  - `Attribution.tsx`：移除 7 处 `glass`（汇总统计卡 ×4、对比图表、模型结果、对比表）→ `bg-[var(--bg-secondary)]`
+  - `Statistics.tsx`：移除 1 处 `glass`（列统计结果卡）→ `bg-[var(--bg-secondary)]`
+  - `SmartAnalysis.tsx`：移除 6 处 `glass`（配置面板、空状态、诊断、预处理、推荐、结果）→ `bg-[var(--bg-secondary)]`
+  - `Profile.tsx`：移除 10 处 `glass`（标题区、头像、账户、统计 ×4、编辑表单、查看信息、安全设置）→ `bg-[var(--bg-secondary)]`
+- **保留**:
+  - `Dashboard.tsx`：widget 卡片保留 `glass`（故意抬高的视觉组件）
+  - `GoalPlanner.tsx`：无 `glass`，已有 padding 模式合理（输入区 `p-2`、结果区 `p-3`/`p-4`）
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.30s，无空 `SelectItem value=""`，定向 glass grep 仅 Dashboard widget 保留。
+
 ## 下一步建议
 
 ### 立即执行
@@ -468,11 +481,10 @@ Upload CSV/Excel
 
 ### 随后进入 Phase 4A-6 实施
 
-1. **4A-6-3: 页面级间距和密度通行** — 移除 glass 过度使用，标准化卡片 padding，为 SectionCard 配置 density
-2. **4A-6-4: 图表颜色 token 审计** — `useChartColors()` hook，替换 137 处硬编码 hex
-3. **4A-6-5: 空/加载/错误状态打磨** — 迁移内联空状态到共享组件
-4. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
-5. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
+1. **4A-6-4: 图表颜色 token 审计** — `useChartColors()` hook，替换 137 处硬编码 hex
+2. **4A-6-5: 空/加载/错误状态打磨** — 迁移内联空状态到共享组件
+3. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
+4. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
 
 ### 远期规划（不变）
 
@@ -489,6 +501,6 @@ cd app && npx tsc --noEmit    # 0 errors ✅
 cd app && npm run build        # built in 20.50s ✅
 ```
 
-> 最近构建: built in 19.11s，JS chunk 3,395 KB。
+> 最近构建: built in 19.30s，JS chunk 3,395 KB。
 
 > 警告: JS chunk 3,395 KB，待 Phase 4A-6-6 拆分优化。

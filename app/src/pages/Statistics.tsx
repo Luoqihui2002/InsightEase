@@ -269,7 +269,7 @@ export function Statistics() {
     return (
       <div className="space-y-6">
         {targetColumns.map((col: any) => (
-          <Card key={col.name} className="glass border-[var(--border-subtle)]">
+          <Card key={col.name} className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
             <CardHeader>
               <CardTitle className="text-base text-[var(--text-primary)] flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-[var(--neon-cyan)]" />

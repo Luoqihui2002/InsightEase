@@ -392,7 +392,7 @@ export function SmartAnalysis() {
       {/* 主要内容区 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 左侧：配置面板 */}
-        <Card className="glass border-[var(--border-subtle)] lg:col-span-1">
+        <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -452,7 +452,7 @@ export function SmartAnalysis() {
         <div className="lg:col-span-2 space-y-6">
           {/* 步骤 1: 选择数据集提示 */}
           {currentStep === 'select' && !selectedDataset && (
-            <Card className="glass border-[var(--border-subtle)] h-96 flex items-center justify-center">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] h-96 flex items-center justify-center">
               <div className="text-center">
                 <Database className="w-16 h-16 text-[var(--neon-cyan)]/30 mx-auto mb-4" />
                 <p className="text-[var(--text-muted)]">请先选择一个数据集开始分析</p>
@@ -463,7 +463,7 @@ export function SmartAnalysis() {
           
           {/* 步骤 2: 数据诊断 */}
           {(currentStep === 'diagnose' || (currentStep === 'select' && selectedDataset)) && (
-            <Card className="glass border-[var(--border-subtle)]">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
               <CardHeader>
                 <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -584,7 +584,7 @@ export function SmartAnalysis() {
           
           {/* 预处理结果 */}
           {preprocessResult && (
-            <Card className="glass border-[var(--neon-green)]/30">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--neon-green)]/30">
               <CardHeader>
                 <CardTitle className="text-lg text-[var(--neon-green)] flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5" />
@@ -616,7 +616,7 @@ export function SmartAnalysis() {
           
           {/* 分析推荐 */}
           {recommendations.length > 0 && !analysisResult && (
-            <Card className="glass border-[var(--border-subtle)]">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
               <CardHeader>
                 <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                   <Brain className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -671,7 +671,7 @@ export function SmartAnalysis() {
           
           {/* 分析结果 */}
           {analysisResult && (
-            <Card className="glass border-[var(--neon-green)]/30">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--neon-green)]/30">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-[var(--neon-green)] flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5" />

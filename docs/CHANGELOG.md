@@ -309,3 +309,13 @@
 - `SectionCard.tsx` 新增 `density` prop（compact/default/spacious），默认 backward-compatible
 - `layout/index.ts` 补全 `SectionCard` 导出
 - 零业务逻辑变更，零 API 变更
+
+## Phase 4A-6-3: Page-Level Spacing and Density Pass
+
+- `Attribution.tsx`：移除 7 处 `glass`（汇总统计、对比图表、模型结果、对比表）→ `bg-[var(--bg-secondary)]`
+- `Statistics.tsx`：移除 1 处 `glass`（列统计结果卡）→ `bg-[var(--bg-secondary)]`
+- `SmartAnalysis.tsx`：移除 6 处 `glass`（配置、空状态、诊断、预处理、推荐、结果）→ `bg-[var(--bg-secondary)]`
+- `Profile.tsx`：移除 10 处 `glass`（标题、头像、账户、统计、表单、安全）→ `bg-[var(--bg-secondary)]`
+- `Dashboard.tsx`：保留 widget 卡片 `glass`（故意抬高的视觉组件）
+- `GoalPlanner.tsx`：无 glass，padding 模式已合理，未改动
+- 零业务逻辑变更，零 API 变更

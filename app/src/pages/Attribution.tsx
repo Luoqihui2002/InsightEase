@@ -750,7 +750,7 @@ export function Attribution() {
               {/* 汇总统计 */}
               {analysisResult?.summary && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className="glass border-[var(--border-subtle)]">
+                  <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                     <CardContent className="p-4 text-center">
                       <p className="text-xs text-[var(--text-muted)]">用户旅程数</p>
                       <p className="text-2xl font-bold text-[var(--neon-cyan)]">
@@ -758,7 +758,7 @@ export function Attribution() {
                       </p>
                     </CardContent>
                   </Card>
-                  <Card className="glass border-[var(--border-subtle)]">
+                  <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                     <CardContent className="p-4 text-center">
                       <p className="text-xs text-[var(--text-muted)]">总转化数</p>
                       <p className="text-2xl font-bold text-[var(--neon-purple)]">
@@ -766,7 +766,7 @@ export function Attribution() {
                       </p>
                     </CardContent>
                   </Card>
-                  <Card className="glass border-[var(--border-subtle)]">
+                  <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                     <CardContent className="p-4 text-center">
                       <p className="text-xs text-[var(--text-muted)]">转化率</p>
                       <p className="text-2xl font-bold text-[var(--neon-green)]">
@@ -774,7 +774,7 @@ export function Attribution() {
                       </p>
                     </CardContent>
                   </Card>
-                  <Card className="glass border-[var(--border-subtle)]">
+                  <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                     <CardContent className="p-4 text-center">
                       <p className="text-xs text-[var(--text-muted)]">平均触点数</p>
                       <p className="text-2xl font-bold text-[var(--neon-orange)]">
@@ -786,7 +786,7 @@ export function Attribution() {
               )}
 
               {/* 对比图表 */}
-              <Card className="glass border-[var(--border-subtle)]">
+              <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                 <CardHeader>
                   <CardTitle className="text-lg text-[var(--text-primary)]">
                     模型对比分析
@@ -803,7 +803,7 @@ export function Attribution() {
                   {Object.entries(analysisResult.models).map(([modelKey, modelData]: [string, any]) => {
                     const modelInfo = ATTRIBUTION_MODELS.find(m => m.key === modelKey);
                     return (
-                      <Card key={modelKey} className="glass border-[var(--border-subtle)]">
+                      <Card key={modelKey} className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                         <CardHeader>
                           <CardTitle className="text-base text-[var(--text-primary)] flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: modelInfo?.color }} />
@@ -841,7 +841,7 @@ export function Attribution() {
 
               {/* 模型对比表 */}
               {analysisResult?.summary?.model_comparison && (
-                <Card className="glass border-[var(--border-subtle)]">
+                <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)]">
                       各模型Top3触点对比

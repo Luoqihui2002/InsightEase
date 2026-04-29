@@ -207,7 +207,7 @@ export function Profile() {
   return (
     <div ref={pageRef} className="space-y-6 max-w-6xl mx-auto">
       {/* 页面标题 */}
-      <div className="p-6 rounded-xl glass border border-[var(--border-subtle)]">
+      <div className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
         <h1 className="text-heading-1 text-[var(--text-primary)] flex items-center gap-3">
           <User className="w-8 h-8 text-[var(--neon-cyan)]" />
           个人中心
@@ -221,7 +221,7 @@ export function Profile() {
         {/* 左侧：个人信息卡片 */}
         <div className="space-y-6">
           {/* 头像卡片 */}
-          <Card className="glass border-[var(--border-subtle)]">
+          <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
             <CardContent className="p-6 text-center">
               <div className="relative inline-block">
                 <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${getAvatarStyle()} flex items-center justify-center text-white text-3xl font-bold mx-auto shadow-lg`}>
@@ -261,7 +261,7 @@ export function Profile() {
           </Card>
           
           {/* 账户信息 */}
-          <Card className="glass border-[var(--border-subtle)]">
+          <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
             <CardHeader>
               <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                 <Shield className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -299,7 +299,7 @@ export function Profile() {
         <div className="lg:col-span-2 space-y-6">
           {/* 统计卡片 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="glass border-[var(--border-subtle)]">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/20 flex items-center justify-center">
@@ -315,7 +315,7 @@ export function Profile() {
               </CardContent>
             </Card>
             
-            <Card className="glass border-[var(--border-subtle)]">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[var(--neon-purple)]/20 flex items-center justify-center">
@@ -331,7 +331,7 @@ export function Profile() {
               </CardContent>
             </Card>
             
-            <Card className="glass border-[var(--border-subtle)]">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[var(--neon-green)]/20 flex items-center justify-center">
@@ -347,7 +347,7 @@ export function Profile() {
               </CardContent>
             </Card>
             
-            <Card className="glass border-[var(--border-subtle)]">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[var(--neon-pink)]/20 flex items-center justify-center">
@@ -366,7 +366,7 @@ export function Profile() {
           
           {/* 编辑模式：个人信息表单 */}
           {isEditing ? (
-            <Card className="glass border-[var(--border-subtle)]">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                   <Edit3 className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -480,7 +480,7 @@ export function Profile() {
             </Card>
           ) : (
             /* 查看模式：个人信息展示 */
-            <Card className="glass border-[var(--border-subtle)]">
+            <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
               <CardHeader>
                 <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                   <User className="w-5 h-5 text-[var(--neon-cyan)]" />
@@ -523,7 +523,7 @@ export function Profile() {
           )}
           
           {/* 安全设置 */}
-          <Card className="glass border-[var(--border-subtle)]">
+          <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
             <CardHeader>
               <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                 <Lock className="w-5 h-5 text-[var(--neon-cyan)]" />
