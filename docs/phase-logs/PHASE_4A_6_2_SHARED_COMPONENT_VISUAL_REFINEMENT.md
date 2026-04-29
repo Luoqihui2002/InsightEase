@@ -40,6 +40,81 @@
 ### 6. `app/src/components/layout/index.ts`
 - 新增 `SectionCard` 导出
 
+## Select / Checkbox / ToggleGroup Inspection
+
+| 文件 | 是否检查 | 是否修改 |
+|---|---|---|
+| `app/src/components/ui/select.tsx` | ✅ 已检查 | ❌ 无修改 |
+| `app/src/components/ui/checkbox.tsx` | ✅ 已检查 | ❌ 无修改 |
+| `app/src/components/ui/toggle-group.tsx` | ✅ 已检查 | ❌ 无修改 |
+
+Select / Checkbox / ToggleGroup 均为标准 shadcn/ui 原始组件（Radix UI 包装器）。现有页面级状态样式覆盖已足够，无需修改原始组件文件。
+
+## Manual Spot Check
+
+- Empty state renders normally — **Pending user manual verification**
+- ErrorState renders normally — **Pending user manual verification**
+- SuccessState renders normally — **Pending user manual verification**
+- Existing SectionCard pages do not visually break — **Pending user manual verification**
+- No console errors — **Pending user manual verification**
+
+## Documentation Updates
+
+- `docs/CURRENT_PROGRESS.md` — ✅ 已更新（新增 Phase 4A-6-2 章节，更新构建时间戳）
+- `docs/CHANGELOG.md` — ✅ 已更新（新增 Phase 4A-6-2 变更条目）
+
+## Git Information
+
+### Commit 前 git status
+```
+On branch master
+Your branch is up to date with 'origin/master'.
+
+Changes to be committed:
+  modified:   src/components/feedback/ErrorState.tsx
+  modified:   src/components/feedback/SuccessState.tsx
+  modified:   src/components/layout/SectionCard.tsx
+  modified:   src/components/ui/empty.tsx
+  modified:   src/index.css
+  modified:   ../docs/CHANGELOG.md
+  modified:   ../docs/CURRENT_PROGRESS.md
+  new file:   ../docs/phase-logs/PHASE_4A_6_2_SHARED_COMPONENT_VISUAL_REFINEMENT.md
+```
+
+### Commit 信息
+```
+Phase 4A-6-2: Shared component visual refinement
+
+- Add 9 status color tokens to index.css (error/success/warning)
+- ErrorState: replace Tailwind red with --status-error tokens
+- SuccessState: replace Tailwind emerald with --status-success tokens
+- empty: align EmptyTitle/EmptyDescription with project text tokens
+- SectionCard: add density prop (compact/default/spacious), backward-compatible
+- layout/index.ts: export SectionCard
+
+Zero business logic change. tsc 0 errors, build success.
+```
+
+### Commit hash
+`4fa33ad`
+
+### Push 结果
+```
+To https://github.com/Luoqihui2002/InsightEase.git
+   f71b3c8..4fa33ad  master -> master
+```
+
+### 最终 git status
+```
+On branch master
+Your branch is up to date with 'origin/master'.
+nothing to commit, working tree clean
+```
+
+### Package 文件检查
+- `package.json` — 未修改 ✅
+- `package-lock.json` — 未修改 ✅
+
 ## 约束遵守
 - 零业务逻辑变更
 - 零 API 客户端变更
