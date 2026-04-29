@@ -433,22 +433,35 @@ Upload CSV/Excel
   - 明确排除项已记录并分配至未来 Phase（4B/4C/ResultTable 设计）
   - 推荐下一Phase：4A-6 Visual System / Style Polish
 
+## Phase 4A-6-1: Visual System / Style Audit
+
+- **目标**: 审计前端视觉系统，产出 Phase 4A-6 具体实施计划。
+- **新文档**:
+  - `docs/VISUAL_SYSTEM_AUDIT.md` — 视觉系统审计（10 个章节，涵盖 shadcn 兼容性、卡片密度、按钮层级、glass、ECharts 颜色、空状态、包体积、ResultTable）
+  - `docs/phase-logs/PHASE_4A_6_1_VISUAL_SYSTEM_AUDIT.md` — 本阶段日志
+- **关键发现**:
+  - shadcn 语义 token 与自定义暗色主题存在 101 处不匹配
+  - 按钮层级倒置：主操作多用 `outline`/`ghost`，极少用 `default`
+  - glass 类过度使用：30 处，普通数据卡片不应使用
+  - ECharts 硬编码 137 处 hex，主题切换时图表颜色不跟随
+  - JS chunk ~3.4MB，vite.config.ts 未配置 `manualChunks`
+- **推荐实施顺序**: 4A-6-2 共享组件样式 → 4A-6-3 页面密度 → 4A-6-4 图表颜色 → 4A-6-5 空状态 → 4A-6-6 按钮+包体积 → 4A-6-7 ResultTable 设计文档
+- **零源码变更**（纯审计阶段）
+
 ## 下一步建议
 
 ### 立即执行
 
 1. **补做 Phase 3G 浏览器端到端回归测试** — 在可连接 RDS 的环境中跑通全部 checklist
 
-### 随后进入 Phase 4A-6: Visual System / Style Polish
+### 随后进入 Phase 4A-6 实施
 
-1. **shadcn 组件视觉一致性** — 暗色主题 CSS 变量对齐
-2. **卡片密度和间距标准化** — compact / default / spacious 三档
-3. **按钮层级审计** — primary / secondary / ghost 一致性
-4. **PageHeader / PageShell 精细化** — 移动端响应式缺口
-5. **glass 类边界审查** — SmartAnalysis、DataWorkshop 残留
-6. **图表颜色 token 审计** — ECharts 硬编码 hex → CSS 变量
-7. **空状态/加载态/错误态视觉打磨**
-8. **Bundle splitting** — `manualChunks` 拆分 vendor / echarts / radix
+1. **4A-6-2: 共享组件视觉精细化** — Empty/ErrorState/SuccessState token 对齐，Select/Checkbox/ToggleGroup 状态校验
+2. **4A-6-3: 页面级间距和密度通行** — 移除 glass 过度使用，标准化卡片 padding
+3. **4A-6-4: 图表颜色 token 审计** — `useChartColors()` hook，替换 137 处硬编码 hex
+4. **4A-6-5: 空/加载/错误状态打磨** — 定义 `--status-error/success/warning`，迁移内联空状态
+5. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
+6. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
 
 ### 远期规划（不变）
 

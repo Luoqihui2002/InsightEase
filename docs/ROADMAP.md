@@ -1,7 +1,7 @@
 # InsightEase 路线图
 
 **版本**: 2026-04-28
-**当前阶段**: Phase 4A-5 交互清理已完成，进入 Phase 4A-6
+**当前阶段**: Phase 4A-6-1 视觉审计已完成，进入 Phase 4A-6-2 实施
 
 ---
 
@@ -59,17 +59,45 @@
 - 推荐下一Phase：4A-6 Visual System / Style Polish
 
 ### 4A-6: 视觉系统与工程优化（当前Phase）
-1. **shadcn 组件视觉一致性** — 暗色主题 CSS 变量对齐
-2. **卡片密度和间距标准化** — compact / default / spacious 三档
-3. **按钮层级审计** — primary / secondary / ghost 一致性
-4. **PageHeader / PageShell 精细化** — 移动端响应式
-5. **glass 类边界审查** — SmartAnalysis、DataWorkshop 残留
-6. **图表颜色 token 审计** — ECharts 硬编码 hex → CSS 变量
-7. **空状态/加载态/错误态视觉打磨**
-8. **Bundle splitting** — `manualChunks` 拆分 vendor / echarts / radix，解决 3.3MB warning
-9. **API 类型统一** — 修复拦截器解包导致的类型混乱，移除 `as any`
-10. **Alembic 引入** — 数据库版本化管理，替代手动 SQL
-11. **storage.read() 统一** — 修复 analysis.py 后台任务 OSS 兼容性问题
+
+#### 4A-6-1: 视觉系统审计 ✅
+- 审计 shadcn 兼容性、卡片密度、按钮层级、glass、ECharts 颜色、空状态、包体积
+- 产出 `docs/VISUAL_SYSTEM_AUDIT.md`
+- 推荐实施顺序：4A-6-2 → 4A-6-3 → 4A-6-4 → 4A-6-5 → 4A-6-6 → 4A-6-7
+
+#### 4A-6-2: 共享组件视觉精细化（下一Phase）
+- Empty/ErrorState/SuccessState token 对齐（`--status-error/success`）
+- Select/Checkbox/ToggleGroup 状态校验与主题匹配
+- 添加 `density` prop 到 SectionCard
+
+#### 4A-6-3: 页面级间距和密度通行
+- 移除 glass 过度使用（Attribution、Statistics、SmartAnalysis、Profile 普通卡片）
+- 标准化卡片 padding 为 compact/default/spacious 三档
+
+#### 4A-6-4: 图表颜色 token 审计
+- `useChartColors()` hook 读取 CSS 变量
+- 替换 Visualization、Dashboard、PathAnalysis、Attribution、Forecast 中 137 处硬编码 hex
+- 验证主题切换时图表颜色跟随
+
+#### 4A-6-5: 空/加载/错误状态打磨
+- 定义 `--status-error/success/warning`
+- 迁移 SmartAnalysis、DataWorkshop、AIWorkspace 内联空状态到 Empty 组件
+
+#### 4A-6-6: 按钮层级 + 包体积分流
+- 主操作按钮改 `variant="default"`
+- 删除操作改 `variant="destructive"`
+- icon-only 按钮添加 `aria-label`
+- `manualChunks` 拆分 vendor / echarts / radix
+
+#### 4A-6-7: ResultTable 设计文档
+- 纯研究文档，不实现
+- 分析 PathAnalysis、Forecast、Attribution 结果表共性
+- 规划 ResultTableShell / ResultTable / MetricComparisonTable API
+
+#### 4A-6-8: 工程稳定化（可选，可并行为独立 phase）
+- **API 类型统一** — 修复拦截器解包导致的类型混乱，移除 `as any`
+- **Alembic 引入** — 数据库版本化管理，替代手动 SQL
+- **storage.read() 统一** — 修复 analysis.py 后台任务 OSS 兼容性问题
 
 ---
 

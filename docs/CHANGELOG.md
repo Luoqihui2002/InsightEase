@@ -286,3 +286,16 @@
 - 产出 `docs/PHASE_4A_INTERACTION_CLEANUP_CLOSURE.md`：标准化组件清单、哨兵映射规则、推迟项分配、ResultTable 设计建议、4A-6 推荐
 - 明确排除项：DataWorkshop → 4C，SmartAnalysis/AIWorkspace → 4B，复杂结果表 → ResultTable 设计
 - 零代码变更（纯文档阶段）
+
+## Phase 4A-6-1: Visual System / Style Audit
+
+- 视觉系统全面审计完成
+- 产出 `docs/VISUAL_SYSTEM_AUDIT.md`：shadcn 兼容性、卡片密度、按钮层级、glass、ECharts 颜色、空状态、包体积、ResultTable
+- 关键发现：
+  - 101 处 shadcn 语义 token 与自定义暗色主题不匹配
+  - 按钮层级倒置（主操作多用 outline/ghost）
+  - glass 类过度使用（30 处）
+  - ECharts 137 处硬编码 hex，主题切换不跟随
+  - JS chunk ~3.4MB，无 manualChunks
+- 推荐实施顺序：4A-6-2 → 4A-6-3 → 4A-6-4 → 4A-6-5 → 4A-6-6 → 4A-6-7
+- 零源码变更（纯审计阶段）
