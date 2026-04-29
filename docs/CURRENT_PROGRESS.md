@@ -540,10 +540,31 @@ Upload CSV/Excel
 
 1. **补做 Phase 3G 浏览器端到端回归测试** — 在可连接 RDS 的环境中跑通全部 checklist
 
+## Phase 4A-6-6B: Bundle Size Triage
+
+- **目标**: 通过 Vite `manualChunks` 拆分 vendor chunk，降低单个 JS chunk 体积。
+- **策略**: 仅拆分不依赖 React 的大型 vendor 库（echarts、@radix-ui、xlsx、framer-motion/gsap），避免 circular chunk 警告。
+- **结果**:
+  - 最大单 chunk: 3,396.60 kB → 1,561.26 kB (**-54%**)
+  - 主 app chunk: 3,396.60 kB → 1,061.24 kB (**-69%**)
+  - JS chunk 数量: 1 → 5
+  - 总 JS 体积: 3,396.60 kB → 3,381.10 kB (≈ -0.5%，符合预期——split 不减少总体积)
+  - 无 circular chunk 警告
+- **未改动**: 零页面代码修改、零 package 修改、未引入 dynamic import
+- **已知限制**:
+  - echarts chunk 仍为 1.56 MB（全量导入，未来可 tree-shake 优化）
+  - 主 chunk 仍为 1.06 MB（未来可路由级 code-split）
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.12s，无 circular chunk 警告。
+
+## 下一步建议
+
+### 立即执行
+
+1. **补做 Phase 3G 浏览器端到端回归测试** — 在可连接 RDS 的环境中跑通全部 checklist
+
 ### 随后进入 Phase 4A-6 实施
 
-1. **4A-6-6B: Bundle Size Triage** — `manualChunks` 拆分 vendor / echarts / radix，降低 JS chunk
-2. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
+1. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
 
 ### 远期规划（不变）
 

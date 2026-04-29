@@ -91,11 +91,13 @@
 - icon-only 按钮添加 `aria-label`（Dashboard widget 操作、History 操作、Dashboard modal 操作）
 - `GoalPlanner.tsx` 补全缺失的 `Button` import
 
-##### 4A-6-6B: Bundle Size Triage（下一Phase）
-- `manualChunks` 拆分 vendor / echarts / radix
-- 目标：降低 ~3.4MB JS chunk
+##### 4A-6-6B: Bundle Size Triage ✅
+- `manualChunks` 拆分 echarts / radix / xlsx / animation
+- 最大单 chunk: 3,396 kB → 1,561 kB (-54%)
+- 主 app chunk: 3,396 kB → 1,061 kB (-69%)
+- 已知限制：echarts 仍全量导入 1.56 MB；主 chunk 仍 1.06 MB
 
-#### 4A-6-7: ResultTable 设计文档
+#### 4A-6-7: ResultTable 设计文档（下一Phase）
 - 纯研究文档，不实现
 - 分析 PathAnalysis、Forecast、Attribution 结果表共性
 - 规划 ResultTableShell / ResultTable / MetricComparisonTable API

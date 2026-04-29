@@ -339,6 +339,18 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-6B: Bundle Size Triage
+
+- `vite.config.ts`: 新增 `build.rollupOptions.output.manualChunks`，拆分 vendor chunk
+  - `vendor-echarts`: echarts + zrender (~1,561 kB)
+  - `vendor-radix`: @radix-ui/* (~133 kB)
+  - `vendor-export`: xlsx (~424 kB)
+  - `vendor-animation`: framer-motion + gsap (~202 kB)
+- 最大单 chunk: 3,396.60 kB → 1,561.26 kB (-54%)
+- 主 app chunk: 3,396.60 kB → 1,061.24 kB (-69%)
+- 总 JS 体积基本不变 (~3,381 kB)，仅重新分配
+- 零页面代码修改、零 package 修改、无 circular chunk 警告
+
 ## Phase 4A-6-3: Page-Level Spacing and Density Pass
 
 - `Attribution.tsx`：移除 7 处 `glass`（汇总统计、对比图表、模型结果、对比表）→ `bg-[var(--bg-secondary)]`
