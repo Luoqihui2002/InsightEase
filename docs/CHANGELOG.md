@@ -277,3 +277,12 @@
 - History 详情弹窗已使用 shadcn `Dialog`，无需改动
 - 零业务逻辑变更
 - `tsc --noEmit` 0 errors，`npm run build` built in 20.50s ✅
+
+## Phase 4A-5-6: Interaction Cleanup Closure
+
+- Phase 4A-5 交互一致性治理正式收官
+- 5 个子阶段全部完成：审计 → 静态选择器 → 动态选择器 → ToggleGroup/Checkbox → 表格/弹窗
+- 29 个控件替换完成，零业务逻辑变更
+- 产出 `docs/PHASE_4A_INTERACTION_CLEANUP_CLOSURE.md`：标准化组件清单、哨兵映射规则、推迟项分配、ResultTable 设计建议、4A-6 推荐
+- 明确排除项：DataWorkshop → 4C，SmartAnalysis/AIWorkspace → 4B，复杂结果表 → ResultTable 设计
+- 零代码变更（纯文档阶段）

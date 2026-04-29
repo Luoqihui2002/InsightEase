@@ -1,7 +1,7 @@
 # InsightEase 路线图
 
 **版本**: 2026-04-28
-**当前阶段**: Phase 3 已完成，等待 3G 浏览器 E2E 验证后进入 Phase 4
+**当前阶段**: Phase 4A-5 交互清理已完成，进入 Phase 4A-6
 
 ---
 
@@ -27,41 +27,49 @@
 6. **4A-4-5** — PathAnalysis（高风险，验证多类型选择器 + 子组件）✅
 7. **4A-4-6** — 迁移收官 + 复杂页面规划（SmartAnalysis / AIWorkspace / DataWorkshop）✅
 
-### 4A-5: 交互一致性治理（当前Phase）
+### 4A-5: 交互一致性治理 ✅
 
 #### 4A-5-1: 交互清理审计 ✅
 - 审计 15 个页面的 native `<select>`、手写 toggle、clickable div、native `<table>`、`alert()`/`confirm()`
 - 产出 `docs/INTERACTION_CLEANUP_AUDIT.md`
 
-#### 4A-5-2: 低风险静态 select 和 switch（下一Phase）
+#### 4A-5-2: 低风险静态 select 和 switch ✅
 - SmartProcess 5 个静态 enum select → shadcn `Select`
-- GoalPlanner 1 个时间范围 select → shadcn `Select`
 - Dashboard 2 个 view tab → shadcn `Tabs`
 - Forecast batch mode toggle → shadcn `Switch`
 
-#### 4A-5-3: 动态列选择器替换
-- Attribution (5)、Statistics (1)、Forecast (2)、PathAnalysis (3)、Visualization (4)
+#### 4A-5-3: 动态列选择器替换 ✅
+- Attribution (5)、Statistics (1)、Forecast (2)、PathAnalysis (3)、Visualization (4)、GoalPlanner (1)
 - native `<select>` → shadcn `Select`
 - sentinel value 映射：`value=""` → `none`/`auto`
 
-#### 4A-5-4: ToggleGroup 和按钮清理
+#### 4A-5-4: ToggleGroup 和按钮清理 ✅
 - PathAnalysis 5-type 选择器 → shadcn `ToggleGroup`
 - Forecast 模型选择器 → shadcn `ToggleGroup`
-- GoalPlanner template/method → shadcn `ToggleGroup`
+- GoalPlanner 拆解方式 → shadcn `ToggleGroup`
 - Forecast checkbox → shadcn `Checkbox`
 
-#### 4A-5-5: Table 和 Dialog 清理
-- History、Attribution model comparison → `DataTablePreview`
-- AIWorkspace preview → `DataTablePreview`
-- 复杂语义表格（PathAnalysis funnel、GoalPlanner decomposition）保持 native
+#### 4A-5-5: Table 和 Dialog 清理 ✅
+- History `renderResultPreview` → `DataTablePreview`
+- 复杂语义表格保持 native（PathAnalysis funnel、GoalPlanner decomposition、Attribution model comparison）
 
-### 4A-6: 工程优化与视觉打磨
-1. **Bundle splitting** — `manualChunks` 拆分 vendor / echarts / radix，解决 3.3MB warning
-2. **API 类型统一** — 修复拦截器解包导致的类型混乱，移除 `as any`
-3. **Alembic 引入** — 数据库版本化管理，替代手动 SQL
-4. **storage.read() 统一** — 修复 analysis.py 后台任务 OSS 兼容性问题
-5. **硬编码颜色清理** — ECharts 选项使用 CSS variable 动态获取
-6. **剩余 glass 类清理** — SmartAnalysis、DataWorkshop
+#### 4A-5-6: 交互清理收官 ✅
+- 产出 `docs/PHASE_4A_INTERACTION_CLEANUP_CLOSURE.md`
+- 29 个控件替换完成，零业务逻辑变更
+- 推荐下一Phase：4A-6 Visual System / Style Polish
+
+### 4A-6: 视觉系统与工程优化（当前Phase）
+1. **shadcn 组件视觉一致性** — 暗色主题 CSS 变量对齐
+2. **卡片密度和间距标准化** — compact / default / spacious 三档
+3. **按钮层级审计** — primary / secondary / ghost 一致性
+4. **PageHeader / PageShell 精细化** — 移动端响应式
+5. **glass 类边界审查** — SmartAnalysis、DataWorkshop 残留
+6. **图表颜色 token 审计** — ECharts 硬编码 hex → CSS 变量
+7. **空状态/加载态/错误态视觉打磨**
+8. **Bundle splitting** — `manualChunks` 拆分 vendor / echarts / radix，解决 3.3MB warning
+9. **API 类型统一** — 修复拦截器解包导致的类型混乱，移除 `as any`
+10. **Alembic 引入** — 数据库版本化管理，替代手动 SQL
+11. **storage.read() 统一** — 修复 analysis.py 后台任务 OSS 兼容性问题
 
 ---
 

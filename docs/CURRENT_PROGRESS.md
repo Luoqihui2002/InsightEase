@@ -421,18 +421,40 @@ Upload CSV/Excel
 - SmartAnalysis / AIWorkspace → Phase 4B
 - PathAnalysis / GoalPlanner / Forecast 结果表 → 复杂语义结构
 
+## Phase 4A-5-6: Interaction Cleanup Closure
+
+- **目标**: 正式收官 Phase 4A-5 交互一致性治理，产出 closure 文档，推荐下一Phase。
+- **新文档**:
+  - `docs/PHASE_4A_INTERACTION_CLEANUP_CLOSURE.md` — Phase 4A-5 正式收官文档
+  - `docs/phase-logs/PHASE_4A_5_6_INTERACTION_CLEANUP_CLOSURE.md` — 本阶段日志
+- **结论**:
+  - Phase 4A-5 全部 5 个子阶段已完成
+  - 29 个控件替换完成，零业务逻辑变更
+  - 明确排除项已记录并分配至未来 Phase（4B/4C/ResultTable 设计）
+  - 推荐下一Phase：4A-6 Visual System / Style Polish
+
 ## 下一步建议
 
 ### 立即执行
 
 1. **补做 Phase 3G 浏览器端到端回归测试** — 在可连接 RDS 的环境中跑通全部 checklist
 
-### 随后进入 Phase 4A: Engineering Stabilization
+### 随后进入 Phase 4A-6: Visual System / Style Polish
 
-1. **Bundle splitting** — `manualChunks` 拆分 vendor / echarts / radix
-2. **API 类型统一** — 修复拦截器解包导致的类型混乱
-3. **Alembic 引入** — 数据库版本化管理
-4. **storage.read() 统一** — 修复 OSS 兼容性问题
+1. **shadcn 组件视觉一致性** — 暗色主题 CSS 变量对齐
+2. **卡片密度和间距标准化** — compact / default / spacious 三档
+3. **按钮层级审计** — primary / secondary / ghost 一致性
+4. **PageHeader / PageShell 精细化** — 移动端响应式缺口
+5. **glass 类边界审查** — SmartAnalysis、DataWorkshop 残留
+6. **图表颜色 token 审计** — ECharts 硬编码 hex → CSS 变量
+7. **空状态/加载态/错误态视觉打磨**
+8. **Bundle splitting** — `manualChunks` 拆分 vendor / echarts / radix
+
+### 远期规划（不变）
+
+- Phase 4B: AI Assistant Upgrade / Hermes Agent
+- Phase 4C: DataWorkshop 组件拆分
+- Phase 5: Dashboard & ECharts Upgrade
 
 ---
 
