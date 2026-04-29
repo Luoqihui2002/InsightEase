@@ -267,3 +267,13 @@
 - 所有状态值、onChange 行为、选项标签完全保留
 - 零业务逻辑变更
 - `tsc --noEmit` 0 errors，`npm run build` built in 21.32s ✅
+
+## Phase 4A-5-5: Table & Dialog Cleanup
+
+- History: `renderResultPreview` 详情预览原生表 → `DataTablePreview`（保留对象→JSON和50字符截断预处理器）
+- History 主分析列表：保持原生（富单元格：图标、按钮、条件颜色）
+- Attribution 模型对比表：保持原生（有意义的视觉颜色编码：百分比高亮）
+- 全库无手写 `fixed inset-0` 模态框
+- History 详情弹窗已使用 shadcn `Dialog`，无需改动
+- 零业务逻辑变更
+- `tsc --noEmit` 0 errors，`npm run build` built in 20.50s ✅

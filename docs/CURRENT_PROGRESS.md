@@ -389,6 +389,38 @@ Upload CSV/Excel
   - 3 个页面无剩余原生 `type="checkbox"` ✅
   - SelectItem empty value grep — no output ✅
 
+## Phase 4A-5-5: Table & Dialog Cleanup
+
+- **目标**: 清理低风险的原生表格和简单弹窗模式。
+- **修改文件**:
+  - `History.tsx`: `renderResultPreview` 详情预览表 → `DataTablePreview`（保留对象→JSON和截断逻辑）
+- **保留的原生表格**:
+  - `History.tsx` 主分析列表：富单元格内容（图标、按钮、条件颜色）
+  - `Attribution.tsx` 模型对比表：有意义的视觉颜色编码（百分比高亮）
+- **弹窗状态**:
+  - `History.tsx` 详情弹窗已使用 shadcn `Dialog`，无需改动
+  - `Attribution.tsx` 无弹窗
+  - 全库无手写 `fixed inset-0` 模态框
+- **验证**:
+  - `npx tsc --noEmit` — 0 errors ✅
+  - `npm run build` — built in 20.50s ✅
+  - SelectItem empty value grep — no output ✅
+
+## Phase 4A-5 交互清理正式收官
+
+| 子阶段 | 状态 |
+|---|---|
+| 4A-5-1: 交互清理审计 | ✅ 完成 |
+| 4A-5-2: 低风险静态选择器和开关 | ✅ 完成 |
+| 4A-5-3: 动态列选择器哨兵映射 | ✅ 完成 |
+| 4A-5-4: ToggleGroup / Checkbox / Button 清理 | ✅ 完成 |
+| 4A-5-5: 表格和弹窗清理 | ✅ 完成 |
+
+**明确排除项**（按审计建议推迟）:
+- DataWorkshop → Phase 4C 组件提取
+- SmartAnalysis / AIWorkspace → Phase 4B
+- PathAnalysis / GoalPlanner / Forecast 结果表 → 复杂语义结构
+
 ## 下一步建议
 
 ### 立即执行
@@ -408,9 +440,9 @@ Upload CSV/Excel
 
 ```bash
 cd app && npx tsc --noEmit    # 0 errors ✅
-cd app && npm run build        # built in 21.32s ✅
+cd app && npm run build        # built in 20.50s ✅
 ```
 
-> 最近构建: built in 21.32s，JS chunk 3,395 KB。
+> 最近构建: built in 20.50s，JS chunk 3,395 KB。
 
 > 警告: JS chunk 3,395 KB，待 Phase 4A-6 拆分优化。

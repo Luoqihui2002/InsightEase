@@ -51,6 +51,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SectionCard } from '@/components/layout/SectionCard';
 import { ContentGrid } from '@/components/layout/ContentGrid';
 import { StatCard } from '@/components/data-display/StatCard';
+import { DataTablePreview } from '@/components/data-display/DataTablePreview';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorState } from '@/components/feedback/ErrorState';
 
@@ -405,30 +406,23 @@ export function History() {
 
     if (Array.isArray(result) && result.length > 0) {
       const columns = Object.keys(result[0]).slice(0, 5);
+      const previewData = result.slice(0, 10).map((row: any) => {
+        const processed: Record<string, unknown> = {};
+        columns.forEach((col) => {
+          processed[col] = typeof row[col] === 'object' ? JSON.stringify(row[col]) : String(row[col]).slice(0, 50);
+        });
+        return processed;
+      });
       return (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-[var(--border-subtle)]">
-                {columns.map(col => (
-                  <th key={col} className="text-left py-2 px-2 text-[var(--text-muted)] font-medium">{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {result.slice(0, 10).map((row, idx) => (
-                <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
-                  {columns.map(col => (
-                    <td key={col} className="py-2 px-2 text-[var(--text-primary)]">
-                      {typeof row[col] === 'object' ? JSON.stringify(row[col]) : String(row[col]).slice(0, 50)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          <DataTablePreview
+            columns={columns}
+            data={previewData}
+            maxRows={10}
+            maxHeight="300px"
+          />
           {result.length > 10 && (
-            <p className="text-xs text-[var(--text-muted)] mt-2 text-center">...还有 {result.length - 10} 行数据</p>
+            <p className="text-xs text-[var(--text-muted)] text-center">...还有 {result.length - 10} 行数据</p>
           )}
         </div>
       );
