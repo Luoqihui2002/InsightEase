@@ -608,7 +608,7 @@ export function Dashboard() {
               </Button>
 
               {activeDashboard && customDashboards.length > 1 && (
-                <Button size="sm" variant="ghost" onClick={() => deleteDashboard(activeDashboardId)} className="text-[var(--neon-pink)]">
+                <Button size="sm" variant="destructive" onClick={() => deleteDashboard(activeDashboardId)}>
                   <Trash2 className="w-4 h-4 mr-1" />
                   删除
                 </Button>
@@ -649,10 +649,10 @@ export function Dashboard() {
 
               {activeDashboard && activeDashboard.widgets.length > 0 && (
                 <div className="flex items-center gap-1 ml-2 pl-2 border-l border-[var(--border-subtle)]">
-                  <Button size="sm" variant="ghost" onClick={() => exportDashboard('png')} title="导出所有图表">
+                  <Button size="sm" variant="ghost" onClick={() => exportDashboard('png')} title="导出所有图表" aria-label="导出所有图表">
                     <ImageIcon className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => exportDashboard('json')} title="导出看板配置">
+                  <Button size="sm" variant="ghost" onClick={() => exportDashboard('json')} title="导出看板配置" aria-label="导出看板配置">
                     <Download className="w-4 h-4" />
                   </Button>
                 </div>
@@ -698,28 +698,34 @@ export function Dashboard() {
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               {editingLayout && activeDashboard.layoutType === 'free' && (
                                 <>
-                                  <button
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => resizeWidget(widget.id, 'enlarge')}
-                                    className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--neon-cyan)] hover:bg-[var(--bg-tertiary)]"
+                                    className="h-7 w-7 text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
                                     title="放大"
+                                    aria-label="放大"
                                   >
                                     <Plus className="w-3 h-3" />
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => resizeWidget(widget.id, 'shrink')}
-                                    className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--neon-orange)] hover:bg-[var(--bg-tertiary)]"
+                                    className="h-7 w-7 text-[var(--text-muted)] hover:text-[var(--neon-orange)]"
                                     title="缩小"
+                                    aria-label="缩小"
                                   >
                                     <X className="w-3 h-3" />
-                                  </button>
+                                  </Button>
                                 </>
                               )}
-                              <button onClick={() => exportSingleChart(widget.id)} className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--neon-cyan)] hover:bg-[var(--bg-tertiary)]" title="导出图片">
+                              <Button variant="ghost" size="icon" onClick={() => exportSingleChart(widget.id)} className="h-7 w-7 text-[var(--text-muted)] hover:text-[var(--neon-cyan)]" title="导出图片" aria-label="导出图片">
                                 <ImageIcon className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => removeWidget(widget.id)} className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--neon-pink)] hover:bg-[var(--bg-tertiary)]" title="移除">
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => removeWidget(widget.id)} className="h-7 w-7 text-[var(--text-muted)] hover:text-[var(--neon-pink)]" title="移除" aria-label="移除">
                                 <X className="w-4 h-4" />
-                              </button>
+                              </Button>
                             </div>
                           </div>
                           <p className="text-xs text-[var(--text-muted)]">{typeLabels[widget.analysisType || ''] || widget.analysisType || '可视化'} · {widget.datasetName}</p>
@@ -1099,7 +1105,7 @@ function WidgetSelector({ analyses, datasets, visualizations, onSelect, onClose,
             {activeTab === 'analysis' ? `${completedAnalyses.length} 个分析结果` : `${visualizations.length} 个可视化结果`}
           </p>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5" /></Button>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭"><X className="w-5 h-5" /></Button>
       </div>
 
       {/* Tab Switch */}
@@ -1192,24 +1198,30 @@ function WidgetSelector({ analyses, datasets, visualizations, onSelect, onClose,
                     </div>
                   </button>
                   <div className="flex flex-col gap-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => onSelect(viz, 'visualization')}
-                      className="p-2 rounded-lg text-[var(--neon-green)] hover:bg-[var(--neon-green)]/20 transition-colors"
+                      className="h-8 w-8 text-[var(--neon-green)] hover:bg-[var(--neon-green)]/20"
                       title="添加到看板"
+                      aria-label="添加到看板"
                     >
                       <Plus className="w-4 h-4" />
-                    </button>
+                    </Button>
                     {onDeleteViz && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDeleteViz(viz.id);
                         }}
-                        className="p-2 rounded-lg text-[var(--neon-pink)] hover:bg-[var(--neon-pink)]/20 transition-colors opacity-0 group-hover:opacity-100"
+                        className="h-8 w-8 text-[var(--neon-pink)] hover:bg-[var(--neon-pink)]/20 opacity-0 group-hover:opacity-100"
                         title="删除"
+                        aria-label="删除"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

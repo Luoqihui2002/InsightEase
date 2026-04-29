@@ -471,11 +471,11 @@ export function Datasets() {
                     下载
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
                     onClick={() => openDeleteDialog('batch')}
                     disabled={isBatchDeleting}
-                    className="h-7 px-2 text-xs border-[var(--neon-pink)] text-[var(--neon-pink)] hover:bg-[var(--neon-pink)] hover:text-[var(--bg-primary)]"
+                    className="h-7 px-2 text-xs"
                   >
                     <Trash2 className="w-3 h-3 mr-1" />
                     删除
@@ -643,7 +643,7 @@ export function Datasets() {
                         <td className="py-3 px-3 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="更多操作">
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>

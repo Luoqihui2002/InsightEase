@@ -555,6 +555,7 @@ export function History() {
                               className="w-8 h-8 text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
                               onClick={() => handleViewResult(item)}
                               title="查看结果"
+                              aria-label="查看结果"
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
@@ -566,6 +567,7 @@ export function History() {
                                     size="icon"
                                     className="w-8 h-8 text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
                                     title="下载报告"
+                                    aria-label="下载报告"
                                   >
                                     <Download className="w-4 h-4" />
                                   </Button>
@@ -591,11 +593,12 @@ export function History() {
                               </DropdownMenu>
                             )}
                             <Button
-                              variant="ghost"
+                              variant="destructive"
                               size="icon"
-                              className="w-8 h-8 text-[var(--text-muted)] hover:text-[var(--neon-pink)]"
+                              className="w-8 h-8"
                               onClick={() => handleDelete(item.id)}
                               title="删除"
+                              aria-label="删除"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -666,6 +669,7 @@ export function History() {
                 size="icon"
                 onClick={() => setSelectedAnalysis(null)}
                 className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                aria-label="关闭"
               >
                 <X className="w-5 h-5" />
               </Button>

@@ -791,7 +791,8 @@ export function PathAnalysis() {
           footer={
             <>
               <Button
-                className="w-full bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
+                variant="default"
+                className="w-full"
                 onClick={handleAnalyze}
                 disabled={analyzing || !selectedDataset}
               >

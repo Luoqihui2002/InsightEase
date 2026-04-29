@@ -253,9 +253,10 @@ export function SmartProcess() {
           footer={
             <>
               <Button
+                variant="default"
+                className="w-full"
                 onClick={handleProcess}
                 disabled={isProcessing || !selectedDataset}
-                className="w-full"
               >
                 {isProcessing ? (
                   <>
@@ -549,7 +550,8 @@ export function SmartProcess() {
               {/* 操作按钮 */}
               <div className="flex gap-3">
                 <Button
-                  className="flex-1 bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
+                  variant="default"
+                  className="flex-1"
                   onClick={handleDownload}
                 >
                   下载处理后数据

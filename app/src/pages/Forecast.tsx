@@ -521,20 +521,14 @@ export function Forecast() {
           icon={<Settings2 className="w-5 h-5 text-[var(--neon-cyan)]" />}
           footer={
             <>
-              <button
+              <Button
+                variant="default"
+                className="w-full"
                 onClick={() => {
                   console.log('Analyze button clicked, selectedDataset:', selectedDataset);
                   handleAnalyze();
                 }}
                 disabled={isAnalyzing || !selectedDataset || (isBatchMode && selectedBatchColumns.length === 0)}
-                className="w-full font-medium py-2 px-4 rounded transition-all flex items-center justify-center"
-                style={{
-                  backgroundColor: selectedDataset ? 'var(--neon-cyan)' : 'var(--bg-tertiary)',
-                  color: selectedDataset ? 'var(--bg-primary)' : 'var(--text-muted)',
-                  cursor: selectedDataset ? 'pointer' : 'not-allowed',
-                  border: 'none',
-                  opacity: (selectedDataset && (!isBatchMode || selectedBatchColumns.length > 0)) ? 1 : 0.5
-                }}
               >
                 {isAnalyzing ? (
                   <>
@@ -550,7 +544,7 @@ export function Forecast() {
                     }
                   </>
                 )}
-              </button>
+              </Button>
 
               {isAnalyzing && (
                 <p className="text-xs text-center text-[var(--text-muted)]">

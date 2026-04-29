@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import gsap from 'gsap';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
 
 // 漏斗层级配置
 interface FunnelLevel {
@@ -776,17 +777,11 @@ export function GoalPlanner() {
 
               {/* 开始拆解按钮 - 只要有目标层级就显示，但禁用状态 */}
               {funnelLevels.length > 0 && targetLevelId && (
-                <button
+                <Button
+                  variant="default"
+                  className="w-full"
                   onClick={calculateMonthlyTargets}
                   disabled={isCalculating || !targetValue || !targetDate || (decompositionMethod === 'custom' && Object.keys(customMonthlyValues).length === 0)}
-                  className="w-full font-medium py-2 px-4 rounded transition-all flex items-center justify-center"
-                  style={{
-                    backgroundColor: (!targetValue || !targetDate || (decompositionMethod === 'custom' && Object.keys(customMonthlyValues).length === 0)) ? 'var(--bg-tertiary)' : 'var(--neon-cyan)',
-                    color: (!targetValue || !targetDate || (decompositionMethod === 'custom' && Object.keys(customMonthlyValues).length === 0)) ? 'var(--text-muted)' : 'var(--bg-primary)',
-                    border: 'none',
-                    cursor: (!targetValue || !targetDate || (decompositionMethod === 'custom' && Object.keys(customMonthlyValues).length === 0)) ? 'not-allowed' : 'pointer',
-                    opacity: (isCalculating || !targetValue || !targetDate || (decompositionMethod === 'custom' && Object.keys(customMonthlyValues).length === 0)) ? 0.5 : 1
-                  }}
                   title={!targetValue ? '请先填写目标值' : !targetDate ? '请先选择截止日期' : (decompositionMethod === 'custom' && Object.keys(customMonthlyValues).length === 0) ? '请先设置每月目标值' : ''}
                 >
                   {isCalculating ? (
@@ -815,7 +810,7 @@ export function GoalPlanner() {
                       开始拆解
                     </>
                   )}
-                </button>
+                </Button>
               )}
           </div>
         </div>
