@@ -515,6 +515,25 @@ Upload CSV/Excel
 - **未修改**: checkbox.tsx（4A-6-5.1 修复保持不变）。
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 26.93s，无空 `SelectItem value=""`。
 
+## Phase 4A-6-6A: Button Hierarchy Cleanup
+
+- **目标**: 统一迁移页面的按钮层级，将自定义 `<button>` 和错误 variant 替换为 shadcn 语义 variant。
+- **修改**:
+  - `Forecast.tsx`："启动预测" 主操作从自定义 `<button>` + inline style → `<Button variant="default">`
+  - `PathAnalysis.tsx`："开始分析" 从 `className="bg-[var(--neon-cyan)]..."` → `variant="default"`
+  - `SmartProcess.tsx`："开始处理" 和 "下载处理后数据" 显式声明 `variant="default"`
+  - `GoalPlanner.tsx`："开始拆解" 从自定义 `<button>` + inline style → `<Button variant="default">`，补全 `Button` import
+  - `Datasets.tsx`：批量删除从 `variant="ghost"` + neon-pink → `variant="destructive"`
+  - `History.tsx`：删除记录从 `variant="ghost"` + neon-pink → `variant="destructive"`
+  - `Dashboard.tsx`：删除看板从 `variant="ghost"` + neon-pink → `variant="destructive"`
+  - `Dashboard.tsx` + `History.tsx`：11 个 icon-only 按钮从自定义 `<button>` → `<Button>` + `aria-label`
+- **未改动（保持自定义 styled `<button>`）**:
+  - Dashboard 导航快捷按钮（含可见文字）
+  - Dashboard 弹窗 tab 切换按钮（含可见文字）
+  - Visualization 图表类型选择网格（含可见文字）
+  - PathAnalysis 聚类模式/桑基网络切换（含可见文字）
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.53s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行
@@ -523,7 +542,7 @@ Upload CSV/Excel
 
 ### 随后进入 Phase 4A-6 实施
 
-1. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
+1. **4A-6-6B: Bundle Size Triage** — `manualChunks` 拆分 vendor / echarts / radix，降低 JS chunk
 2. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
 
 ### 远期规划（不变）

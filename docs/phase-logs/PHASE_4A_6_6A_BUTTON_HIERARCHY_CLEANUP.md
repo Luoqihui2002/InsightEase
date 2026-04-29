@@ -69,3 +69,46 @@ Clarify button hierarchy across migrated pages by applying consistent shadcn/ui 
 - Widget action buttons (enlarge/shrink/export/remove) in Dashboard.tsx were migrated from custom `<button>` to shadcn `<Button>` with `size="icon"`. The remove button retains `variant="ghost"` with hover text color because it appears in a hover-reveal context where a solid destructive button would be visually jarring.
 - Navigation shortcut buttons in Dashboard.tsx (lines 966-1003) and tab switch buttons (lines 1107-1128) remain custom `<button>` elements because they contain visible text and serve as navigation/toggle UI rather than action buttons.
 - Chart type selectors in Visualization.tsx and cluster mode toggles in PathAnalysis.tsx remain custom styled as they are selection chips, not action buttons.
+
+## Documentation Updates
+
+| File | Updated | Notes |
+|------|---------|-------|
+| `docs/CURRENT_PROGRESS.md` | ✅ | Added Phase 4A-6-6A section; updated next steps to 4A-6-6B |
+| `docs/CHANGELOG.md` | ✅ | Added Phase 4A-6-6A entry |
+| `docs/ROADMAP.md` | ✅ | Marked 4A-6-6A complete; added 4A-6-6B as next sub-phase |
+
+## Git Information
+
+### Pre-commit Status
+```
+On branch master
+Your branch is ahead of 'origin/master' by 1 commit.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+```
+
+### Commit
+- **Hash**: `4e13564`
+- **Message**: `refactor: clarify button hierarchy across pages`
+- **Files changed**: 8 files changed, 127 insertions(+), 48 deletions(-)
+  - `app/src/pages/Dashboard.tsx`
+  - `app/src/pages/Datasets.tsx`
+  - `app/src/pages/Forecast.tsx`
+  - `app/src/pages/GoalPlanner.tsx`
+  - `app/src/pages/History.tsx`
+  - `app/src/pages/PathAnalysis.tsx`
+  - `app/src/pages/SmartProcess.tsx`
+  - `docs/phase-logs/PHASE_4A_6_6A_BUTTON_HIERARCHY_CLEANUP.md`
+
+### Package Files Modified
+- **None** — no `package.json`, `package-lock.json`, or `vite.config.ts` changes.
+
+## Next Phase
+
+**Phase 4A-6-6B: Bundle Size Triage** — ready to begin.
+
+- `manualChunks` 拆分 vendor / echarts / radix
+- 目标：降低 ~3.4MB JS chunk
+- 零业务逻辑变更预期

@@ -348,3 +348,11 @@
 - `Dashboard.tsx`：保留 widget 卡片 `glass`（故意抬高的视觉组件）
 - `GoalPlanner.tsx`：无 glass，padding 模式已合理，未改动
 - 零业务逻辑变更，零 API 变更
+
+## Phase 4A-6-6A: Button Hierarchy Cleanup
+
+- `Forecast.tsx` / `PathAnalysis.tsx` / `SmartProcess.tsx` / `GoalPlanner.tsx`：4 个主操作按钮从自定义 `<button>` 或自定义 className → `<Button variant="default">`
+- `Datasets.tsx` / `History.tsx` / `Dashboard.tsx`：3 个删除操作从 `variant="ghost"` + neon-pink → `variant="destructive"`
+- `Dashboard.tsx` / `History.tsx`：11 个 icon-only 按钮从自定义 `<button>` → `<Button variant="ghost" size="icon">` + `aria-label`
+- `GoalPlanner.tsx`：补全缺失的 `import { Button } from "@/components/ui/button"`
+- 零业务逻辑变更，零 API 变更

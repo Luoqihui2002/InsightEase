@@ -84,10 +84,16 @@
 - 迁移 SmartAnalysis、DataWorkshop、AIWorkspace 内联空状态到 Empty 组件
 
 #### 4A-6-6: 按钮层级 + 包体积分流
-- 主操作按钮改 `variant="default"`
-- 删除操作改 `variant="destructive"`
-- icon-only 按钮添加 `aria-label`
+
+##### 4A-6-6A: Button Hierarchy Cleanup ✅
+- 主操作按钮改 `variant="default"`（Forecast、PathAnalysis、SmartProcess、GoalPlanner）
+- 删除操作改 `variant="destructive"`（Datasets、History、Dashboard）
+- icon-only 按钮添加 `aria-label`（Dashboard widget 操作、History 操作、Dashboard modal 操作）
+- `GoalPlanner.tsx` 补全缺失的 `Button` import
+
+##### 4A-6-6B: Bundle Size Triage（下一Phase）
 - `manualChunks` 拆分 vendor / echarts / radix
+- 目标：降低 ~3.4MB JS chunk
 
 #### 4A-6-7: ResultTable 设计文档
 - 纯研究文档，不实现
