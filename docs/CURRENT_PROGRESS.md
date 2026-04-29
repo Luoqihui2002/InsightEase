@@ -473,6 +473,18 @@ Upload CSV/Excel
   - `GoalPlanner.tsx`：无 `glass`，已有 padding 模式合理（输入区 `p-2`、结果区 `p-3`/`p-4`）
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.30s，无空 `SelectItem value=""`，定向 glass grep 仅 Dashboard widget 保留。
 
+## Phase 4A-6-4: Chart Color Token Foundation + Low-risk Migration
+
+- **目标**: 创建可复用的图表颜色 token 基础工具，将低风险页面的硬编码 ECharts 颜色迁移到 CSS 变量体系。
+- **新增**:
+  - `app/src/hooks/useChartColors.ts`：`getChartColors()` 纯函数 + `useChartColors()` React Hook（含 MutationObserver 主题监听），所有 token 带安全 fallback。
+- **修改**:
+  - `Visualization.tsx`：移除 `CHART_COLORS` 常量，替换为 `getChartColors()`；`#94a3b8` → `textSecondary`，`#e2e8f0` → `textPrimary`，`#0a0e27` → `bgPrimary`。
+  - `Dashboard.tsx`：移除 `COLORS` 常量，替换为 `getChartColors()`；所有颜色引用迁移到 token。
+- **保留**: `#fff`（意图性白色）、`rgba(...)` 透明度衍生值（无对应 CSS 变量）。
+- **推迟**: PathAnalysis / Attribution / Forecast 图表颜色迁移 → Phase 4A-6-5。
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.49s，无空 `SelectItem value=""`，Visualization/Dashboard 无旧硬编码 neon hex。
+
 ## 下一步建议
 
 ### 立即执行
@@ -481,10 +493,9 @@ Upload CSV/Excel
 
 ### 随后进入 Phase 4A-6 实施
 
-1. **4A-6-4: 图表颜色 token 审计** — `useChartColors()` hook，替换 137 处硬编码 hex
-2. **4A-6-5: 空/加载/错误状态打磨** — 迁移内联空状态到共享组件
-3. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
-4. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
+1. **4A-6-5: 空/加载/错误状态打磨** — 迁移内联空状态到共享组件
+2. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
+3. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
 
 ### 远期规划（不变）
 
@@ -501,6 +512,6 @@ cd app && npx tsc --noEmit    # 0 errors ✅
 cd app && npm run build        # built in 20.50s ✅
 ```
 
-> 最近构建: built in 19.30s，JS chunk 3,395 KB。
+> 最近构建: built in 19.49s，JS chunk 3,396 KB。
 
 > 警告: JS chunk 3,395 KB，待 Phase 4A-6-6 拆分优化。

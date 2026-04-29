@@ -37,6 +37,7 @@ import { SectionCard } from '@/components/layout/SectionCard';
 import { ChartCard } from '@/components/data-display/ChartCard';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from '@/components/ui/empty';
+import { getChartColors } from '@/hooks/useChartColors';
 
 // 图表类型
 type ChartType = 'bar' | 'line' | 'pie' | 'scatter' | 'histogram' | 'heatmap';
@@ -60,27 +61,7 @@ interface FieldInfo {
   sample?: any[];
 }
 
-// 颜色配置 - 使用实际颜色值避免 ECharts 无法解析 CSS 变量
-const CHART_COLORS = {
-  cyan: '#00f5ff',
-  purple: '#b829f7',
-  pink: '#ff0080',
-  green: '#00ff9d',
-  orange: '#ffaa00',
-  blue: '#3b82f6',
-  red: '#ef4444',
-  yellow: '#eab308',
-  // 高对比度配色方案
-  primary: ['#00f5ff', '#00d4e6', '#00b3cc', '#0099b3', '#007a99'],
-  categorical: ['#00f5ff', '#b829f7', '#ff0080', '#00ff9d', '#ffaa00', '#3b82f6', '#ef4444', '#eab308'],
-  gradients: [
-    ['#00f5ff', '#0066ff'],
-    ['#b829f7', '#ff0080'],
-    ['#00ff9d', '#00f5ff'],
-    ['#ffaa00', '#ff0080'],
-    ['#3b82f6', '#8b5cf6']
-  ]
-};
+// Chart colors are read from CSS variables via getChartColors()
 
 // 图表类型中文标签
 const chartTypeLabels: Record<ChartType, string> = {
@@ -565,6 +546,7 @@ export function Visualization() {
 
   // 构建图表配置
   const buildChartOption = useCallback((type: ChartType, data: any[], xField: string, yField: string): echarts.EChartsOption => {
+    const colors = getChartColors();
     // 验证数据
     if (!data || data.length === 0) {
       return {
@@ -572,7 +554,7 @@ export function Visualization() {
           text: '暂无数据',
           left: 'center',
           top: 'center',
-          textStyle: { color: '#94a3b8' }
+          textStyle: { color: colors.textSecondary }
         }
       };
     }
@@ -582,7 +564,7 @@ export function Visualization() {
         text: chartConfig.title,
         left: 'center',
         textStyle: {
-          color: '#e2e8f0',
+          color: colors.textPrimary,
           fontSize: 16,
           fontWeight: 'normal'
         }
@@ -593,7 +575,7 @@ export function Visualization() {
         borderColor: 'rgba(0, 245, 255, 0.3)',
         borderWidth: 1,
         textStyle: {
-          color: '#e2e8f0'
+          color: colors.textPrimary
         }
       },
       grid: {
@@ -615,9 +597,9 @@ export function Visualization() {
           xAxis: {
             type: 'category',
             data: data.map(d => d.name),
-            axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.3)' } },
+            axisLine: { lineStyle: { color: colors.borderSubtle } },
             axisLabel: {
-              color: '#94a3b8',
+              color: colors.textSecondary,
               rotate: data.length > 10 ? 45 : 0,
               interval: data.length > 20 ? 'auto' : 0
             },
@@ -626,10 +608,10 @@ export function Visualization() {
           yAxis: {
             type: 'value',
             axisLine: { show: false },
-            axisLabel: { color: '#94a3b8' },
+            axisLabel: { color: colors.textSecondary },
             splitLine: {
               lineStyle: {
-                color: 'rgba(148, 163, 184, 0.1)',
+                color: colors.borderSubtle,
                 type: 'dashed'
               }
             }
@@ -640,13 +622,13 @@ export function Visualization() {
             itemStyle: {
               borderRadius: [4, 4, 0, 0],
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: CHART_COLORS.cyan },
-                { offset: 1, color: CHART_COLORS.purple }
+                { offset: 0, color: colors.primary },
+                { offset: 1, color: colors.secondary }
               ])
             },
             emphasis: {
               itemStyle: {
-                color: CHART_COLORS.cyan
+                color: colors.primary
               }
             }
           }]
@@ -658,9 +640,9 @@ export function Visualization() {
           xAxis: {
             type: 'category',
             data: data.map(d => d.name),
-            axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.3)' } },
+            axisLine: { lineStyle: { color: colors.borderSubtle } },
             axisLabel: {
-              color: '#94a3b8',
+              color: colors.textSecondary,
               rotate: data.length > 10 ? 45 : 0
             },
             axisTick: { show: false },
@@ -669,10 +651,10 @@ export function Visualization() {
           yAxis: {
             type: 'value',
             axisLine: { show: false },
-            axisLabel: { color: '#94a3b8' },
+            axisLabel: { color: colors.textSecondary },
             splitLine: {
               lineStyle: {
-                color: 'rgba(148, 163, 184, 0.1)',
+                color: colors.borderSubtle,
                 type: 'dashed'
               }
             }
@@ -684,13 +666,13 @@ export function Visualization() {
             symbol: 'circle',
             symbolSize: 8,
             lineStyle: {
-              color: CHART_COLORS.cyan,
+              color: colors.primary,
               width: 3,
-              shadowColor: CHART_COLORS.cyan,
+              shadowColor: colors.primary,
               shadowBlur: 10
             },
             itemStyle: {
-              color: CHART_COLORS.cyan,
+              color: colors.primary,
               borderColor: '#fff',
               borderWidth: 2
             },
@@ -713,24 +695,24 @@ export function Visualization() {
             avoidLabelOverlap: true,
             itemStyle: {
               borderRadius: 8,
-              borderColor: '#0a0e27',
+              borderColor: colors.bgPrimary,
               borderWidth: 2
             },
             label: {
               show: true,
-              color: '#e2e8f0',
+              color: colors.textPrimary,
               formatter: '{b}: {d}%'
             },
             labelLine: {
               lineStyle: {
-                color: 'rgba(148, 163, 184, 0.5)'
+                color: colors.borderSubtle
               }
             },
             data: data.map((d, i) => ({
               name: d.name,
               value: d.value,
               itemStyle: {
-                color: CHART_COLORS.categorical[i % CHART_COLORS.categorical.length]
+                color: colors.categorical[i % colors.categorical.length]
               }
             }))
           }]
@@ -739,10 +721,7 @@ export function Visualization() {
       case 'scatter':
         // 如果启用了聚类，按聚类标签分组数据
         if (enableClustering && clusterResult && clusterResult.labels) {
-          const clusterColors = [
-            '#00f5ff', '#b829f7', '#ff0080', '#00ff9d',
-            '#ffaa00', '#3b82f6', '#ef4444', '#eab308'
-          ];
+          const clusterColors = colors.palette;
 
           // 按聚类标签分组数据
           const seriesData: any[] = [];
@@ -777,7 +756,7 @@ export function Visualization() {
               symbol: 'diamond',
               itemStyle: {
                 color: '#fff',
-                borderColor: '#00f5ff',
+                borderColor: colors.primary,
                 borderWidth: 2,
                 opacity: 0.8
               },
@@ -789,18 +768,18 @@ export function Visualization() {
             ...baseOption,
             legend: {
               data: seriesData.map(s => s.name),
-              textStyle: { color: '#94a3b8' },
+              textStyle: { color: colors.textSecondary },
               top: 40
             },
             xAxis: {
               type: 'value',
               name: xField,
-              nameTextStyle: { color: '#94a3b8' },
-              axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.3)' } },
-              axisLabel: { color: '#94a3b8' },
+              nameTextStyle: { color: colors.textSecondary },
+              axisLine: { lineStyle: { color: colors.borderSubtle } },
+              axisLabel: { color: colors.textSecondary },
               splitLine: {
                 lineStyle: {
-                  color: 'rgba(148, 163, 184, 0.1)',
+                  color: colors.borderSubtle,
                   type: 'dashed'
                 }
               }
@@ -808,12 +787,12 @@ export function Visualization() {
             yAxis: {
               type: 'value',
               name: yField,
-              nameTextStyle: { color: '#94a3b8' },
-              axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.3)' } },
-              axisLabel: { color: '#94a3b8' },
+              nameTextStyle: { color: colors.textSecondary },
+              axisLine: { lineStyle: { color: colors.borderSubtle } },
+              axisLabel: { color: colors.textSecondary },
               splitLine: {
                 lineStyle: {
-                  color: 'rgba(148, 163, 184, 0.1)',
+                  color: colors.borderSubtle,
                   type: 'dashed'
                 }
               }
@@ -828,12 +807,12 @@ export function Visualization() {
           xAxis: {
             type: 'value',
             name: xField,
-            nameTextStyle: { color: '#94a3b8' },
-            axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.3)' } },
-            axisLabel: { color: '#94a3b8' },
+            nameTextStyle: { color: colors.textSecondary },
+            axisLine: { lineStyle: { color: colors.borderSubtle } },
+            axisLabel: { color: colors.textSecondary },
             splitLine: {
               lineStyle: {
-                color: 'rgba(148, 163, 184, 0.1)',
+                color: colors.borderSubtle,
                 type: 'dashed'
               }
             }
@@ -841,12 +820,12 @@ export function Visualization() {
           yAxis: {
             type: 'value',
             name: yField,
-            nameTextStyle: { color: '#94a3b8' },
-            axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.3)' } },
-            axisLabel: { color: '#94a3b8' },
+            nameTextStyle: { color: colors.textSecondary },
+            axisLine: { lineStyle: { color: colors.borderSubtle } },
+            axisLabel: { color: colors.textSecondary },
             splitLine: {
               lineStyle: {
-                color: 'rgba(148, 163, 184, 0.1)',
+                color: colors.borderSubtle,
                 type: 'dashed'
               }
             }
@@ -856,13 +835,13 @@ export function Visualization() {
             data: data,
             symbolSize: 12,
             itemStyle: {
-              color: CHART_COLORS.cyan,
+              color: colors.primary,
               shadowBlur: 10,
-              shadowColor: CHART_COLORS.cyan
+              shadowColor: colors.primary
             },
             emphasis: {
               itemStyle: {
-                color: CHART_COLORS.pink,
+                color: colors.accent,
                 borderColor: '#fff',
                 borderWidth: 2
               }
@@ -876,9 +855,9 @@ export function Visualization() {
           xAxis: {
             type: 'category',
             data: data.map(d => d.name),
-            axisLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.3)' } },
+            axisLine: { lineStyle: { color: colors.borderSubtle } },
             axisLabel: {
-              color: '#94a3b8',
+              color: colors.textSecondary,
               interval: Math.floor(data.length / 10)
             },
             axisTick: { show: false }
@@ -886,12 +865,12 @@ export function Visualization() {
           yAxis: {
             type: 'value',
             name: '频数',
-            nameTextStyle: { color: '#94a3b8' },
+            nameTextStyle: { color: colors.textSecondary },
             axisLine: { show: false },
-            axisLabel: { color: '#94a3b8' },
+            axisLabel: { color: colors.textSecondary },
             splitLine: {
               lineStyle: {
-                color: 'rgba(148, 163, 184, 0.1)',
+                color: colors.borderSubtle,
                 type: 'dashed'
               }
             }
@@ -902,8 +881,8 @@ export function Visualization() {
             barWidth: '95%',
             itemStyle: {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: CHART_COLORS.green },
-                { offset: 1, color: CHART_COLORS.cyan }
+                { offset: 0, color: colors.success },
+                { offset: 1, color: colors.primary }
               ])
             }
           }]
@@ -1036,12 +1015,13 @@ export function Visualization() {
 
   // 下载图表
   const handleDownload = () => {
+    const colors = getChartColors();
     if (chartInstanceRef.current && selectedDataset) {
       try {
         const url = chartInstanceRef.current.getDataURL({
           type: 'png',
           pixelRatio: 2,
-          backgroundColor: '#0a0e27'
+          backgroundColor: colors.bgPrimary
         });
         const link = document.createElement('a');
         // 文件名格式：数据集_图表类型

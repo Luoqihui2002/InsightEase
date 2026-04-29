@@ -49,6 +49,7 @@ import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { StatCard } from '@/components/data-display/StatCard';
 import { ChartCard } from '@/components/data-display/ChartCard';
+import { getChartColors } from '@/hooks/useChartColors';
 
 // ============ Types ============
 type DashboardView = 'overview' | 'custom';
@@ -118,23 +119,7 @@ const typeLabels: Record<string, string> = {
   path: '路径分析',
 };
 
-// Color constants for ECharts (CSS variables don't work in Canvas)
-const COLORS = {
-  cyan: '#00f5ff',
-  purple: '#b829f7',
-  green: '#00ff9f',
-  pink: '#ff006e',
-  orange: '#ff6b35',
-  yellow: '#ffd700',
-  blue: '#3a86ff',
-  indigo: '#8338ec',
-  textPrimary: '#e2e8f0',
-  textSecondary: '#94a3b8',
-  textMuted: '#64748b',
-  borderSubtle: 'rgba(148, 163, 184, 0.2)',
-  bgPrimary: '#0a0e27',
-  bgSecondary: '#151b3d',
-};
+// Chart colors are read from CSS variables via getChartColors()
 
 // ============ Main Component ============
 export function Dashboard() {
@@ -803,6 +788,7 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
 
   useEffect(() => {
+    const colors = getChartColors();
     if (!datasets.length) return;
 
     // Storage pie chart
@@ -823,11 +809,11 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
           type: 'pie',
           radius: ['40%', '70%'],
           center: ['50%', '50%'],
-          itemStyle: { borderRadius: 8, borderColor: COLORS.bgPrimary, borderWidth: 2 },
-          label: { color: COLORS.textSecondary, fontSize: 10 },
+          itemStyle: { borderRadius: 8, borderColor: colors.bgPrimary, borderWidth: 2 },
+          label: { color: colors.textSecondary, fontSize: 10 },
           data: storageData.map((d, i) => ({
             ...d,
-            itemStyle: { color: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.orange, COLORS.yellow, COLORS.pink, COLORS.indigo, COLORS.blue][i % 8] }
+            itemStyle: { color: [colors.primary, colors.secondary, colors.success, colors.warning, colors.palette[7], colors.accent, colors.secondary, colors.blue][i % 8] }
           }))
         }]
       });
@@ -845,18 +831,18 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
 
       trendChartInstance.current.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', backgroundColor: COLORS.bgSecondary, borderColor: COLORS.cyan, textStyle: { color: COLORS.textPrimary } },
+        tooltip: { trigger: 'axis', backgroundColor: colors.bgSecondary, borderColor: colors.primary, textStyle: { color: colors.textPrimary } },
         grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-        xAxis: { type: 'category', data: last7Days.map(d => d.slice(5)), axisLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
-        yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
+        xAxis: { type: 'category', data: last7Days.map(d => d.slice(5)), axisLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
+        yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
         series: [{
           data: dailyCounts,
           type: 'line',
           smooth: true,
           symbol: 'circle',
           symbolSize: 8,
-          lineStyle: { color: COLORS.cyan, width: 3 },
-          itemStyle: { color: COLORS.cyan },
+          lineStyle: { color: colors.primary, width: 3 },
+          itemStyle: { color: colors.primary },
           areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 245, 255, 0.3)' }, { offset: 1, color: 'rgba(0, 245, 255, 0)' }]) }
         }]
       });
@@ -872,15 +858,15 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
 
       typeChartInstance.current.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', backgroundColor: COLORS.bgSecondary, borderColor: COLORS.purple, textStyle: { color: COLORS.textPrimary } },
+        tooltip: { trigger: 'axis', backgroundColor: colors.bgSecondary, borderColor: colors.secondary, textStyle: { color: colors.textPrimary } },
         grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-        xAxis: { type: 'category', data: types.map(t => typeLabels[t] || t), axisLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10, rotate: types.length > 4 ? 30 : 0 } },
-        yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
+        xAxis: { type: 'category', data: types.map(t => typeLabels[t] || t), axisLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10, rotate: types.length > 4 ? 30 : 0 } },
+        yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
         series: [{
           data: counts,
           type: 'bar',
           barWidth: '60%',
-          itemStyle: { borderRadius: [4, 4, 0, 0], color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: COLORS.purple }, { offset: 1, color: 'rgba(184, 41, 247, 0.3)' }]) }
+          itemStyle: { borderRadius: [4, 4, 0, 0], color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.secondary }, { offset: 1, color: 'rgba(184, 41, 247, 0.3)' }]) }
         }]
       });
     }
@@ -1238,9 +1224,10 @@ function WidgetSelector({ analyses, datasets, visualizations, onSelect, onClose,
 
 // ============ Chart Option Generator ============
 function generateChartOption(type: string, result: any): echarts.EChartsOption {
+  const colors = getChartColors();
   const baseOption: echarts.EChartsOption = {
     backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis', backgroundColor: COLORS.bgSecondary, borderColor: COLORS.cyan, textStyle: { color: COLORS.textPrimary } },
+    tooltip: { trigger: 'axis', backgroundColor: colors.bgSecondary, borderColor: colors.primary, textStyle: { color: colors.textPrimary } },
     grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true }
   };
 
@@ -1251,9 +1238,9 @@ function generateChartOption(type: string, result: any): echarts.EChartsOption {
         const data = result.histogram || result.distribution;
         return {
           ...baseOption,
-          xAxis: { type: 'category', data: data.map((d: any) => d.bin || d.range || d.label), axisLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
-          yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
-          series: [{ type: 'bar', data: data.map((d: any) => d.count || d.value || d.frequency), itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: COLORS.cyan }, { offset: 1, color: 'rgba(0, 245, 255, 0.3)' }]), borderRadius: [4, 4, 0, 0] } }]
+          xAxis: { type: 'category', data: data.map((d: any) => d.bin || d.range || d.label), axisLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
+          yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
+          series: [{ type: 'bar', data: data.map((d: any) => d.count || d.value || d.frequency), itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.primary }, { offset: 1, color: 'rgba(0, 245, 255, 0.3)' }]), borderRadius: [4, 4, 0, 0] } }]
         };
       }
       break;
@@ -1266,9 +1253,9 @@ function generateChartOption(type: string, result: any): echarts.EChartsOption {
         const values = data.map((d: any) => d.value || d.prediction || d.actual).slice(-30);
         return {
           ...baseOption,
-          xAxis: { type: 'category', data: dates, axisLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
-          yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
-          series: [{ type: 'line', data: values, smooth: true, symbol: 'circle', symbolSize: 6, lineStyle: { color: COLORS.cyan, width: 2 }, itemStyle: { color: COLORS.cyan }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 245, 255, 0.3)' }, { offset: 1, color: 'rgba(0, 245, 255, 0)' }]) } }]
+          xAxis: { type: 'category', data: dates, axisLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
+          yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
+          series: [{ type: 'line', data: values, smooth: true, symbol: 'circle', symbolSize: 6, lineStyle: { color: colors.primary, width: 2 }, itemStyle: { color: colors.primary }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 245, 255, 0.3)' }, { offset: 1, color: 'rgba(0, 245, 255, 0)' }]) } }]
         };
       }
       break;
@@ -1279,14 +1266,14 @@ function generateChartOption(type: string, result: any): echarts.EChartsOption {
         return {
           ...baseOption,
           tooltip: { trigger: 'item' },
-          xAxis: { type: 'value', axisLine: { lineStyle: { color: COLORS.borderSubtle } }, splitLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
-          yAxis: { type: 'value', axisLine: { lineStyle: { color: COLORS.borderSubtle } }, splitLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
+          xAxis: { type: 'value', axisLine: { lineStyle: { color: colors.borderSubtle } }, splitLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
+          yAxis: { type: 'value', axisLine: { lineStyle: { color: colors.borderSubtle } }, splitLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
           series: uniqueClusters.map((clusterId, idx) => ({
             type: 'scatter',
             name: `Cluster ${clusterId}`,
             data: (result.clusters || []).filter((c: any) => c.cluster === clusterId || c.label === clusterId).map((c: any) => [c.x || c[0], c.y || c[1]]),
             symbolSize: 10,
-            itemStyle: { color: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.pink, COLORS.orange][idx % 5] }
+            itemStyle: { color: [colors.primary, colors.secondary, colors.success, colors.accent, colors.warning][idx % 5] }
           }))
         };
       }
@@ -1306,8 +1293,8 @@ function generateChartOption(type: string, result: any): echarts.EChartsOption {
             data: nodes.map((n: any) => ({ name: n.name || n.id || n })),
             links: links.map((l: any) => ({ source: typeof l.source === 'string' ? l.source : nodes[l.source]?.name, target: typeof l.target === 'string' ? l.target : nodes[l.target]?.name, value: l.value || l.count || l.weight })),
             lineStyle: { color: 'gradient', curveness: 0.5 },
-            itemStyle: { color: COLORS.cyan },
-            label: { color: COLORS.textSecondary, fontSize: 10 }
+            itemStyle: { color: colors.primary },
+            label: { color: colors.textSecondary, fontSize: 10 }
           } as any]
         };
       }
@@ -1326,9 +1313,9 @@ function generateChartOption(type: string, result: any): echarts.EChartsOption {
         return {
           ...baseOption,
           tooltip: { position: 'top', formatter: (params: any) => `${variables[params.data[0]]} vs ${variables[params.data[1]]}: ${params.data[2].toFixed(2)}` },
-          xAxis: { type: 'category', data: variables, axisLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10, rotate: 45 } },
-          yAxis: { type: 'category', data: variables, axisLine: { lineStyle: { color: COLORS.borderSubtle } }, axisLabel: { color: COLORS.textMuted, fontSize: 10 } },
-          visualMap: { min: -1, max: 1, calculable: true, orient: 'horizontal', left: 'center', bottom: '0%', inRange: { color: [COLORS.pink, '#ffffff', COLORS.green] }, textStyle: { color: COLORS.textMuted } },
+          xAxis: { type: 'category', data: variables, axisLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10, rotate: 45 } },
+          yAxis: { type: 'category', data: variables, axisLine: { lineStyle: { color: colors.borderSubtle } }, axisLabel: { color: colors.muted, fontSize: 10 } },
+          visualMap: { min: -1, max: 1, calculable: true, orient: 'horizontal', left: 'center', bottom: '0%', inRange: { color: [colors.accent, '#ffffff', colors.success] }, textStyle: { color: colors.muted } },
           series: [{ type: 'heatmap', data: heatmapData, label: { show: true, formatter: (params: any) => params.data[2].toFixed(1), fontSize: 9 } }]
         };
       }
@@ -1347,8 +1334,8 @@ function generateChartOption(type: string, result: any): echarts.EChartsOption {
             minSize: '0%', maxSize: '100%',
             sort: 'descending', gap: 2,
             label: { show: true, position: 'inside', formatter: '{b}', color: '#fff', fontSize: 10 },
-            itemStyle: { borderColor: COLORS.bgPrimary, borderWidth: 1 },
-            data: stages.map((s: any, i: number) => ({ value: s.value || s.count || s.users, name: s.stage || s.name || `Stage ${i + 1}`, itemStyle: { color: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.pink, COLORS.orange][i % 5] } }))
+            itemStyle: { borderColor: colors.bgPrimary, borderWidth: 1 },
+            data: stages.map((s: any, i: number) => ({ value: s.value || s.count || s.users, name: s.stage || s.name || `Stage ${i + 1}`, itemStyle: { color: [colors.primary, colors.secondary, colors.success, colors.accent, colors.warning][i % 5] } }))
           }]
         };
       }
@@ -1364,22 +1351,23 @@ function generateChartOption(type: string, result: any): echarts.EChartsOption {
         type: 'pie',
         radius: ['40%', '70%'],
         center: ['50%', '50%'],
-        itemStyle: { borderRadius: 8, borderColor: COLORS.bgPrimary, borderWidth: 2 },
-        label: { color: COLORS.textSecondary, fontSize: 10 },
-        data: result.slice(0, 8).map((d: any, i: number) => ({ name: d.name || d.label || d.category || `Item ${i + 1}`, value: d.value || d.count || d.frequency || 1, itemStyle: { color: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.pink, COLORS.orange, COLORS.yellow, COLORS.pink, COLORS.indigo][i % 8] } }))
+        itemStyle: { borderRadius: 8, borderColor: colors.bgPrimary, borderWidth: 2 },
+        label: { color: colors.textSecondary, fontSize: 10 },
+        data: result.slice(0, 8).map((d: any, i: number) => ({ name: d.name || d.label || d.category || `Item ${i + 1}`, value: d.value || d.count || d.frequency || 1, itemStyle: { color: [colors.primary, colors.secondary, colors.success, colors.accent, colors.warning, colors.palette[7], colors.accent, colors.secondary][i % 8] } }))
       }]
     };
   }
 
   // Empty fallback
-  return { ...baseOption, title: { show: true, text: '暂无数据', left: 'center', textStyle: { color: COLORS.textMuted, fontSize: 14 } }, xAxis: { type: 'category', data: [], show: false }, yAxis: { type: 'value', show: false }, series: [{ type: 'bar', data: [] }] };
+  return { ...baseOption, title: { show: true, text: '暂无数据', left: 'center', textStyle: { color: colors.muted, fontSize: 14 } }, xAxis: { type: 'category', data: [], show: false }, yAxis: { type: 'value', show: false }, series: [{ type: 'bar', data: [] }] };
 }
 
 // Generate chart option for saved visualization
 function generateVizOption(config: any, data: any): echarts.EChartsOption {
+  const colors = getChartColors();
   const baseOption: echarts.EChartsOption = {
     backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis', backgroundColor: COLORS.bgSecondary, borderColor: COLORS.cyan, textStyle: { color: COLORS.textPrimary } },
+    tooltip: { trigger: 'axis', backgroundColor: colors.bgSecondary, borderColor: colors.primary, textStyle: { color: colors.textPrimary } },
     grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true }
   };
 
@@ -1396,23 +1384,23 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
         xAxis: {
           type: 'category',
           data: data.map((d: any) => d[xField]),
-          axisLine: { lineStyle: { color: COLORS.borderSubtle } },
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
+          axisLine: { lineStyle: { color: colors.borderSubtle } },
+          axisLabel: { color: colors.muted, fontSize: 10 }
         },
         yAxis: {
           type: 'value',
           axisLine: { show: false },
-          splitLine: { lineStyle: { color: COLORS.borderSubtle } },
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
+          splitLine: { lineStyle: { color: colors.borderSubtle } },
+          axisLabel: { color: colors.muted, fontSize: 10 }
         },
         series: [{
           type: chartType,
           data: data.map((d: any) => d[yField]),
           itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: COLORS.cyan }, { offset: 1, color: 'rgba(0, 245, 255, 0.3)' }]),
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.primary }, { offset: 1, color: 'rgba(0, 245, 255, 0.3)' }]),
             borderRadius: [4, 4, 0, 0]
           },
-          lineStyle: { color: COLORS.cyan, width: 2 },
+          lineStyle: { color: colors.primary, width: 2 },
           areaStyle: chartType === 'line' ? { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 245, 255, 0.3)' }, { offset: 1, color: 'rgba(0, 245, 255, 0)' }]) } : undefined
         }]
       };
@@ -1431,12 +1419,12 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
           type: 'pie',
           radius: ['40%', '70%'],
           center: ['50%', '50%'],
-          itemStyle: { borderRadius: 8, borderColor: COLORS.bgPrimary, borderWidth: 2 },
-          label: { color: COLORS.textSecondary, fontSize: 10 },
+          itemStyle: { borderRadius: 8, borderColor: colors.bgPrimary, borderWidth: 2 },
+          label: { color: colors.textSecondary, fontSize: 10 },
           data: Object.entries(pieData).map(([name, value], i) => ({
             name,
             value,
-            itemStyle: { color: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.pink, COLORS.orange, COLORS.yellow, COLORS.indigo, COLORS.blue][i % 8] }
+            itemStyle: { color: [colors.primary, colors.secondary, colors.success, colors.accent, colors.warning, colors.palette[7], colors.secondary, colors.blue][i % 8] }
           }))
         }]
       };
@@ -1447,21 +1435,21 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
         tooltip: { trigger: 'item' },
         xAxis: {
           type: 'value',
-          axisLine: { lineStyle: { color: COLORS.borderSubtle } },
-          splitLine: { lineStyle: { color: COLORS.borderSubtle } },
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
+          axisLine: { lineStyle: { color: colors.borderSubtle } },
+          splitLine: { lineStyle: { color: colors.borderSubtle } },
+          axisLabel: { color: colors.muted, fontSize: 10 }
         },
         yAxis: {
           type: 'value',
-          axisLine: { lineStyle: { color: COLORS.borderSubtle } },
-          splitLine: { lineStyle: { color: COLORS.borderSubtle } },
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
+          axisLine: { lineStyle: { color: colors.borderSubtle } },
+          splitLine: { lineStyle: { color: colors.borderSubtle } },
+          axisLabel: { color: colors.muted, fontSize: 10 }
         },
         series: [{
           type: 'scatter',
           data: data.map((d: any) => [d[xField], d[yField]]),
           symbolSize: 10,
-          itemStyle: { color: COLORS.cyan }
+          itemStyle: { color: colors.primary }
         }]
       };
 
@@ -1482,20 +1470,20 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
         xAxis: {
           type: 'category',
           data: histogram.map((_, i) => `${(min + i * step).toFixed(1)}-${(min + (i + 1) * step).toFixed(1)}`),
-          axisLine: { lineStyle: { color: COLORS.borderSubtle } },
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
+          axisLine: { lineStyle: { color: colors.borderSubtle } },
+          axisLabel: { color: colors.muted, fontSize: 10 }
         },
         yAxis: {
           type: 'value',
           axisLine: { show: false },
-          splitLine: { lineStyle: { color: COLORS.borderSubtle } },
-          axisLabel: { color: COLORS.textMuted, fontSize: 10 }
+          splitLine: { lineStyle: { color: colors.borderSubtle } },
+          axisLabel: { color: colors.muted, fontSize: 10 }
         },
         series: [{
           type: 'bar',
           data: histogram,
           itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: COLORS.purple }, { offset: 1, color: 'rgba(184, 41, 247, 0.3)' }]),
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.secondary }, { offset: 1, color: 'rgba(184, 41, 247, 0.3)' }]),
             borderRadius: [4, 4, 0, 0]
           }
         }]
@@ -1504,7 +1492,7 @@ function generateVizOption(config: any, data: any): echarts.EChartsOption {
     default:
       return {
         ...baseOption,
-        title: { show: true, text: '不支持的图表类型', left: 'center', textStyle: { color: COLORS.textMuted, fontSize: 14 } },
+        title: { show: true, text: '不支持的图表类型', left: 'center', textStyle: { color: colors.muted, fontSize: 14 } },
         xAxis: { type: 'category', data: [], show: false },
         yAxis: { type: 'value', show: false },
         series: [{ type: 'bar', data: [] }]

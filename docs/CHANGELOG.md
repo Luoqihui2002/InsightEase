@@ -310,6 +310,15 @@
 - `layout/index.ts` 补全 `SectionCard` 导出
 - 零业务逻辑变更，零 API 变更
 
+## Phase 4A-6-4: Chart Color Token Foundation + Low-risk Migration
+
+- 新增 `app/src/hooks/useChartColors.ts`：`getChartColors()` 纯函数 + `useChartColors()` Hook（MutationObserver 监听主题切换），所有 token 带安全 fallback
+- `Visualization.tsx`：移除 `CHART_COLORS` 常量，迁移至 `getChartColors()`；替换 `#94a3b8`/`#e2e8f0`/`#0a0e27` 为对应 token
+- `Dashboard.tsx`：移除 `COLORS` 常量，迁移至 `getChartColors()`；所有颜色引用替换为 token
+- 保留 `#fff`（意图性白色）和 `rgba` 透明度衍生值（无对应 CSS 变量）
+- PathAnalysis / Attribution / Forecast 图表颜色推迟到 4A-6-5
+- 零业务逻辑变更，零 API 变更
+
 ## Phase 4A-6-3: Page-Level Spacing and Density Pass
 
 - `Attribution.tsx`：移除 7 处 `glass`（汇总统计、对比图表、模型结果、对比表）→ `bg-[var(--bg-secondary)]`
