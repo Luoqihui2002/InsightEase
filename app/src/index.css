@@ -53,6 +53,17 @@
     --border-glow: rgba(0, 245, 255, 0.3);
     --border-subtle: rgba(148, 163, 184, 0.1);
     
+    /* 状态色 */
+    --status-error: #ff0080;
+    --status-error-bg: rgba(255, 0, 128, 0.08);
+    --status-error-border: rgba(255, 0, 128, 0.24);
+    --status-success: #00ff9d;
+    --status-success-bg: rgba(0, 255, 157, 0.08);
+    --status-success-border: rgba(0, 255, 157, 0.24);
+    --status-warning: #ffaa00;
+    --status-warning-bg: rgba(255, 170, 0, 0.08);
+    --status-warning-border: rgba(255, 170, 0, 0.24);
+    
     /* 侧边栏 */
     --sidebar-background: 225 45% 10%;
     --sidebar-foreground: 215 25% 90%;

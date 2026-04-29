@@ -13,12 +13,12 @@ export function SuccessState({ title, message, actions, className }: SuccessStat
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-8 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-xl border border-[var(--status-success-border)] bg-[var(--status-success-bg)] p-8 text-center",
         className
       )}
     >
-      <CheckCircle className="h-8 w-8 text-emerald-400" />
-      {title && <h3 className="text-base font-medium text-emerald-300">{title}</h3>}
+      <CheckCircle className="h-8 w-8 text-[var(--status-success)]" />
+      {title && <h3 className="text-base font-medium text-[var(--status-success)]">{title}</h3>}
       {message && <p className="text-sm text-[var(--text-secondary)]">{message}</p>}
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

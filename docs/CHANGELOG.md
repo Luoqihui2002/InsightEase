@@ -299,3 +299,13 @@
   - JS chunk ~3.4MB，无 manualChunks
 - 推荐实施顺序：4A-6-2 → 4A-6-3 → 4A-6-4 → 4A-6-5 → 4A-6-6 → 4A-6-7
 - 零源码变更（纯审计阶段）
+
+## Phase 4A-6-2: Shared Component Visual Refinement
+
+- `index.css` 新增 9 个状态色 token：`--status-error/*`、`--status-success/*`、`--status-warning/*`
+- `ErrorState.tsx`：Tailwind `red-500` 替换为项目 `--status-error/*` token
+- `SuccessState.tsx`：Tailwind `emerald-500` 替换为项目 `--status-success/*` token
+- `empty.tsx`：`text-muted-foreground` 替换为 `text-[var(--text-secondary)]`，标题对齐 `--text-primary`
+- `SectionCard.tsx` 新增 `density` prop（compact/default/spacious），默认 backward-compatible
+- `layout/index.ts` 补全 `SectionCard` 导出
+- 零业务逻辑变更，零 API 变更

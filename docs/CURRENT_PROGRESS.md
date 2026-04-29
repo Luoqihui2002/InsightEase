@@ -448,6 +448,18 @@ Upload CSV/Excel
 - **推荐实施顺序**: 4A-6-2 共享组件样式 → 4A-6-3 页面密度 → 4A-6-4 图表颜色 → 4A-6-5 空状态 → 4A-6-6 按钮+包体积 → 4A-6-7 ResultTable 设计文档
 - **零源码变更**（纯审计阶段）
 
+## Phase 4A-6-2: Shared Component Visual Refinement
+
+- **目标**: 将共享反馈和布局组件的视觉 token 对齐到项目暗色主题。
+- **修改**:
+  - `index.css` 新增 9 个状态色 token（error=#ff0080, success=#00ff9d, warning=#ffaa00）。
+  - `ErrorState.tsx`：Tailwind `red-500` 替换为 `--status-error/*` 系列 token。
+  - `SuccessState.tsx`：Tailwind `emerald-500` 替换为 `--status-success/*` 系列 token。
+  - `empty.tsx`：`text-muted-foreground` 替换为 `text-[var(--text-secondary)]`，标题对齐 `--text-primary`。
+  - `SectionCard.tsx`：新增 `density` prop（compact/default/spacious），向后兼容。
+  - `layout/index.ts`：补全 `SectionCard` 导出。
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.11s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行
@@ -456,12 +468,11 @@ Upload CSV/Excel
 
 ### 随后进入 Phase 4A-6 实施
 
-1. **4A-6-2: 共享组件视觉精细化** — Empty/ErrorState/SuccessState token 对齐，Select/Checkbox/ToggleGroup 状态校验
-2. **4A-6-3: 页面级间距和密度通行** — 移除 glass 过度使用，标准化卡片 padding
-3. **4A-6-4: 图表颜色 token 审计** — `useChartColors()` hook，替换 137 处硬编码 hex
-4. **4A-6-5: 空/加载/错误状态打磨** — 定义 `--status-error/success/warning`，迁移内联空状态
-5. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
-6. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
+1. **4A-6-3: 页面级间距和密度通行** — 移除 glass 过度使用，标准化卡片 padding，为 SectionCard 配置 density
+2. **4A-6-4: 图表颜色 token 审计** — `useChartColors()` hook，替换 137 处硬编码 hex
+3. **4A-6-5: 空/加载/错误状态打磨** — 迁移内联空状态到共享组件
+4. **4A-6-6: 按钮层级 + 包体积分流** — 主操作改 `default`，destructive 改 `destructive`，`manualChunks`
+5. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
 
 ### 远期规划（不变）
 
@@ -478,6 +489,6 @@ cd app && npx tsc --noEmit    # 0 errors ✅
 cd app && npm run build        # built in 20.50s ✅
 ```
 
-> 最近构建: built in 20.50s，JS chunk 3,395 KB。
+> 最近构建: built in 19.11s，JS chunk 3,395 KB。
 
-> 警告: JS chunk 3,395 KB，待 Phase 4A-6 拆分优化。
+> 警告: JS chunk 3,395 KB，待 Phase 4A-6-6 拆分优化。
