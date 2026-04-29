@@ -856,7 +856,7 @@ export function PathAnalysis() {
                   type="single" 
                   value={pathType}
                   onValueChange={(value) => value && setPathType(value as PathType)}
-                  className="grid grid-cols-2 gap-2"
+                  className="grid grid-cols-2 sm:grid-cols-3 gap-3"
                 >
                   <ToggleGroupItem value="funnel" className="flex flex-col items-center gap-1 h-auto p-2 text-xs data-[state=on]:bg-[var(--neon-cyan)]/10 data-[state=on]:border-[var(--neon-cyan)] data-[state=on]:text-[var(--neon-cyan)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--neon-cyan)]/50">
                     <Filter className="w-4 h-4"/>漏斗分析

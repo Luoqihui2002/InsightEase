@@ -327,6 +327,12 @@
 - `Forecast.tsx`：无 ECharts 使用，已使用 CSS 变量，零变更
 - 零业务逻辑变更，零 API 变更
 
+## Phase 4A-6-5.1: PathAnalysis Control Layout + Checkbox Visibility Hotfix
+
+- `PathAnalysis.tsx`：分析类型 ToggleGroup 布局改为响应式 2-col → 3-col 网格（gap-3），解决 5 选项拥挤问题
+- `checkbox.tsx`：未选中边框从 `border-input` 改为 `border-slate-400/40`，提升暗色背景可见性
+- 零业务逻辑变更
+
 ## Phase 4A-6-3: Page-Level Spacing and Density Pass
 
 - `Attribution.tsx`：移除 7 处 `glass`（汇总统计、对比图表、模型结果、对比表）→ `bg-[var(--bg-secondary)]`

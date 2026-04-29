@@ -496,6 +496,15 @@ Upload CSV/Excel
   - `Forecast.tsx` — 无 ECharts 使用，已使用 CSS 变量，零变更。
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 24.62s，无空 `SelectItem value=""`，neon hex 仅 Attribution 模型语义色保留。
 
+## Phase 4A-6-5.1: PathAnalysis Control Layout + Checkbox Visibility Hotfix
+
+- **目标**: 修复 PathAnalysis 手动 QA 发现的两个 UI 问题。
+- **修改**:
+  - `PathAnalysis.tsx`：分析类型 ToggleGroup 布局从 `grid-cols-2 gap-2` 改为 `grid-cols-2 sm:grid-cols-3 gap-3`，桌面端 3+2 排列更均衡。
+  - `checkbox.tsx`：未选中状态边框从 `border-input`（暗色下几乎不可见）改为 `border-slate-400/40`，提升暗色背景可见性；选中态/聚焦态不变。
+- **修复策略**: 共享复选框修复（覆盖 Forecast + PathAnalysis 全部 7 处使用），而非局部覆盖。
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.94s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行
@@ -522,6 +531,6 @@ cd app && npx tsc --noEmit    # 0 errors ✅
 cd app && npm run build        # built in 20.50s ✅
 ```
 
-> 最近构建: built in 24.62s，JS chunk 3,397 KB。
+> 最近构建: built in 19.94s，JS chunk 3,397 KB。
 
 > 警告: JS chunk 3,395 KB，待 Phase 4A-6-6 拆分优化。
