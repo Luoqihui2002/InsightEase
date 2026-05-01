@@ -579,6 +579,24 @@ Upload CSV/Excel
 - **未实现**: 零代码变更、零组件实现、零 API 修改
 - **状态**: 设计文档已完成，待未来开发阶段实施
 
+## Phase 4A-6-10: Statistics ResultView QA & Polish
+
+- **目标**: 稳定化 Statistics 页面的 `ResultView` 集成，修复代码审查中发现的问题。
+- **修改文件**:
+  - `app/src/lib/adapters/statisticsResultAdapter.ts` — 增强安全性与健壮性
+  - `app/src/pages/Statistics.tsx` — 移除独立的 AI 解读区块，简化结果容器
+- **修复内容**:
+  - 不稳定 ID: `Date.now()` → `datasetInfo.id + selectedColumn`
+  - 空值安全: 所有数值字段增加 `typeof` 类型守卫
+  - `column_stats` 增加 `Array.isArray` 校验
+  - `highNullColumns` 过滤增加数值类型检查
+  - `totalNulls` reduce 增加类型守卫
+  - 空结果提示: "无法解析分析结果" → "分析完成，但未返回统计数据"
+  - 移除未使用的 `Sparkles` 导入
+- **AI 解读整合**: 从 `Statistics.tsx` 独立 JSX 移入适配器，作为 `ResultTextBlock` 统一渲染
+- **导出行为**: `handleExportCSV` 继续使用 `analysisResult.column_stats`，未迁移到 `AnalysisResult`
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.44s。
+
 ## Phase 4A-6-9: Integrate ResultView with Statistics Page
 
 - **目标**: 将 `ResultView` 接入 Statistics 分析页面，验证统一结果系统在产品流中的可用性。

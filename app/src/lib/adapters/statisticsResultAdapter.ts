@@ -33,15 +33,15 @@ export function toStatisticsAnalysisResult(
   datasetInfo: Dataset | null,
   selectedColumn: string
 ): AnalysisResult | null {
-  if (!data?.column_stats || data.column_stats.length === 0) {
+  const columnStats = data?.column_stats;
+  if (!columnStats || !Array.isArray(columnStats) || columnStats.length === 0) {
     return null;
   }
 
-  const columnStats = data.column_stats;
   const targetColumns =
     selectedColumn === "all"
       ? columnStats
-      : columnStats.filter((c) => c.name === selectedColumn);
+      : columnStats.filter((c) => c?.name === selectedColumn);
 
   const blocks: ResultBlock[] = [];
 
@@ -50,7 +50,9 @@ export function toStatisticsAnalysisResult(
   const categoricalCount = targetColumns.filter(
     (c) => c.type === "categorical"
   ).length;
-  const highNullColumns = targetColumns.filter((c) => c.null_percentage > 10);
+  const highNullColumns = targetColumns.filter(
+    (c) => typeof c.null_percentage === "number" && c.null_percentage > 10
+  );
 
   let summaryContent = `已对 ${targetColumns.length} 个字段进行描述性统计分析。`;
   if (numericCount > 0) {
@@ -77,7 +79,10 @@ export function toStatisticsAnalysisResult(
 
   // === Metric block ===
   const totalRows = datasetInfo?.row_count ?? 0;
-  const totalNulls = targetColumns.reduce((sum, c) => sum + c.null_count, 0);
+  const totalNulls = targetColumns.reduce(
+    (sum, c) => sum + (typeof c.null_count === "number" ? c.null_count : 0),
+    0
+  );
 
   blocks.push({
     type: "metric",
@@ -127,7 +132,7 @@ export function toStatisticsAnalysisResult(
   ];
 
   const tableRows = targetColumns.map((col) => ({
-    name: col.name,
+    name: col.name ?? "—",
     type:
       col.type === "numeric"
         ? "数值型"
@@ -136,15 +141,16 @@ export function toStatisticsAnalysisResult(
         : col.type === "datetime"
         ? "日期型"
         : "其他",
-    non_null_count: col.non_null_count,
-    null_count: col.null_count,
-    null_percentage: col.null_percentage / 100,
-    mean: col.mean ?? null,
-    median: col.median ?? null,
-    std: col.std ?? null,
-    min: col.min ?? null,
-    max: col.max ?? null,
-    unique_count: col.unique_count ?? null,
+    non_null_count: typeof col.non_null_count === "number" ? col.non_null_count : null,
+    null_count: typeof col.null_count === "number" ? col.null_count : null,
+    null_percentage:
+      typeof col.null_percentage === "number" ? col.null_percentage / 100 : null,
+    mean: typeof col.mean === "number" ? col.mean : null,
+    median: typeof col.median === "number" ? col.median : null,
+    std: typeof col.std === "number" ? col.std : null,
+    min: typeof col.min === "number" ? col.min : null,
+    max: typeof col.max === "number" ? col.max : null,
+    unique_count: typeof col.unique_count === "number" ? col.unique_count : null,
     most_common: col.most_common ?? null,
   }));
 
@@ -157,14 +163,24 @@ export function toStatisticsAnalysisResult(
     emptyMessage: "无字段统计数据",
   });
 
+  // === AI Summary block ===
+  if (data?.ai_summary) {
+    blocks.push({
+      type: "text",
+      title: "AI 智能解读",
+      content: data.ai_summary,
+    });
+  }
+
   // === Warning blocks ===
   for (const col of highNullColumns) {
+    const np = col.null_percentage ?? 0;
     blocks.push({
       type: "warning",
-      severity: col.null_percentage > 50 ? "critical" : "caution",
-      message: `字段 "${col.name}" 的空值率为 ${col.null_percentage.toFixed(1)}%，可能影响分析准确性。`,
+      severity: np > 50 ? "critical" : "caution",
+      message: `字段 "${col.name}" 的空值率为 ${np.toFixed(1)}%，可能影响分析准确性。`,
       suggestion:
-        col.null_percentage > 50
+        np > 50
           ? "建议检查数据源或考虑删除该字段。"
           : "建议对空值进行填充或剔除处理。",
       relatedField: col.name,
@@ -178,7 +194,7 @@ export function toStatisticsAnalysisResult(
   }
 
   return {
-    id: `stats-${Date.now()}`,
+    id: `stats-${datasetInfo?.id ?? "unknown"}-${selectedColumn}`,
     analysisType: "descriptive_statistics",
     title: selectedColumn === "all" ? "描述性统计分析" : `"${selectedColumn}" 描述性统计`,
     description: datasetInfo?.filename

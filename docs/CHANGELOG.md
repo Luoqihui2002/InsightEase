@@ -339,6 +339,19 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-10: Statistics ResultView QA & Polish
+
+- 增强 `statisticsResultAdapter.ts` 安全性：
+  - 稳定 ID: `Date.now()` → `datasetInfo.id + selectedColumn`
+  - 所有数值字段增加 `typeof` 类型守卫
+  - `column_stats` 增加 `Array.isArray` 校验
+  - `highNullColumns` 过滤增加数值类型检查
+- AI 解读从 `Statistics.tsx` 独立 JSX 移入适配器，作为 `ResultTextBlock` 统一渲染
+- 空结果提示优化: "无法解析分析结果" → "分析完成，但未返回统计数据"
+- 移除未使用的 `Sparkles` 导入
+- 导出行为保持不变 (`handleExportCSV` 仍读取原始 `column_stats`)
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-9: Integrate ResultView with Statistics Page
 
 - 新增 `app/src/lib/adapters/statisticsResultAdapter.ts` — Statistics 结果 → `AnalysisResult` 适配器

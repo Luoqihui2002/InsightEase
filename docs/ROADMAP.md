@@ -114,7 +114,13 @@
 - `statisticsResultAdapter.ts` 产出 summary + metric + table + warning blocks
 - AI 解读区块保留
 
-#### 4A-6-10: ResultView 多页推广（可选后续）
+#### 4A-6-10: Statistics ResultView QA & Polish ✅
+- 适配器安全性增强（稳定 ID、类型守卫、空值处理）
+- AI 解读整合为 `ResultTextBlock`
+- 空结果提示优化
+- Statistics 页面作为其他页面的参考模式
+
+#### 4A-6-11: ResultView 多页推广（可选后续）
 - Semantic、Attribution、Forecast、PathAnalysis 等页面接入 `ResultView`
 - 每个页面需要独立适配器
 

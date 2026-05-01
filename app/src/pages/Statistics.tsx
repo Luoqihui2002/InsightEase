@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { companionService } from '@/services';
 import { 
   Play, 
-  Sparkles,
   Loader2
 } from 'lucide-react';
 
@@ -360,8 +359,7 @@ export function Statistics() {
           ) : undefined}
         >
           {showResult && (
-            <div ref={resultRef} className="space-y-6">
-              {/* 统一结果视图 */}
+            <div ref={resultRef}>
               {(() => {
                 const converted = toStatisticsAnalysisResult(
                   analysisResult,
@@ -372,29 +370,10 @@ export function Statistics() {
                   <ResultView result={converted} />
                 ) : (
                   <div className="text-center py-8 text-[var(--text-muted)]">
-                    <p>无法解析分析结果</p>
+                    <p>分析完成，但未返回统计数据</p>
                   </div>
                 );
               })()}
-
-              {/* AI 解读 */}
-              {analysisResult?.ai_summary && (
-                <div className="rounded-xl border border-[var(--neon-cyan)]/30 bg-[var(--bg-secondary)] overflow-hidden">
-                  <div className="p-4 border-b border-[var(--border-subtle)]">
-                    <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
-                      <Sparkles className="w-5 h-5 text-[var(--neon-cyan)]" />
-                      AI 智能解读
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="p-4 rounded-lg bg-gradient-to-r from-[var(--neon-purple)]/10 to-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/30">
-                      <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">
-                        {analysisResult.ai_summary}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </AnalysisResultPanel>
