@@ -562,9 +562,33 @@ Upload CSV/Excel
 
 1. **补做 Phase 3G 浏览器端到端回归测试** — 在可连接 RDS 的环境中跑通全部 checklist
 
+## Phase 4A-6-7: ResultTable Design Document
+
+- **目标**: 产出统一的分析结果渲染设计文档，定义前后端共享的 ResultTable 数据契约。
+- **产出**:
+  - `docs/design/RESULT_TABLE_DESIGN.md` — 完整设计文档
+    - `AnalysisResult` 顶层接口（含状态、数据集元数据、诊断信息）
+    - 6 种 ResultBlock 类型：summary、metric、table、chart、text、warning
+    - Table Column Contract（含 semanticRole 语义角色系统）
+    - 格式化规则（数值、百分比、p-value、置信区间、货币、日期）
+    - 6 种结果状态定义（loading/empty/success/warning/error/unsupported）
+    - 3 个示例 payload（描述统计、A/B 测试、回归分析）
+    - 前端渲染策略（ResultView → block dispatcher → type-specific renderer）
+    - 后端/API 兼容性说明（版本控制、错误 payload、导出兼容性）
+    - 8 阶段实施路线图（从 TypeScript schema 到全页面 rollout）
+- **未实现**: 零代码变更、零组件实现、零 API 修改
+- **状态**: 设计文档已完成，待未来开发阶段实施
+
+## 下一步建议
+
+### 立即执行
+
+1. **补做 Phase 3G 浏览器端到端回归测试** — 在可连接 RDS 的环境中跑通全部 checklist
+
 ### 随后进入 Phase 4A-6 实施
 
-1. **4A-6-7: ResultTable 设计文档** — 纯研究，不实现
+1. **ResultTable 实施**（如需继续视觉/工程优化）— `app/src/types/result.ts` + `ResultView` 组件 + `ResultTableRenderer`
+2. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
 
 ### 远期规划（不变）
 

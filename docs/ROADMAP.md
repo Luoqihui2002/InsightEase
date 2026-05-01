@@ -97,7 +97,17 @@
 - 主 app chunk: 3,396 kB → 1,061 kB (-69%)
 - 已知限制：echarts 仍全量导入 1.56 MB；主 chunk 仍 1.06 MB
 
-#### 4A-6-7: ResultTable 设计文档（下一Phase）
+#### 4A-6-7: ResultTable 设计文档 ✅
+- 产出 `docs/design/RESULT_TABLE_DESIGN.md`
+- 定义 `AnalysisResult` schema、`ResultBlock` 类型系统、Column Contract、格式化规则
+- 3 个示例 payload + 8 阶段实施路线图
+- 零代码变更
+
+#### 4A-6-7 Implementation（可选后续）
+- `app/src/types/result.ts` + `ResultView` + `ResultTableRenderer`
+- 从 Statistics 页面开始试点集成
+
+#### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
 - 纯研究文档，不实现
 - 分析 PathAnalysis、Forecast、Attribution 结果表共性
 - 规划 ResultTableShell / ResultTable / MetricComparisonTable API

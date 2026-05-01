@@ -339,6 +339,16 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-7: ResultTable Design Document
+
+- 产出 `docs/design/RESULT_TABLE_DESIGN.md` — 分析结果统一渲染设计文档
+- 定义 `AnalysisResult` 顶层 schema 与 6 种 `ResultBlock` 类型（summary / metric / table / chart / text / warning）
+- 定义 Table Column Contract，含 `semanticRole` 语义角色（dimension / metric / p_value / confidence_interval 等）
+- 定义格式化规则（数值、百分比、p-value、货币、日期、null 值）
+- 提供 3 个示例 payload：描述统计、A/B 测试、回归分析
+- 定义 8 阶段实施路线图（schema → ResultView → ResultTable → mock → 单页集成 → 全 rollout）
+- 零代码变更、零组件实现、零 API 修改
+
 ## Phase 4A-6-6B: Bundle Size Triage
 
 - `vite.config.ts`: 新增 `build.rollupOptions.output.manualChunks`，拆分 vendor chunk
