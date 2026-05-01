@@ -404,18 +404,41 @@ function convertSingleForecast(
     });
   }
 
-  // ── Chart placeholder ──
-  // Forecast.tsx does not render a real ECharts chart outside ResultView,
-  // so a placeholder is appropriate here.
+  // ── Chart block: forecast trend line ──
   if (forecastRows.length > 0) {
+    const chartRows = forecastRows.slice(0, 100);
+
+    // Dynamically build yKeys based on data availability
+    const yKeys: string[] = [];
+    const seriesNames: string[] = [];
+
+    const hasActual = chartRows.some((r) => typeof r.actual === "number");
+    const hasLower = chartRows.some((r) => typeof r.lower === "number");
+    const hasUpper = chartRows.some((r) => typeof r.upper === "number");
+
+    if (hasActual) {
+      yKeys.push("actual");
+      seriesNames.push("实际值");
+    }
+    yKeys.push("forecast");
+    seriesNames.push("预测值");
+    if (hasLower) {
+      yKeys.push("lower");
+      seriesNames.push("下限");
+    }
+    if (hasUpper) {
+      yKeys.push("upper");
+      seriesNames.push("上限");
+    }
+
     blocks.push({
       type: "chart",
       title: "预测趋势图",
       chartType: "line",
-      data: forecastRows.slice(0, 50), // preview subset
+      data: chartRows,
       xKey: "date",
-      yKeys: ["actual", "forecast"],
-      seriesNames: ["实际值", "预测值"],
+      yKeys,
+      seriesNames,
     });
   }
 

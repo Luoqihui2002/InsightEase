@@ -165,8 +165,10 @@
 - ResultView 图表块由 placeholder 改为 ResultChartRenderer
 - 未迁移任何页面图表
 
-#### 4A-6-19: Forecast Chart Migration（可选后续）
+#### 4A-6-19: Forecast Chart Migration ✅
 - Forecast placeholder → 真实 line chart
+- 动态 yKeys（actual/forecast/lower/upper 按数据存在性）
+- 第一个真实页面图表迁移
 
 #### 4A-6-20: Attribution Chart Migration（可选后续）
 - Attribution 对比图表迁移至 ResultView

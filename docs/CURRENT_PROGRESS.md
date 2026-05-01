@@ -776,6 +776,19 @@ Upload CSV/Excel
 - **未迁移页面**: Forecast/Attribution/PathAnalysis 页面图表保持原样
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.52s。index chunk +~4 kB，vendor-echarts 不变。
 
+## Phase 4A-6-19: Forecast Chart Migration
+
+- **目标**: 将 Forecast 页面的图表块从 placeholder 转为真实 line chart。
+- **修改文件**:
+  - `app/src/lib/adapters/forecastResultAdapter.ts` — 更新 chart block
+- **变更要点**:
+  - 动态构建 `yKeys` 和 `seriesNames`：根据数据中存在性决定是否包含 `actual`/`forecast`/`lower`/`upper`
+  - 预览子集从 50 行扩大到 100 行
+  - 移除 "placeholder" 注释
+- **数据形状**: `buildForecastTableRows` 产出的 `{ date, forecast, lower, upper, actual? }` 行直接传入 chart block
+- **已知限制**: confidence interval 目前以独立 line 系列显示，非 shaded band；超长预测（>100 点）被截断
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.30s。
+
 ## 下一步建议
 
 ### 立即执行

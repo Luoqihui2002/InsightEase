@@ -339,6 +339,16 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-19: Forecast Chart Migration
+
+- `forecastResultAdapter.ts` 更新 chart block：
+  - 动态构建 `yKeys`：根据数据存在性包含 `actual`/`forecast`/`lower`/`upper`
+  - 预览子集从 50 行扩大到 100 行
+  - Forecast 图表块由 placeholder 转为真实 line chart（通过 4A-6-18 的 `ResultChartRenderer`）
+- 第一个真实页面图表迁移
+- Attribution 和 PathAnalysis 图表保持原样
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-18: Basic ResultChartRenderer Implementation
 
 - 新增 `ResultChartRenderer.tsx` — 主图表渲染器，支持 line/bar/area
