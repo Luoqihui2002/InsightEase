@@ -71,6 +71,18 @@
 - 更新 `ARCHITECTURE_DECISIONS.md` 至 v2.0
 - 浏览器端到端回归测试待人工验证
 
+## Phase 4A-6-21: Manual QA Test Dataset Pack
+
+- **目标**: 创建稳定的手动 QA 测试数据集包，覆盖端到端功能验证。
+- **新增文件**:
+  - `manual-test-data/scripts/generate_manual_test_data.py` — Python 标准库生成脚本，固定随机种子，UTF-8 输出
+  - `manual-test-data/README.md` — 数据集说明与推荐测试顺序
+  - `manual-test-data/qa-checklist.md` — 功能域 QA 检查清单
+  - `manual-test-data/csv/01_users.csv` ~ `10_data_quality_edge_cases.csv` — 10 个 CSV 数据集
+- **数据集覆盖**: Statistics / Semantic / Forecast / Attribution / PathAnalysis / A/B 实验 / 回归 / 数据质量 / 多表关系
+- **设计要点**: 关联表共享外键、确定性漏斗事件、~35% 归因转化率、周季节性 + 促销 + 节假日时间序列、中英文评论混合、数据质量边界场景
+- **零应用代码修改**: 未修改任何前端/后端源代码，未修改 package 文件
+
 ## Phase 4A-6-20: Attribution Chart Migration
 
 - **目标**: 将 Attribution 页面对比柱状图从页面级 ECharts 迁移进 `ResultView`。

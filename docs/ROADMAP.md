@@ -175,6 +175,11 @@
 - 嵌套 `models` 数据扁平化为 bar chart rows，模型 key 映射中文名
 - 移除页面级 ECharts 图表逻辑和未使用导入
 
+#### 4A-6-21: Manual QA Test Dataset Pack ✅
+- 生成 10 个确定性 CSV 测试数据集
+- 覆盖 Statistics / Semantic / Forecast / Attribution / PathAnalysis / A/B / 回归 / 数据质量
+- 为进入 Phase 4B 提供端到端验证基础
+
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
 - 纯研究文档，不实现
 - 分析 PathAnalysis、Forecast、Attribution 结果表共性

@@ -1,0 +1,501 @@
+review_id,user_id,product_id,review_date,rating,review_text,language,sentiment_label,topic
+R00001,U00500,P0086,2024-11-06,2,一般般，没什么特别的。,zh,neutral,quality
+R00002,U00108,P0013,2025-02-10,4,"Average quality, nothing special.",en,neutral,quality
+R00003,U00161,P0032,2024-10-10,2,Took too long to arrive.,en,negative,delivery
+R00004,U00205,P0114,2024-05-31,2,Love the color and design!,en,positive,quality
+R00005,U00166,P0002,2025-03-13,2,物流很快，包装完好。,zh,positive,delivery
+R00006,U00126,P0032,2024-12-21,2,物流很快，包装完好。,zh,positive,delivery
+R00007,U00017,P0013,2024-03-23,3,"The size is too small, disappointed.",en,negative,size
+R00008,U00358,P0052,2024-08-18,3,Took too long to arrive.,en,negative,delivery
+R00009,U00036,P0038,2024-10-23,5,发货太慢了，等了很久。,zh,negative,delivery
+R00010,U00184,P0109,2024-10-19,4,发货太慢了，等了很久。,zh,negative,delivery
+R00011,U00022,P0030,2024-02-18,4,价格有点贵，性价比一般。,zh,negative,price
+R00012,U00185,P0055,2024-09-29,2,"Great product, very satisfied!",en,positive,quality
+R00013,U00283,P0026,2024-04-05,1,物流很快，包装完好。,zh,positive,delivery
+R00014,U00461,P0035,2025-02-14,2,"The size is too small, disappointed.",en,negative,size
+R00015,U00157,P0048,2024-07-17,2,质量很好，非常满意！,zh,positive,quality
+R00016,U00448,P0061,2024-11-11,5,尺寸偏小，有点失望。,zh,negative,size
+R00017,U00352,P0103,2024-04-27,4,颜色和设计都很喜欢！,zh,positive,quality
+R00018,U00222,P0031,2024-08-02,3,颜色和设计都很喜欢！,zh,positive,quality
+R00019,U00369,P0040,2024-10-23,5,Took too long to arrive.,en,negative,delivery
+R00020,U00016,P0085,2024-07-25,2,"Average quality, nothing special.",en,neutral,quality
+R00021,U00402,P0053,2025-03-16,4,Customer service was helpful.,en,positive,customer_service
+R00022,U00290,P0018,2024-11-20,1,Love the color and design!,en,positive,quality
+R00023,U00421,P0091,2025-02-05,1,尺寸偏小，有点失望。,zh,negative,size
+R00024,U00072,P0112,2024-10-24,3,"Exactly as described, 5 stars.",en,positive,quality
+R00025,U00316,P0079,2025-03-18,2,Customer service was helpful.,en,positive,customer_service
+R00026,U00046,P0079,2025-02-28,2,"The size is too small, disappointed.",en,negative,size
+R00027,U00229,P0034,2024-04-18,3,"Exactly as described, 5 stars.",en,positive,quality
+R00028,U00221,P0078,2024-12-05,4,Fast delivery and good packaging.,en,positive,delivery
+R00029,U00461,P0022,2024-01-31,5,收到的时候包装破损了，不好。,zh,negative,packaging
+R00030,U00378,P0027,2024-09-14,4,和描述一致，好评。,zh,positive,quality
+R00031,U00448,P0016,2024-02-18,2,Customer service was helpful.,en,positive,customer_service
+R00032,U00111,P0066,2024-03-18,5,"Great product, very satisfied!",en,positive,quality
+R00033,U00259,P0025,2024-10-27,5,发货太慢了，等了很久。,zh,negative,delivery
+R00034,U00054,P0048,2025-03-31,1,Fast delivery and good packaging.,en,positive,delivery
+R00035,U00319,P0045,2024-06-01,4,物流很快，包装完好。,zh,positive,delivery
+R00036,U00041,P0056,2024-10-13,1,一般般，没什么特别的。,zh,neutral,quality
+R00037,U00263,P0005,2024-05-01,1,尺寸偏小，有点失望。,zh,negative,size
+R00038,U00373,P0110,2024-01-16,1,Took too long to arrive.,en,negative,delivery
+R00039,U00350,P0090,2024-05-18,4,质量很好，非常满意！,zh,positive,quality
+R00040,U00009,P0011,2025-02-15,2,颜色和设计都很喜欢！,zh,positive,quality
+R00041,U00420,P0112,2024-05-20,2,"Average quality, nothing special.",en,neutral,quality
+R00042,U00214,P0001,2024-07-02,4,"Arrived broken, terrible packaging.",en,negative,packaging
+R00043,U00101,P0024,2024-02-22,1,"Exactly as described, 5 stars.",en,positive,quality
+R00044,U00466,P0045,2024-05-16,5,"Average quality, nothing special.",en,neutral,quality
+R00045,U00318,P0081,2025-01-13,5,质量很好，非常满意！,zh,positive,quality
+R00046,U00296,P0011,2025-01-23,4,Customer service was helpful.,en,positive,customer_service
+R00047,U00377,P0014,2024-11-01,4,发货太慢了，等了很久。,zh,negative,delivery
+R00048,U00410,P0085,2024-01-25,5,发货太慢了，等了很久。,zh,negative,delivery
+R00049,U00121,P0049,2024-05-29,1,"The size is too small, disappointed.",en,negative,size
+R00050,U00330,P0054,2024-06-11,5,价格有点贵，性价比一般。,zh,negative,price
+R00051,U00010,P0117,2025-03-06,3,Customer service was helpful.,en,positive,customer_service
+R00052,U00155,P0070,2024-11-20,2,和描述一致，好评。,zh,positive,quality
+R00053,U00013,P0116,2024-10-18,1,尺寸偏小，有点失望。,zh,negative,size
+R00054,U00216,P0106,2024-09-23,1,"The size is too small, disappointed.",en,negative,size
+R00055,U00388,P0011,2024-06-23,2,"Average quality, nothing special.",en,neutral,quality
+R00056,U00010,P0080,2024-07-16,3,一般般，没什么特别的。,zh,neutral,quality
+R00057,U00312,P0039,2024-07-05,2,Love the color and design!,en,positive,quality
+R00058,U00459,P0078,2024-09-09,2,"Exactly as described, 5 stars.",en,positive,quality
+R00059,U00031,P0001,2025-03-11,5,Customer service was helpful.,en,positive,customer_service
+R00060,U00018,P0015,2024-07-09,2,一般般，没什么特别的。,zh,neutral,quality
+R00061,U00104,P0103,2024-11-18,1,质量很好，非常满意！,zh,positive,quality
+R00062,U00113,P0023,2025-02-10,3,物流很快，包装完好。,zh,positive,delivery
+R00063,U00382,P0023,2024-06-06,5,一般般，没什么特别的。,zh,neutral,quality
+R00064,U00380,P0110,2024-10-14,5,收到的时候包装破损了，不好。,zh,negative,packaging
+R00065,U00443,P0103,2024-06-02,5,"Great product, very satisfied!",en,positive,quality
+R00066,U00023,P0034,2024-07-29,3,价格有点贵，性价比一般。,zh,negative,price
+R00067,U00453,P0090,2024-06-18,3,收到的时候包装破损了，不好。,zh,negative,packaging
+R00068,U00050,P0088,2024-07-26,5,物流很快，包装完好。,zh,positive,delivery
+R00069,U00084,P0092,2024-05-24,1,Love the color and design!,en,positive,quality
+R00070,U00457,P0098,2024-11-22,4,质量很好，非常满意！,zh,positive,quality
+R00071,U00052,P0011,2024-11-23,5,Took too long to arrive.,en,negative,delivery
+R00072,U00190,P0026,2024-10-17,1,Love the color and design!,en,positive,quality
+R00073,U00121,P0066,2024-11-25,5,"Great product, very satisfied!",en,positive,quality
+R00074,U00356,P0051,2025-02-20,4,"The size is too small, disappointed.",en,negative,size
+R00075,U00226,P0088,2024-01-14,5,价格有点贵，性价比一般。,zh,negative,price
+R00076,U00080,P0010,2024-09-16,3,物流很快，包装完好。,zh,positive,delivery
+R00077,U00436,P0049,2024-09-28,1,颜色和设计都很喜欢！,zh,positive,quality
+R00078,U00356,P0025,2024-11-06,3,"Exactly as described, 5 stars.",en,positive,quality
+R00079,U00303,P0002,2024-01-17,5,Customer service was helpful.,en,positive,customer_service
+R00080,U00301,P0019,2024-06-16,5,颜色和设计都很喜欢！,zh,positive,quality
+R00081,U00248,P0066,2025-02-08,2,质量很好，非常满意！,zh,positive,quality
+R00082,U00367,P0105,2024-10-05,1,发货太慢了，等了很久。,zh,negative,delivery
+R00083,U00245,P0004,2024-04-19,4,Love the color and design!,en,positive,quality
+R00084,U00106,P0097,2024-02-12,2,价格有点贵，性价比一般。,zh,negative,price
+R00085,U00189,P0071,2025-02-08,5,Fast delivery and good packaging.,en,positive,delivery
+R00086,U00291,P0083,2024-12-18,3,一般般，没什么特别的。,zh,neutral,quality
+R00087,U00182,P0027,2024-12-20,1,颜色和设计都很喜欢！,zh,positive,quality
+R00088,U00130,P0067,2024-08-22,5,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00089,U00412,P0025,2024-05-11,1,"The size is too small, disappointed.",en,negative,size
+R00090,U00179,P0089,2024-11-30,1,和描述一致，好评。,zh,positive,quality
+R00091,U00008,P0041,2024-01-30,1,"Exactly as described, 5 stars.",en,positive,quality
+R00092,U00052,P0032,2024-12-29,4,收到的时候包装破损了，不好。,zh,negative,packaging
+R00093,U00254,P0113,2024-01-18,1,"The size is too small, disappointed.",en,negative,size
+R00094,U00496,P0036,2024-09-20,3,Fast delivery and good packaging.,en,positive,delivery
+R00095,U00373,P0085,2024-02-25,2,Took too long to arrive.,en,negative,delivery
+R00096,U00341,P0033,2024-09-16,1,Love the color and design!,en,positive,quality
+R00097,U00448,P0093,2024-10-25,3,"Great product, very satisfied!",en,positive,quality
+R00098,U00085,P0041,2024-06-16,2,质量很好，非常满意！,zh,positive,quality
+R00099,U00198,P0019,2024-06-14,3,和描述一致，好评。,zh,positive,quality
+R00100,U00041,P0035,2024-05-17,1,一般般，没什么特别的。,zh,neutral,quality
+R00101,U00340,P0092,2025-01-25,5,Customer service was helpful.,en,positive,customer_service
+R00102,U00229,P0008,2024-02-02,1,收到的时候包装破损了，不好。,zh,negative,packaging
+R00103,U00098,P0085,2024-03-07,1,发货太慢了，等了很久。,zh,negative,delivery
+R00104,U00075,P0076,2024-05-10,1,质量很好，非常满意！,zh,positive,quality
+R00105,U00413,P0056,2024-02-26,1,价格有点贵，性价比一般。,zh,negative,price
+R00106,U00454,P0109,2024-06-06,5,"Average quality, nothing special.",en,neutral,quality
+R00107,U00081,P0033,2025-01-19,1,"Arrived broken, terrible packaging.",en,negative,packaging
+R00108,U00208,P0096,2024-06-24,2,发货太慢了，等了很久。,zh,negative,delivery
+R00109,U00417,P0010,2024-03-08,1,一般般，没什么特别的。,zh,neutral,quality
+R00110,U00419,P0101,2024-07-30,5,尺寸偏小，有点失望。,zh,negative,size
+R00111,U00265,P0012,2024-12-25,1,Took too long to arrive.,en,negative,delivery
+R00112,U00040,P0009,2024-03-25,2,"Great product, very satisfied!",en,positive,quality
+R00113,U00357,P0003,2024-03-03,4,"Arrived broken, terrible packaging.",en,negative,packaging
+R00114,U00297,P0106,2024-07-14,3,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00115,U00321,P0050,2024-11-29,4,物流很快，包装完好。,zh,positive,delivery
+R00116,U00096,P0029,2024-10-07,2,"Arrived broken, terrible packaging.",en,negative,packaging
+R00117,U00259,P0040,2024-02-20,3,尺寸偏小，有点失望。,zh,negative,size
+R00118,U00158,P0037,2024-07-20,2,"Arrived broken, terrible packaging.",en,negative,packaging
+R00119,U00411,P0065,2024-01-12,4,Price is a bit high for what you get.,en,negative,price
+R00120,U00340,P0078,2024-11-25,1,"Exactly as described, 5 stars.",en,positive,quality
+R00121,U00103,P0066,2024-12-11,5,质量很好，非常满意！,zh,positive,quality
+R00122,U00176,P0094,2024-11-10,3,"Great product, very satisfied!",en,positive,quality
+R00123,U00315,P0098,2025-01-08,3,"Great product, very satisfied!",en,positive,quality
+R00124,U00269,P0083,2024-02-05,4,Price is a bit high for what you get.,en,negative,price
+R00125,U00119,P0051,2024-03-19,3,收到的时候包装破损了，不好。,zh,negative,packaging
+R00126,U00252,P0023,2024-02-13,1,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00127,U00252,P0024,2024-08-27,3,颜色和设计都很喜欢！,zh,positive,quality
+R00128,U00489,P0007,2025-03-02,3,"Average quality, nothing special.",en,neutral,quality
+R00129,U00041,P0118,2024-06-28,4,和描述一致，好评。,zh,positive,quality
+R00130,U00261,P0096,2025-03-04,1,和描述一致，好评。,zh,positive,quality
+R00131,U00174,P0044,2024-02-16,5,物流很快，包装完好。,zh,positive,delivery
+R00132,U00304,P0046,2025-01-02,3,Took too long to arrive.,en,negative,delivery
+R00133,U00319,P0055,2024-05-11,2,Price is a bit high for what you get.,en,negative,price
+R00134,U00072,P0018,2024-02-19,4,质量很好，非常满意！,zh,positive,quality
+R00135,U00066,P0071,2024-06-05,2,Love the color and design!,en,positive,quality
+R00136,U00398,P0068,2024-09-02,2,"Exactly as described, 5 stars.",en,positive,quality
+R00137,U00274,P0008,2024-12-05,2,和描述一致，好评。,zh,positive,quality
+R00138,U00457,P0020,2024-11-12,1,"Great product, very satisfied!",en,positive,quality
+R00139,U00089,P0050,2024-06-09,1,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00140,U00369,P0034,2024-03-15,1,"Arrived broken, terrible packaging.",en,negative,packaging
+R00141,U00321,P0043,2025-03-06,4,Took too long to arrive.,en,negative,delivery
+R00142,U00386,P0015,2024-05-05,1,颜色和设计都很喜欢！,zh,positive,quality
+R00143,U00186,P0098,2025-03-18,4,Took too long to arrive.,en,negative,delivery
+R00144,U00370,P0048,2024-04-26,1,Customer service was helpful.,en,positive,customer_service
+R00145,U00031,P0114,2024-03-11,3,Love the color and design!,en,positive,quality
+R00146,U00113,P0003,2024-01-08,1,"The size is too small, disappointed.",en,negative,size
+R00147,U00108,P0009,2024-05-24,4,"Average quality, nothing special.",en,neutral,quality
+R00148,U00427,P0040,2024-04-04,1,Took too long to arrive.,en,negative,delivery
+R00149,U00128,P0060,2024-11-24,4,Took too long to arrive.,en,negative,delivery
+R00150,U00348,P0112,2024-12-12,1,颜色和设计都很喜欢！,zh,positive,quality
+R00151,U00172,P0085,2024-11-11,2,物流很快，包装完好。,zh,positive,delivery
+R00152,U00457,P0062,2024-08-30,1,Customer service was helpful.,en,positive,customer_service
+R00153,U00219,P0007,2025-01-14,3,Customer service was helpful.,en,positive,customer_service
+R00154,U00239,P0052,2024-11-14,4,和描述一致，好评。,zh,positive,quality
+R00155,U00299,P0095,2024-09-22,4,发货太慢了，等了很久。,zh,negative,delivery
+R00156,U00180,P0052,2024-12-09,5,Price is a bit high for what you get.,en,negative,price
+R00157,U00332,P0100,2024-06-05,1,一般般，没什么特别的。,zh,neutral,quality
+R00158,U00109,P0045,2024-01-08,4,"The size is too small, disappointed.",en,negative,size
+R00159,U00403,P0038,2024-11-12,5,一般般，没什么特别的。,zh,neutral,quality
+R00160,U00232,P0022,2024-12-24,4,尺寸偏小，有点失望。,zh,negative,size
+R00161,U00098,P0028,2024-10-16,4,尺寸偏小，有点失望。,zh,negative,size
+R00162,U00014,P0006,2024-08-14,1,颜色和设计都很喜欢！,zh,positive,quality
+R00163,U00316,P0111,2024-05-24,4,"Average quality, nothing special.",en,neutral,quality
+R00164,U00025,P0085,2025-02-03,3,质量很好，非常满意！,zh,positive,quality
+R00165,U00066,P0006,2024-02-18,1,Price is a bit high for what you get.,en,negative,price
+R00166,U00453,P0108,2025-02-07,4,Customer service was helpful.,en,positive,customer_service
+R00167,U00375,P0037,2024-03-13,2,"Great product, very satisfied!",en,positive,quality
+R00168,U00478,P0073,2025-01-06,2,物流很快，包装完好。,zh,positive,delivery
+R00169,U00333,P0092,2024-03-11,2,"Arrived broken, terrible packaging.",en,negative,packaging
+R00170,U00044,P0104,2024-06-04,2,收到的时候包装破损了，不好。,zh,negative,packaging
+R00171,U00058,P0053,2024-02-08,4,Love the color and design!,en,positive,quality
+R00172,U00379,P0111,2024-11-14,4,尺寸偏小，有点失望。,zh,negative,size
+R00173,U00348,P0040,2025-03-25,4,Took too long to arrive.,en,negative,delivery
+R00174,U00250,P0006,2024-09-06,1,和描述一致，好评。,zh,positive,quality
+R00175,U00310,P0068,2025-02-17,5,"Average quality, nothing special.",en,neutral,quality
+R00176,U00460,P0009,2025-02-09,1,质量很好，非常满意！,zh,positive,quality
+R00177,U00190,P0064,2024-10-06,4,"Average quality, nothing special.",en,neutral,quality
+R00178,U00123,P0075,2024-01-31,2,Customer service was helpful.,en,positive,customer_service
+R00179,U00061,P0042,2024-11-27,3,价格有点贵，性价比一般。,zh,negative,price
+R00180,U00206,P0002,2024-04-03,4,颜色和设计都很喜欢！,zh,positive,quality
+R00181,U00067,P0027,2024-07-25,2,Took too long to arrive.,en,negative,delivery
+R00182,U00174,P0103,2024-09-17,5,Took too long to arrive.,en,negative,delivery
+R00183,U00365,P0049,2025-01-14,5,Took too long to arrive.,en,negative,delivery
+R00184,U00229,P0009,2025-02-19,3,Love the color and design!,en,positive,quality
+R00185,U00332,P0071,2024-09-11,3,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00186,U00266,P0086,2024-01-12,3,"Great product, very satisfied!",en,positive,quality
+R00187,U00322,P0009,2024-02-04,4,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00188,U00133,P0081,2024-06-06,3,颜色和设计都很喜欢！,zh,positive,quality
+R00189,U00031,P0020,2025-01-10,4,Fast delivery and good packaging.,en,positive,delivery
+R00190,U00397,P0066,2024-11-04,3,"Exactly as described, 5 stars.",en,positive,quality
+R00191,U00142,P0040,2024-04-28,4,Price is a bit high for what you get.,en,negative,price
+R00192,U00423,P0027,2024-07-26,4,发货太慢了，等了很久。,zh,negative,delivery
+R00193,U00490,P0007,2024-05-26,3,一般般，没什么特别的。,zh,neutral,quality
+R00194,U00387,P0051,2025-02-06,4,收到的时候包装破损了，不好。,zh,negative,packaging
+R00195,U00062,P0069,2024-09-25,1,"Average quality, nothing special.",en,neutral,quality
+R00196,U00035,P0068,2024-03-27,4,一般般，没什么特别的。,zh,neutral,quality
+R00197,U00331,P0029,2024-05-31,4,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00198,U00148,P0076,2024-08-01,4,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00199,U00380,P0038,2024-07-10,2,颜色和设计都很喜欢！,zh,positive,quality
+R00200,U00459,P0031,2024-12-20,2,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00201,U00328,P0067,2025-02-28,5,"Average quality, nothing special.",en,neutral,quality
+R00202,U00163,P0054,2024-09-10,3,"Average quality, nothing special.",en,neutral,quality
+R00203,U00062,P0105,2024-04-19,3,Took too long to arrive.,en,negative,delivery
+R00204,U00322,P0099,2025-03-23,3,"Exactly as described, 5 stars.",en,positive,quality
+R00205,U00339,P0057,2024-11-01,4,质量很好，非常满意！,zh,positive,quality
+R00206,U00371,P0059,2024-11-03,1,"Great product, very satisfied!",en,positive,quality
+R00207,U00458,P0057,2024-11-24,1,价格有点贵，性价比一般。,zh,negative,price
+R00208,U00324,P0082,2024-07-10,3,Took too long to arrive.,en,negative,delivery
+R00209,U00014,P0003,2024-02-06,4,Love the color and design!,en,positive,quality
+R00210,U00054,P0100,2024-05-14,1,Love the color and design!,en,positive,quality
+R00211,U00242,P0023,2024-06-28,5,Customer service was helpful.,en,positive,customer_service
+R00212,U00056,P0082,2024-04-03,5,Price is a bit high for what you get.,en,negative,price
+R00213,U00183,P0049,2024-08-17,2,收到的时候包装破损了，不好。,zh,negative,packaging
+R00214,U00027,P0047,2024-07-06,3,"Exactly as described, 5 stars.",en,positive,quality
+R00215,U00168,P0109,2025-03-05,1,Price is a bit high for what you get.,en,negative,price
+R00216,U00241,P0037,2024-11-20,5,价格有点贵，性价比一般。,zh,negative,price
+R00217,U00221,P0042,2024-03-20,4,物流很快，包装完好。,zh,positive,delivery
+R00218,U00468,P0020,2025-01-23,3,Took too long to arrive.,en,negative,delivery
+R00219,U00225,P0040,2024-03-20,5,Love the color and design!,en,positive,quality
+R00220,U00401,P0020,2024-01-13,2,Customer service was helpful.,en,positive,customer_service
+R00221,U00027,P0036,2024-02-07,1,Customer service was helpful.,en,positive,customer_service
+R00222,U00150,P0116,2024-10-19,4,一般般，没什么特别的。,zh,neutral,quality
+R00223,U00235,P0021,2024-07-11,3,Fast delivery and good packaging.,en,positive,delivery
+R00224,U00366,P0008,2025-02-28,1,Price is a bit high for what you get.,en,negative,price
+R00225,U00263,P0060,2024-08-02,1,"Exactly as described, 5 stars.",en,positive,quality
+R00226,U00211,P0058,2024-04-28,4,发货太慢了，等了很久。,zh,negative,delivery
+R00227,U00192,P0005,2024-01-29,5,Price is a bit high for what you get.,en,negative,price
+R00228,U00083,P0016,2025-01-11,5,"Arrived broken, terrible packaging.",en,negative,packaging
+R00229,U00200,P0093,2025-03-05,5,质量很好，非常满意！,zh,positive,quality
+R00230,U00405,P0023,2024-01-31,3,Love the color and design!,en,positive,quality
+R00231,U00217,P0094,2024-06-26,1,"Great product, very satisfied!",en,positive,quality
+R00232,U00458,P0073,2024-07-17,1,尺寸偏小，有点失望。,zh,negative,size
+R00233,U00469,P0070,2024-09-23,3,质量很好，非常满意！,zh,positive,quality
+R00234,U00343,P0045,2024-03-05,2,"Exactly as described, 5 stars.",en,positive,quality
+R00235,U00129,P0075,2024-05-15,1,尺寸偏小，有点失望。,zh,negative,size
+R00236,U00464,P0096,2024-01-14,1,"Average quality, nothing special.",en,neutral,quality
+R00237,U00017,P0069,2024-10-18,4,Price is a bit high for what you get.,en,negative,price
+R00238,U00207,P0096,2024-01-18,3,价格有点贵，性价比一般。,zh,negative,price
+R00239,U00486,P0102,2024-07-29,2,Fast delivery and good packaging.,en,positive,delivery
+R00240,U00485,P0024,2024-02-19,3,"Arrived broken, terrible packaging.",en,negative,packaging
+R00241,U00357,P0107,2024-08-26,3,"Average quality, nothing special.",en,neutral,quality
+R00242,U00309,P0049,2024-08-30,5,"Average quality, nothing special.",en,neutral,quality
+R00243,U00456,P0074,2024-07-27,1,Price is a bit high for what you get.,en,negative,price
+R00244,U00268,P0056,2024-06-30,2,质量很好，非常满意！,zh,positive,quality
+R00245,U00487,P0035,2024-12-13,2,"The size is too small, disappointed.",en,negative,size
+R00246,U00461,P0023,2024-04-01,1,"Exactly as described, 5 stars.",en,positive,quality
+R00247,U00424,P0006,2024-05-26,2,价格有点贵，性价比一般。,zh,negative,price
+R00248,U00405,P0088,2024-01-24,4,"The size is too small, disappointed.",en,negative,size
+R00249,U00087,P0022,2024-03-14,5,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00250,U00130,P0080,2024-11-01,3,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00251,U00291,P0025,2025-01-10,4,颜色和设计都很喜欢！,zh,positive,quality
+R00252,U00478,P0038,2024-03-25,5,价格有点贵，性价比一般。,zh,negative,price
+R00253,U00017,P0011,2024-09-05,4,尺寸偏小，有点失望。,zh,negative,size
+R00254,U00342,P0111,2024-09-28,4,价格有点贵，性价比一般。,zh,negative,price
+R00255,U00464,P0065,2025-01-25,5,Love the color and design!,en,positive,quality
+R00256,U00061,P0014,2024-02-02,2,Fast delivery and good packaging.,en,positive,delivery
+R00257,U00335,P0045,2024-03-29,5,Fast delivery and good packaging.,en,positive,delivery
+R00258,U00484,P0027,2024-09-28,2,Customer service was helpful.,en,positive,customer_service
+R00259,U00474,P0022,2024-03-16,2,物流很快，包装完好。,zh,positive,delivery
+R00260,U00253,P0043,2024-01-23,3,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00261,U00408,P0068,2025-02-14,1,Took too long to arrive.,en,negative,delivery
+R00262,U00335,P0031,2024-11-18,2,尺寸偏小，有点失望。,zh,negative,size
+R00263,U00143,P0071,2024-12-14,5,"Exactly as described, 5 stars.",en,positive,quality
+R00264,U00282,P0033,2024-07-28,1,尺寸偏小，有点失望。,zh,negative,size
+R00265,U00433,P0015,2024-12-31,2,"Exactly as described, 5 stars.",en,positive,quality
+R00266,U00054,P0051,2025-01-05,3,一般般，没什么特别的。,zh,neutral,quality
+R00267,U00324,P0040,2024-03-07,4,质量很好，非常满意！,zh,positive,quality
+R00268,U00127,P0026,2024-12-03,5,和描述一致，好评。,zh,positive,quality
+R00269,U00241,P0008,2024-03-08,1,和描述一致，好评。,zh,positive,quality
+R00270,U00344,P0049,2024-02-09,4,Took too long to arrive.,en,negative,delivery
+R00271,U00425,P0096,2025-01-23,1,发货太慢了，等了很久。,zh,negative,delivery
+R00272,U00243,P0086,2024-07-13,1,Took too long to arrive.,en,negative,delivery
+R00273,U00077,P0079,2025-03-14,4,Fast delivery and good packaging.,en,positive,delivery
+R00274,U00135,P0038,2024-02-12,5,物流很快，包装完好。,zh,positive,delivery
+R00275,U00388,P0102,2024-05-15,2,Fast delivery and good packaging.,en,positive,delivery
+R00276,U00239,P0111,2024-01-17,2,价格有点贵，性价比一般。,zh,negative,price
+R00277,U00339,P0054,2024-08-22,1,发货太慢了，等了很久。,zh,negative,delivery
+R00278,U00006,P0027,2024-06-13,4,质量很好，非常满意！,zh,positive,quality
+R00279,U00122,P0058,2025-02-22,2,Price is a bit high for what you get.,en,negative,price
+R00280,U00204,P0086,2024-05-17,3,"Exactly as described, 5 stars.",en,positive,quality
+R00281,U00005,P0038,2024-10-02,3,尺寸偏小，有点失望。,zh,negative,size
+R00282,U00044,P0075,2024-10-30,1,"The size is too small, disappointed.",en,negative,size
+R00283,U00164,P0097,2024-07-20,2,尺寸偏小，有点失望。,zh,negative,size
+R00284,U00442,P0024,2024-12-10,4,Price is a bit high for what you get.,en,negative,price
+R00285,U00310,P0010,2025-01-24,1,价格有点贵，性价比一般。,zh,negative,price
+R00286,U00417,P0063,2024-09-17,3,"The size is too small, disappointed.",en,negative,size
+R00287,U00093,P0045,2024-11-04,2,"Average quality, nothing special.",en,neutral,quality
+R00288,U00092,P0102,2024-10-24,1,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00289,U00306,P0038,2024-03-12,2,尺寸偏小，有点失望。,zh,negative,size
+R00290,U00451,P0109,2024-11-06,2,Customer service was helpful.,en,positive,customer_service
+R00291,U00127,P0070,2024-05-11,1,物流很快，包装完好。,zh,positive,delivery
+R00292,U00227,P0043,2025-02-08,4,收到的时候包装破损了，不好。,zh,negative,packaging
+R00293,U00045,P0063,2024-07-26,3,尺寸偏小，有点失望。,zh,negative,size
+R00294,U00083,P0021,2024-12-08,3,价格有点贵，性价比一般。,zh,negative,price
+R00295,U00431,P0067,2025-02-22,5,物流很快，包装完好。,zh,positive,delivery
+R00296,U00224,P0056,2024-01-08,4,"Arrived broken, terrible packaging.",en,negative,packaging
+R00297,U00287,P0028,2024-04-30,3,和描述一致，好评。,zh,positive,quality
+R00298,U00264,P0026,2025-01-10,2,Fast delivery and good packaging.,en,positive,delivery
+R00299,U00262,P0028,2024-07-19,1,价格有点贵，性价比一般。,zh,negative,price
+R00300,U00427,P0082,2024-10-22,2,物流很快，包装完好。,zh,positive,delivery
+R00301,U00213,P0067,2024-07-26,4,尺寸偏小，有点失望。,zh,negative,size
+R00302,U00013,P0070,2024-01-12,4,颜色和设计都很喜欢！,zh,positive,quality
+R00303,U00190,P0054,2024-06-20,2,和描述一致，好评。,zh,positive,quality
+R00304,U00013,P0007,2024-04-05,2,Fast delivery and good packaging.,en,positive,delivery
+R00305,U00187,P0002,2024-11-11,2,价格有点贵，性价比一般。,zh,negative,price
+R00306,U00338,P0105,2024-01-09,3,一般般，没什么特别的。,zh,neutral,quality
+R00307,U00448,P0001,2024-11-12,2,价格有点贵，性价比一般。,zh,negative,price
+R00308,U00019,P0031,2024-04-23,4,收到的时候包装破损了，不好。,zh,negative,packaging
+R00309,U00136,P0019,2024-12-15,1,"The size is too small, disappointed.",en,negative,size
+R00310,U00412,P0061,2024-05-27,4,Love the color and design!,en,positive,quality
+R00311,U00256,P0106,2024-10-18,2,Price is a bit high for what you get.,en,negative,price
+R00312,U00090,P0081,2024-03-14,4,和描述一致，好评。,zh,positive,quality
+R00313,U00319,P0036,2025-03-23,5,颜色和设计都很喜欢！,zh,positive,quality
+R00314,U00134,P0021,2024-09-12,4,质量很好，非常满意！,zh,positive,quality
+R00315,U00313,P0032,2025-01-08,2,Customer service was helpful.,en,positive,customer_service
+R00316,U00375,P0074,2025-03-22,5,尺寸偏小，有点失望。,zh,negative,size
+R00317,U00073,P0097,2024-06-07,1,Love the color and design!,en,positive,quality
+R00318,U00090,P0103,2024-09-20,1,价格有点贵，性价比一般。,zh,negative,price
+R00319,U00425,P0045,2024-11-09,5,发货太慢了，等了很久。,zh,negative,delivery
+R00320,U00323,P0117,2024-12-07,4,"Average quality, nothing special.",en,neutral,quality
+R00321,U00341,P0065,2024-01-14,5,"The size is too small, disappointed.",en,negative,size
+R00322,U00420,P0097,2024-01-16,5,颜色和设计都很喜欢！,zh,positive,quality
+R00323,U00288,P0093,2024-02-01,3,收到的时候包装破损了，不好。,zh,negative,packaging
+R00324,U00320,P0027,2024-04-28,4,"Great product, very satisfied!",en,positive,quality
+R00325,U00225,P0019,2024-05-17,3,Price is a bit high for what you get.,en,negative,price
+R00326,U00425,P0017,2024-04-05,4,质量很好，非常满意！,zh,positive,quality
+R00327,U00309,P0034,2024-03-10,4,物流很快，包装完好。,zh,positive,delivery
+R00328,U00120,P0103,2024-03-09,4,价格有点贵，性价比一般。,zh,negative,price
+R00329,U00095,P0115,2024-03-16,1,Price is a bit high for what you get.,en,negative,price
+R00330,U00179,P0031,2024-03-15,3,质量很好，非常满意！,zh,positive,quality
+R00331,U00398,P0013,2024-07-19,5,Fast delivery and good packaging.,en,positive,delivery
+R00332,U00097,P0100,2025-03-23,2,和描述一致，好评。,zh,positive,quality
+R00333,U00478,P0117,2024-08-14,3,和描述一致，好评。,zh,positive,quality
+R00334,U00050,P0011,2024-12-26,4,物流很快，包装完好。,zh,positive,delivery
+R00335,U00418,P0090,2025-02-03,1,质量很好，非常满意！,zh,positive,quality
+R00336,U00003,P0070,2024-07-23,2,一般般，没什么特别的。,zh,neutral,quality
+R00337,U00427,P0076,2025-02-05,3,Took too long to arrive.,en,negative,delivery
+R00338,U00116,P0026,2024-10-24,4,"Average quality, nothing special.",en,neutral,quality
+R00339,U00417,P0093,2024-01-03,3,一般般，没什么特别的。,zh,neutral,quality
+R00340,U00166,P0109,2024-03-17,5,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00341,U00203,P0096,2024-06-05,4,尺寸偏小，有点失望。,zh,negative,size
+R00342,U00500,P0088,2024-02-17,5,"The size is too small, disappointed.",en,negative,size
+R00343,U00109,P0117,2024-03-09,1,"The size is too small, disappointed.",en,negative,size
+R00344,U00080,P0025,2025-01-12,5,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00345,U00299,P0091,2024-02-14,5,"Average quality, nothing special.",en,neutral,quality
+R00346,U00499,P0052,2024-06-17,3,"Exactly as described, 5 stars.",en,positive,quality
+R00347,U00397,P0053,2024-04-21,4,Fast delivery and good packaging.,en,positive,delivery
+R00348,U00356,P0086,2025-03-15,5,和描述一致，好评。,zh,positive,quality
+R00349,U00464,P0101,2024-02-02,4,质量很好，非常满意！,zh,positive,quality
+R00350,U00452,P0095,2025-03-21,4,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00351,U00182,P0080,2024-11-12,5,物流很快，包装完好。,zh,positive,delivery
+R00352,U00483,P0077,2024-07-13,4,"The size is too small, disappointed.",en,negative,size
+R00353,U00227,P0052,2024-02-01,2,和描述一致，好评。,zh,positive,quality
+R00354,U00102,P0049,2024-05-20,3,Customer service was helpful.,en,positive,customer_service
+R00355,U00364,P0074,2025-02-10,3,和描述一致，好评。,zh,positive,quality
+R00356,U00434,P0038,2024-04-30,4,"Average quality, nothing special.",en,neutral,quality
+R00357,U00378,P0035,2024-04-10,3,"Great product, very satisfied!",en,positive,quality
+R00358,U00152,P0078,2024-02-23,4,Customer service was helpful.,en,positive,customer_service
+R00359,U00221,P0026,2024-03-02,4,Customer service was helpful.,en,positive,customer_service
+R00360,U00241,P0098,2024-05-19,3,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00361,U00093,P0019,2024-02-20,2,Customer service was helpful.,en,positive,customer_service
+R00362,U00068,P0083,2024-02-25,5,Took too long to arrive.,en,negative,delivery
+R00363,U00099,P0066,2024-02-17,5,价格有点贵，性价比一般。,zh,negative,price
+R00364,U00470,P0030,2024-05-11,4,"Great product, very satisfied!",en,positive,quality
+R00365,U00054,P0059,2024-06-16,1,Love the color and design!,en,positive,quality
+R00366,U00339,P0023,2024-10-29,3,Fast delivery and good packaging.,en,positive,delivery
+R00367,U00122,P0094,2024-10-13,3,收到的时候包装破损了，不好。,zh,negative,packaging
+R00368,U00260,P0095,2024-04-15,2,"Great product, very satisfied!",en,positive,quality
+R00369,U00243,P0013,2024-01-13,3,Price is a bit high for what you get.,en,negative,price
+R00370,U00107,P0095,2024-06-14,1,质量很好，非常满意！,zh,positive,quality
+R00371,U00163,P0084,2024-08-06,2,Love the color and design!,en,positive,quality
+R00372,U00116,P0009,2024-12-22,4,Took too long to arrive.,en,negative,delivery
+R00373,U00310,P0087,2024-11-19,1,"The size is too small, disappointed.",en,negative,size
+R00374,U00118,P0120,2025-02-16,2,尺寸偏小，有点失望。,zh,negative,size
+R00375,U00134,P0058,2024-11-17,1,物流很快，包装完好。,zh,positive,delivery
+R00376,U00447,P0034,2025-03-19,2,物流很快，包装完好。,zh,positive,delivery
+R00377,U00480,P0082,2024-11-20,5,"Arrived broken, terrible packaging.",en,negative,packaging
+R00378,U00166,P0039,2024-02-25,4,Price is a bit high for what you get.,en,negative,price
+R00379,U00279,P0074,2024-03-13,2,一般般，没什么特别的。,zh,neutral,quality
+R00380,U00204,P0119,2024-10-03,2,Fast delivery and good packaging.,en,positive,delivery
+R00381,U00485,P0083,2024-10-30,3,和描述一致，好评。,zh,positive,quality
+R00382,U00396,P0071,2024-12-18,1,质量很好，非常满意！,zh,positive,quality
+R00383,U00476,P0066,2024-06-04,3,Price is a bit high for what you get.,en,negative,price
+R00384,U00061,P0087,2024-10-12,4,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00385,U00489,P0088,2024-02-21,5,和描述一致，好评。,zh,positive,quality
+R00386,U00498,P0011,2024-08-06,2,颜色和设计都很喜欢！,zh,positive,quality
+R00387,U00483,P0038,2024-11-01,5,物流很快，包装完好。,zh,positive,delivery
+R00388,U00055,P0118,2024-06-03,3,Love the color and design!,en,positive,quality
+R00389,U00374,P0054,2024-06-22,1,"Arrived broken, terrible packaging.",en,negative,packaging
+R00390,U00112,P0118,2024-09-21,4,Love the color and design!,en,positive,quality
+R00391,U00403,P0029,2024-07-31,4,"Average quality, nothing special.",en,neutral,quality
+R00392,U00435,P0050,2024-02-11,4,Took too long to arrive.,en,negative,delivery
+R00393,U00220,P0106,2024-01-06,3,"Average quality, nothing special.",en,neutral,quality
+R00394,U00124,P0029,2024-08-19,1,"Exactly as described, 5 stars.",en,positive,quality
+R00395,U00386,P0086,2025-02-10,2,价格有点贵，性价比一般。,zh,negative,price
+R00396,U00241,P0011,2024-03-06,4,尺寸偏小，有点失望。,zh,negative,size
+R00397,U00248,P0001,2024-08-01,5,"Exactly as described, 5 stars.",en,positive,quality
+R00398,U00494,P0031,2025-02-15,1,物流很快，包装完好。,zh,positive,delivery
+R00399,U00056,P0059,2025-02-08,5,Price is a bit high for what you get.,en,negative,price
+R00400,U00155,P0110,2024-01-01,4,发货太慢了，等了很久。,zh,negative,delivery
+R00401,U00395,P0058,2024-03-12,5,发货太慢了，等了很久。,zh,negative,delivery
+R00402,U00229,P0019,2025-03-13,1,一般般，没什么特别的。,zh,neutral,quality
+R00403,U00046,P0071,2024-08-08,2,"Exactly as described, 5 stars.",en,positive,quality
+R00404,U00101,P0009,2024-11-11,1,发货太慢了，等了很久。,zh,negative,delivery
+R00405,U00456,P0057,2024-10-09,4,尺寸偏小，有点失望。,zh,negative,size
+R00406,U00381,P0089,2024-10-12,4,质量很好，非常满意！,zh,positive,quality
+R00407,U00252,P0034,2024-01-08,1,"Exactly as described, 5 stars.",en,positive,quality
+R00408,U00421,P0019,2024-11-22,3,发货太慢了，等了很久。,zh,negative,delivery
+R00409,U00127,P0113,2024-03-02,4,物流很快，包装完好。,zh,positive,delivery
+R00410,U00168,P0103,2024-01-01,3,质量很好，非常满意！,zh,positive,quality
+R00411,U00430,P0014,2024-08-10,1,尺寸偏小，有点失望。,zh,negative,size
+R00412,U00362,P0030,2024-10-04,3,Took too long to arrive.,en,negative,delivery
+R00413,U00117,P0078,2025-03-22,4,Fast delivery and good packaging.,en,positive,delivery
+R00414,U00433,P0049,2024-09-01,3,Customer service was helpful.,en,positive,customer_service
+R00415,U00177,P0057,2024-08-02,5,Took too long to arrive.,en,negative,delivery
+R00416,U00298,P0038,2024-02-15,3,Fast delivery and good packaging.,en,positive,delivery
+R00417,U00183,P0120,2024-12-03,1,Customer service was helpful.,en,positive,customer_service
+R00418,U00181,P0051,2024-04-10,4,发货太慢了，等了很久。,zh,negative,delivery
+R00419,U00112,P0066,2024-06-18,3,Fast delivery and good packaging.,en,positive,delivery
+R00420,U00260,P0097,2024-09-24,2,Price is a bit high for what you get.,en,negative,price
+R00421,U00060,P0027,2024-03-17,5,Love the color and design!,en,positive,quality
+R00422,U00219,P0063,2024-09-19,2,发货太慢了，等了很久。,zh,negative,delivery
+R00423,U00104,P0120,2024-07-02,5,Took too long to arrive.,en,negative,delivery
+R00424,U00317,P0075,2024-02-25,5,物流很快，包装完好。,zh,positive,delivery
+R00425,U00452,P0100,2024-08-26,4,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00426,U00263,P0047,2024-09-19,4,"Arrived broken, terrible packaging.",en,negative,packaging
+R00427,U00076,P0019,2024-06-20,3,和描述一致，好评。,zh,positive,quality
+R00428,U00250,P0089,2024-07-27,2,"Arrived broken, terrible packaging.",en,negative,packaging
+R00429,U00208,P0023,2024-09-14,4,一般般，没什么特别的。,zh,neutral,quality
+R00430,U00040,P0060,2025-02-19,1,"Average quality, nothing special.",en,neutral,quality
+R00431,U00190,P0111,2024-04-18,3,一般般，没什么特别的。,zh,neutral,quality
+R00432,U00388,P0043,2024-06-26,2,发货太慢了，等了很久。,zh,negative,delivery
+R00433,U00138,P0119,2024-07-08,1,发货太慢了，等了很久。,zh,negative,delivery
+R00434,U00341,P0073,2024-09-23,5,一般般，没什么特别的。,zh,neutral,quality
+R00435,U00258,P0100,2024-12-02,2,质量很好，非常满意！,zh,positive,quality
+R00436,U00135,P0069,2024-07-30,2,发货太慢了，等了很久。,zh,negative,delivery
+R00437,U00311,P0074,2025-01-09,4,Fast delivery and good packaging.,en,positive,delivery
+R00438,U00267,P0043,2024-06-15,3,Customer service was helpful.,en,positive,customer_service
+R00439,U00229,P0075,2024-04-14,5,"Average quality, nothing special.",en,neutral,quality
+R00440,U00468,P0029,2024-02-13,3,Took too long to arrive.,en,negative,delivery
+R00441,U00361,P0016,2024-05-14,2,和描述一致，好评。,zh,positive,quality
+R00442,U00183,P0033,2024-06-07,1,"The size is too small, disappointed.",en,negative,size
+R00443,U00206,P0060,2025-03-07,4,和描述一致，好评。,zh,positive,quality
+R00444,U00160,P0117,2024-03-14,5,Customer service was helpful.,en,positive,customer_service
+R00445,U00254,P0034,2024-01-17,3,物流很快，包装完好。,zh,positive,delivery
+R00446,U00486,P0100,2024-07-08,2,"Great product, very satisfied!",en,positive,quality
+R00447,U00326,P0089,2024-08-26,1,价格有点贵，性价比一般。,zh,negative,price
+R00448,U00189,P0033,2024-08-24,4,Love the color and design!,en,positive,quality
+R00449,U00479,P0105,2025-02-13,2,尺寸偏小，有点失望。,zh,negative,size
+R00450,U00494,P0058,2025-02-08,4,Fast delivery and good packaging.,en,positive,delivery
+R00451,U00416,P0078,2024-09-07,3,和描述一致，好评。,zh,positive,quality
+R00452,U00342,P0083,2024-01-01,5,"The size is too small, disappointed.",en,negative,size
+R00453,U00203,P0091,2024-12-01,3,"Great product, very satisfied!",en,positive,quality
+R00454,U00319,P0109,2024-05-24,1,"Average quality, nothing special.",en,neutral,quality
+R00455,U00087,P0106,2025-02-13,2,价格有点贵，性价比一般。,zh,negative,price
+R00456,U00487,P0104,2024-07-27,1,"Exactly as described, 5 stars.",en,positive,quality
+R00457,U00372,P0006,2024-05-19,1,物流很快，包装完好。,zh,positive,delivery
+R00458,U00256,P0007,2024-09-19,2,"The size is too small, disappointed.",en,negative,size
+R00459,U00078,P0018,2024-01-27,5,和描述一致，好评。,zh,positive,quality
+R00460,U00422,P0041,2024-02-15,2,Customer service was helpful.,en,positive,customer_service
+R00461,U00015,P0001,2024-04-01,5,发货太慢了，等了很久。,zh,negative,delivery
+R00462,U00023,P0009,2025-02-04,1,物流很快，包装完好。,zh,positive,delivery
+R00463,U00226,P0033,2024-12-11,4,Took too long to arrive.,en,negative,delivery
+R00464,U00316,P0074,2024-01-29,3,Price is a bit high for what you get.,en,negative,price
+R00465,U00165,P0017,2024-05-03,4,物流很快，包装完好。,zh,positive,delivery
+R00466,U00097,P0089,2024-11-12,1,颜色和设计都很喜欢！,zh,positive,quality
+R00467,U00314,P0118,2024-09-10,3,"Exactly as described, 5 stars.",en,positive,quality
+R00468,U00360,P0099,2024-05-29,3,价格有点贵，性价比一般。,zh,negative,price
+R00469,U00476,P0070,2024-05-24,3,尺寸偏小，有点失望。,zh,negative,size
+R00470,U00423,P0049,2024-04-28,2,Customer service was helpful.,en,positive,customer_service
+R00471,U00422,P0032,2025-02-01,5,Love the color and design!,en,positive,quality
+R00472,U00457,P0040,2025-03-28,4,收到的时候包装破损了，不好。,zh,negative,packaging
+R00473,U00034,P0074,2024-01-22,2,质量很好，非常满意！,zh,positive,quality
+R00474,U00288,P0026,2025-02-09,1,Took too long to arrive.,en,negative,delivery
+R00475,U00071,P0038,2024-02-15,2,收到的时候包装破损了，不好。,zh,negative,packaging
+R00476,U00061,P0055,2025-02-10,1,Fast delivery and good packaging.,en,positive,delivery
+R00477,U00339,P0099,2025-02-08,3,尺寸偏小，有点失望。,zh,negative,size
+R00478,U00412,P0075,2024-01-22,2,"Exactly as described, 5 stars.",en,positive,quality
+R00479,U00328,P0096,2024-10-16,2,物流很快，包装完好。,zh,positive,delivery
+R00480,U00475,P0120,2024-03-01,4,Took too long to arrive.,en,negative,delivery
+R00481,U00379,P0114,2024-11-16,2,价格有点贵，性价比一般。,zh,negative,price
+R00482,U00146,P0092,2024-12-17,2,Love the color and design!,en,positive,quality
+R00483,U00491,P0098,2024-12-26,4,Fast delivery and good packaging.,en,positive,delivery
+R00484,U00281,P0093,2025-02-22,2,"Average quality, nothing special.",en,neutral,quality
+R00485,U00321,P0109,2024-09-29,2,"Average quality, nothing special.",en,neutral,quality
+R00486,U00411,P0050,2024-12-09,1,"The size is too small, disappointed.",en,negative,size
+R00487,U00341,P0025,2024-10-18,2,一般般，没什么特别的。,zh,neutral,quality
+R00488,U00035,P0068,2024-07-11,4,"Arrived broken, terrible packaging.",en,negative,packaging
+R00489,U00059,P0087,2024-02-13,1,颜色和设计都很喜欢！,zh,positive,quality
+R00490,U00411,P0119,2024-02-01,2,收到的时候包装破损了，不好。,zh,negative,packaging
+R00491,U00471,P0070,2024-10-12,2,"Arrived broken, terrible packaging.",en,negative,packaging
+R00492,U00296,P0088,2024-09-02,1,尺寸偏小，有点失望。,zh,negative,size
+R00493,U00409,P0108,2024-12-09,3,Customer service was helpful.,en,positive,customer_service
+R00494,U00312,P0113,2024-06-11,2,客服态度不错，解决问题很快。,zh,positive,customer_service
+R00495,U00217,P0040,2024-05-18,1,物流很快，包装完好。,zh,positive,delivery
+R00496,U00311,P0084,2024-12-14,2,"The size is too small, disappointed.",en,negative,size
+R00497,U00150,P0117,2025-02-03,4,物流很快，包装完好。,zh,positive,delivery
+R00498,U00268,P0051,2024-05-07,5,Price is a bit high for what you get.,en,negative,price
+R00499,U00360,P0051,2024-03-24,3,和描述一致，好评。,zh,positive,quality
+R00500,U00340,P0021,2024-04-28,5,"Great product, very satisfied!",en,positive,quality

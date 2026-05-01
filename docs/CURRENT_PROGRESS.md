@@ -802,6 +802,25 @@ Upload CSV/Excel
   - 移除未使用导入：`echarts`、`getChartColors`、`withAlpha`、`Card` 系列组件
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.01s。
 
+## Phase 4A-6-21: Manual QA Test Dataset Pack
+
+- **目标**: 创建稳定、可复现的手动 QA 测试数据集包，供进入 Phase 4B 前做端到端验证。
+- **新增文件**:
+  - `manual-test-data/scripts/generate_manual_test_data.py` — 纯标准库生成脚本，固定种子 `SEED = 42`
+  - `manual-test-data/README.md` — 数据集说明与推荐测试顺序
+  - `manual-test-data/qa-checklist.md` — 按功能域的详细 QA 检查清单
+  - `manual-test-data/csv/01_users.csv` ~ `10_data_quality_edge_cases.csv` — 10 个测试数据集
+- **数据集覆盖**:
+  - Statistics / Semantic / Forecast / Attribution / PathAnalysis
+  - A/B 实验、回归分析、数据质量边界、多表关系
+- **设计要点**:
+  - 用户表与商品表先生成，再加载用于生成订单、事件、评论等关联表
+  - 事件日志包含确定性漏斗结果（转化/加购流失/结账流失/跳出）
+  - 归因旅程包含 1–6 个有序触点，~35% 转化率
+  - 预测数据包含周季节性、促销 spike、节假日效应
+  - 数据质量表包含 >60% 缺失、常数列、高基数、混合类型、异常值
+- **验证**: 脚本运行成功，10 个 CSV 生成完毕，未修改任何应用源代码
+
 ## 下一步建议
 
 ### 立即执行
@@ -810,10 +829,8 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **Phase 4A-6-18: Basic ResultChartRenderer Implementation** — 实现 line/bar 支持，graph 类型仍保持 placeholder
-2. **Phase 4A-6-19: Forecast Chart Migration** — Forecast placeholder 转为真实 line chart
-3. **Phase 4A-6-20: Attribution Chart Migration** — Attribution 对比图表迁移至 ResultView
-4. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
+1. **Phase 4B: AI Assistant Upgrade / Hermes Agent** — 结果渲染架构已基本统一，可开始设计 AI 助手
+2. **或继续 ResultChartRenderer 打磨** — tooltip 格式化、ResizeObserver、confidence band
 
 ### 远期规划（不变）
 
