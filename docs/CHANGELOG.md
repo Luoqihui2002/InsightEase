@@ -71,6 +71,21 @@
 - 更新 `ARCHITECTURE_DECISIONS.md` 至 v2.0
 - 浏览器端到端回归测试待人工验证
 
+## Phase 4B-3: Static Dataset Understanding UI
+
+- **目标**: 构建第一个可见的 AI Data Assistant 功能：静态数据集理解卡片。
+- **新增文件**:
+  - `app/src/components/assistant/DatasetUnderstandingCard.tsx` — 数据集理解主组件
+- **修改文件**:
+  - `app/src/pages/Datasets.tsx` — 在数据集详情对话框集成理解卡片
+- **功能**:
+  - 调用 `assistantApi.profileDataset(datasetId)` 获取画像
+  - 表类型推断、置信度、证据、推荐分析
+  - 数据质量警告、字段角色/语义类型分布
+  - 关键字段分组、字段详情表格（默认 20 行，可展开）
+  - 加载/错误/空状态 + 刷新按钮
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` 成功。
+
 ## Phase 4B-2B: Dataset Profile API Contract Smoke Test & Casing Fix
 
 - **目标**: 验证并稳定后端画像端点与前端的 API 契约，解决 snake_case / camelCase 不匹配。

@@ -204,9 +204,11 @@
 - 确认前端现有类型约定为 snake_case
 - `assistant.ts` 类型统一改为 snake_case，与后端和项目约定一致
 
-#### 4B-3: Static Dataset Understanding UI
+#### 4B-3: Static Dataset Understanding UI ✅
 - 基于 `DatasetProfile` 的数据集概览卡片
 - 字段角色检测（非 LLM）
+- 在 Datasets 页面详情对话框集成 `DatasetUnderstandingCard`
+- 表类型推断、质量警告、字段分布、关键字段、详情表格
 
 #### 4B-4: Assistant Panel Mock UI
 - 助手面板 UI 框架

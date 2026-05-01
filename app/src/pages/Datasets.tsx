@@ -60,6 +60,7 @@ import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { StatCard } from '@/components/data-display/StatCard';
 import { DataTablePreview } from '@/components/data-display/DataTablePreview';
+import { DatasetUnderstandingCard } from '@/components/assistant/DatasetUnderstandingCard';
 
 export function Datasets() {
   const navigate = useNavigate();
@@ -772,6 +773,14 @@ export function Datasets() {
                   </p>
                 </div>
               </ContentGrid>
+
+              {/* AI 数据理解 */}
+              {selectedDataset && (
+                <DatasetUnderstandingCard
+                  datasetId={selectedDataset.id}
+                  datasetName={selectedDataset.filename}
+                />
+              )}
 
               {/* 前五行预览 */}
               <div className="space-y-3">

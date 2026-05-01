@@ -881,6 +881,26 @@ Upload CSV/Excel
   - `app/src/types/assistant.ts` — 全部字段改为 snake_case（dataset_id, row_count, semantic_type, null_rate, table_type, recommended_analyses, quality_warnings, generated_at 等）
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` 成功，后端 `compileall` 通过
 
+## Phase 4B-3: Static Dataset Understanding UI
+
+- **目标**: 构建第一个可见的 AI Data Assistant 功能：静态、非 LLM 的数据集理解卡片。
+- **新增文件**:
+  - `app/src/components/assistant/DatasetUnderstandingCard.tsx` — 数据集理解主组件
+- **修改文件**:
+  - `app/src/pages/Datasets.tsx` — 在数据集详情对话框中集成 `DatasetUnderstandingCard`
+- **组件功能**:
+  - 调用 `assistantApi.profileDataset(datasetId)` 获取画像
+  - 加载/错误/空状态处理 + 刷新按钮
+  - 表类型推断（含置信度、证据、推荐分析）
+  - 数据质量警告列表
+  - 字段角色分布（带图标和颜色的徽章）
+  - 语义类型分布
+  - 关键字段分组（标识列、时间列、指标列、文本列、实验分组、警告列）
+  - 字段详情表格（字段名、角色、类型、缺失率、唯一值、示例值、警告）
+  - 表格默认展示前 20 个字段，支持展开全部
+- **辅助函数**: ROLE_LABELS / SEMANTIC_LABELS / TABLE_TYPE_LABELS / getConfidenceLabel / getRoleIcon / getRoleBadgeColor / getSemanticBadgeColor / KeyColumnGroup
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.41s
+
 ## 下一步建议
 
 ### 立即执行
