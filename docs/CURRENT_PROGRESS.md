@@ -662,6 +662,34 @@ Upload CSV/Excel
 - **图表策略**: Forecast 页面原本无真实 ECharts 图表，因此适配器 emit line chart placeholder（符合 4A-6-13 政策）
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.88s。清理了未使用变量 `metrics`、`Calendar`、`BarChart3`。
 
+## Phase 4A-6-15: ResultView Rollout to PathAnalysis Page
+
+- **目标**: 将 `ResultView` 推广到 PathAnalysis 页面，验证路径/漏斗/旅程结果的结构化渲染。
+- **新增文件**:
+  - `app/src/lib/adapters/pathAnalysisResultAdapter.ts` — PathAnalysis 结果 → `AnalysisResult`（5 种分析类型）
+- **修改文件**:
+  - `app/src/pages/PathAnalysis.tsx` — 接入 `ResultView`，保留所有 ECharts 图表和特殊 UI
+- **适配器设计**:
+  - Dispatcher 按 `pathType` 路由到 5 个独立转换器：funnel、path、clustering、key_path、sequence_mining
+  - 每个转换器产出：summary + metric + table(s) + warning + text (AI summary)
+  - Funnel：漏斗步骤表 + 流失/转化警告
+  - Path：热门路径表 + 节点统计表 + 循环/碎片化警告
+  - Clustering：用户群体表 + 分布不均警告
+  - Key Path：常见路径表 + 最优路径表
+  - Sequence Mining：频繁模式表 + 关联规则表 + 高转化模式表 + 低数据警告
+  - 防御性处理：`safeNumber`、`safeString`、`safeArray`、`formatPath`
+- **保留的 UI**:
+  - 漏斗 ECharts 图表、桑基图、力导向网络图、关联规则图
+  - 循环路径警告（含示例详情）
+  - 视觉路径展示（breadcrumb 箭头样式）
+  - 最优路径卡片
+  - 聚类保存按钮
+  - 聚类卡片（含特征统计）
+  - 导出工具栏（CSV + 图表下载）
+- **图表策略**: 页面已渲染多个真实 ECharts 图表，因此适配器不 emit chart placeholder（符合 4A-6-13 政策）
+- **已知限制**: 旧 metric cards 暂时与 ResultView 共存，未来 cleanup phase 移除
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.79s。清理了未使用导入 `ResultTableColumn`。
+
 ## Phase 4A-6-13: Chart Placeholder Policy & Attribution Cleanup
 
 - **目标**: 消除 Attribution 页面中图表占位卡片与真实 ECharts 图表的重复 UI。

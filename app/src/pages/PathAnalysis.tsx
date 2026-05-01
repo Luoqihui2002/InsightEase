@@ -30,6 +30,8 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import * as echarts from 'echarts';
+import { ResultView } from '@/components/results';
+import { toPathAnalysisResult } from '@/lib/adapters/pathAnalysisResultAdapter';
 import { getChartColors, withAlpha } from '@/hooks/useChartColors';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
 
@@ -1424,6 +1426,18 @@ export function PathAnalysis() {
           
           {result && (
             <div className="space-y-6">
+              {/* ResultView 统一结果渲染 */}
+              {(() => {
+                const converted = toPathAnalysisResult(
+                  result,
+                  datasetInfo,
+                  pathType
+                );
+                return converted ? (
+                  <ResultView result={converted} />
+                ) : null;
+              })()}
+
               {/* 下载工具栏 */}
               <div className="flex items-center justify-end gap-2">
                 <Button

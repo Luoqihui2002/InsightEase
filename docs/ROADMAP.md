@@ -142,11 +142,16 @@
 - 保留错误诊断、What-if 结果、导出按钮
 - 验证时间序列结果结构
 
-#### 4A-6-15: ResultView 推广到 PathAnalysis（可选后续）
-- 验证漏斗/图结果结构
-- 独立适配器
+#### 4A-6-15: ResultView 推广到 PathAnalysis Page ✅
+- 创建 `pathAnalysisResultAdapter.ts`（支持 5 种分析类型）
+- `PathAnalysis.tsx` 接入 `ResultView`
+- 保留所有 ECharts 图表和特殊 UI
+- 验证漏斗/路径/聚类/关键路径/序列模式结果结构
 
-#### 4A-6-16: ResultChartRenderer 实现（可选后续）
+#### 4A-6-16: PathAnalysis UI 清理（可选后续）
+- 移除与 ResultView 重复的旧 metric cards
+
+#### 4A-6-17: ResultChartRenderer 实现（可选后续）
 - 在 ResultView 内支持真实 ECharts 图表渲染
 - 迁移页面级图表到 ResultView 内部
 

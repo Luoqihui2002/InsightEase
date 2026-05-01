@@ -162,7 +162,7 @@ Unchanged. The export button still reads `analysisResult` directly and construct
 ## Git Information
 
 ### Commit
-- **Hash**: `{TBD}`
+- **Hash**: `43da438`
 - **Message**: `feat: integrate result view with forecast page`
 
 ### Package Files Modified

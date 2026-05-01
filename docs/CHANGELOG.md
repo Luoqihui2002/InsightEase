@@ -339,6 +339,21 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-15: ResultView Rollout to PathAnalysis Page
+
+- 新增 `app/src/lib/adapters/pathAnalysisResultAdapter.ts` — PathAnalysis 结果 → `AnalysisResult`
+- `PathAnalysis.tsx` 接入 `ResultView`：
+  - ResultView 渲染在结果区顶部
+  - 保留所有 ECharts 图表：漏斗图、桑基图、力导向网络图、关联规则图
+  - 保留特殊 UI：循环警告、视觉路径展示、最优路径卡片、聚类保存按钮、聚类卡片
+  - 保留导出工具栏（CSV + 图表下载）
+- 适配器支持 5 种分析类型：funnel、path、clustering、key_path、sequence_mining
+- 每个类型独立转换器：summary + metric + table(s) + warning + AI text
+- 路径数组通过 `formatPath` 转换为 " → " 分隔字符串用于表格显示
+- 图表占位：不 emit（页面已存在多个真实 ECharts 图表）
+- 防御性处理：safeNumber、safeString、safeArray、formatPath
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-14: ResultView Rollout to Forecast Page
 
 - 新增 `app/src/lib/adapters/forecastResultAdapter.ts` — Forecast 结果 → `AnalysisResult`
