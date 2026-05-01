@@ -339,6 +339,18 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-17: ResultChartRenderer Design Document
+
+- 创建 `docs/design/RESULT_CHART_RENDERER_DESIGN.md`
+- 盘点 6 处现有图表使用：Attribution bar、Forecast line placeholder、PathAnalysis funnel/sankey/graph/association-rule
+- 评估 `ResultChartBlock` schema 充足性，提出 `encoding`/`axes`/`rendererHint` 等扩展建议
+- 定义三级图表优先级：P0 line/bar/area → P1 scatter/histogram/pie → P2 funnel/sankey/graph
+- 提出渲染架构：`ResultChartRenderer` → `buildChartOption` → `BaseEChart`
+- 定义 ECharts 生命周期安全要求
+- 包体积策略：复用现有 ECharts (`vendor-echarts` ~1,561 kB)，不新增依赖
+- 迁移策略：Forecast 优先 → Attribution 次之 → PathAnalysis graph 延后
+- 纯文档阶段，未修改任何源代码、adapter、package 文件
+
 ## Phase 4A-6-16: PathAnalysis ResultView UI Cleanup
 
 - `PathAnalysis.tsx` 清理重复 UI：

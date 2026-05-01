@@ -153,9 +153,21 @@
 - 移除重复的 HTML table：漏斗步骤、节点详情、关联规则
 - 保留图表、视觉展示、交互组件、导出工具栏
 
-#### 4A-6-17: ResultChartRenderer 实现（可选后续）
-- 在 ResultView 内支持真实 ECharts 图表渲染
-- 迁移页面级图表到 ResultView 内部
+#### 4A-6-17: ResultChartRenderer Design Document ✅
+- 创建 `docs/design/RESULT_CHART_RENDERER_DESIGN.md`
+- 盘点 6 处图表使用，定义 P0/P1/P2 优先级
+- 提出渲染架构和迁移策略
+- 纯文档阶段
+
+#### 4A-6-18: ResultChartRenderer Implementation（可选后续）
+- 实现 line/bar 真实渲染
+- graph 类型仍保持 placeholder
+
+#### 4A-6-19: Forecast Chart Migration（可选后续）
+- Forecast placeholder → 真实 line chart
+
+#### 4A-6-20: Attribution Chart Migration（可选后续）
+- Attribution 对比图表迁移至 ResultView
 
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
 - 纯研究文档，不实现

@@ -737,6 +737,23 @@ Upload CSV/Excel
   - ECharts 对比图表 — 保留在页面级别，未来迁移至 ResultView
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.85s。
 
+## Phase 4A-6-17: ResultChartRenderer Design Document
+
+- **目标**: 创建 `ResultChartRenderer` 架构设计文档，为未来在 ResultView 内支持真实图表渲染提供路线图。
+- **范围**: 纯文档阶段，未修改任何应用源代码
+- **新增文件**:
+  - `docs/design/RESULT_CHART_RENDERER_DESIGN.md`
+- **设计要点**:
+  - 盘点当前 6 处图表使用：Attribution bar、Forecast line placeholder、PathAnalysis funnel/sankey/graph/association-rule
+  - 评估现有 `ResultChartBlock` schema 充足性，提出未来扩展建议
+  - 定义三级优先级：P0 line/bar/area → P1 scatter/histogram/pie → P2 funnel/sankey/graph
+  - 提出架构：`ResultChartRenderer` → `buildChartOption` → `BaseEChart` (生命周期包装器)
+  - 定义 ECharts 生命周期安全要求：mount/update/unmount/resize/空数据处理
+  - 包体积策略：复用现有 ECharts，不新增依赖
+  - 迁移策略：Forecast 优先（无冲突）→ Attribution 次之 → PathAnalysis graph 延后
+  - 明确非目标：本阶段不实现、不迁移、不修改 adapter、不添加依赖
+- **验证**: `git status` 确认仅 docs/ 文件变动，无源代码修改
+
 ## 下一步建议
 
 ### 立即执行
@@ -745,9 +762,10 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **ResultView 推广到 Forecast / PathAnalysis 页面** — 验证时间序列和漏斗/图结果结构
-2. **或实现 ResultChartRenderer** — 在 ResultView 内支持真实图表渲染
-3. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
+1. **Phase 4A-6-18: Basic ResultChartRenderer Implementation** — 实现 line/bar 支持，graph 类型仍保持 placeholder
+2. **Phase 4A-6-19: Forecast Chart Migration** — Forecast placeholder 转为真实 line chart
+3. **Phase 4A-6-20: Attribution Chart Migration** — Attribution 对比图表迁移至 ResultView
+4. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
 
 ### 远期规划（不变）
 
