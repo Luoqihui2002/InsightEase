@@ -148,8 +148,10 @@
 - 保留所有 ECharts 图表和特殊 UI
 - 验证漏斗/路径/聚类/关键路径/序列模式结果结构
 
-#### 4A-6-16: PathAnalysis UI 清理（可选后续）
-- 移除与 ResultView 重复的旧 metric cards
+#### 4A-6-16: PathAnalysis UI 清理 ✅
+- 移除与 ResultView 重复的旧 metric cards（5 种分析类型共 15 个 cards）
+- 移除重复的 HTML table：漏斗步骤、节点详情、关联规则
+- 保留图表、视觉展示、交互组件、导出工具栏
 
 #### 4A-6-17: ResultChartRenderer 实现（可选后续）
 - 在 ResultView 内支持真实 ECharts 图表渲染

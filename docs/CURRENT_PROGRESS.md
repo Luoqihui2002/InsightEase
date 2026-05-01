@@ -690,6 +690,24 @@ Upload CSV/Excel
 - **已知限制**: 旧 metric cards 暂时与 ResultView 共存，未来 cleanup phase 移除
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.79s。清理了未使用导入 `ResultTableColumn`。
 
+## Phase 4A-6-16: PathAnalysis ResultView UI Cleanup
+
+- **目标**: 移除 PathAnalysis 页面中与 ResultView 重复的 metric cards 和基础表格。
+- **修改文件**:
+  - `app/src/pages/PathAnalysis.tsx` — 移除 5 种分析类型下的旧 metric cards 和重复表格
+- **移除内容**:
+  - Funnel：3 个 metric cards + 步骤详情 HTML table
+  - Path：3 个 metric cards + 节点详情 card grid
+  - Sequence Mining：4 个 metric cards + 关联规则 HTML table
+  - Clustering：2 个 metric cards
+  - Key Path：3 个 metric cards
+- **保留内容**:
+  - 所有 ECharts 图表（漏斗图、桑基图、力导向图、关联规则图）
+  - 循环路径警告、视觉路径展示、最优路径卡片
+  - 聚类保存按钮、聚类卡片
+  - 导出工具栏
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.17s。清理了未使用导入 `Users`。
+
 ## Phase 4A-6-13: Chart Placeholder Policy & Attribution Cleanup
 
 - **目标**: 消除 Attribution 页面中图表占位卡片与真实 ECharts 图表的重复 UI。

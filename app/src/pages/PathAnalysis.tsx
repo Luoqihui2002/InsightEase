@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Target,
   Layers,
-  Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1454,35 +1453,7 @@ export function PathAnalysis() {
               {/* 漏斗分析结果 */}
               {pathType === 'funnel' && result.funnel_steps && (
                 <>
-                  {/* 概览卡片 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">总用户数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-cyan)]">
-                          {result.total_users?.toLocaleString()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">总体转化率</p>
-                        <p className="text-2xl font-bold text-[var(--neon-green)]">
-                          {result.overall_conversion_rate}%
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">步骤数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-purple)]">
-                          {result.funnel_steps.length}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {/* 漏斗图 */}
+                  {/* 漏斗图 — ResultView 已渲染概览指标和步骤表格 */}
                   <Card className="border-[var(--border-subtle)]">
                     <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
@@ -1504,83 +1475,13 @@ export function PathAnalysis() {
                     </CardContent>
                   </Card>
                   
-                  {/* 步骤详情表 */}
-                  <Card className="border-[var(--border-subtle)]">
-                    <CardHeader>
-                      <CardTitle className="text-lg text-[var(--text-primary)]">
-                        步骤详情
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-[var(--border-subtle)]">
-                              <th className="text-left py-2 text-[var(--text-muted)]">步骤</th>
-                              <th className="text-right py-2 text-[var(--text-muted)]">用户数</th>
-                              <th className="text-right py-2 text-[var(--text-muted)]">转化率</th>
-                              <th className="text-right py-2 text-[var(--text-muted)]">流失率</th>
-                              <th className="text-right py-2 text-[var(--text-muted)]">平均耗时</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {result.funnel_steps.map((step: FunnelStep) => (
-                              <tr key={step.step} className="border-b border-[var(--border-subtle)]/50">
-                                <td className="py-3">
-                                  <span className="text-[var(--text-primary)]">{step.name}</span>
-                                </td>
-                                <td className="text-right py-3 text-[var(--neon-cyan)]">
-                                  {step.users.toLocaleString()}
-                                </td>
-                                <td className="text-right py-3 text-[var(--neon-green)]">
-                                  {step.conversion_rate}%
-                                </td>
-                                <td className="text-right py-3 text-[var(--neon-pink)]">
-                                  {step.drop_off_rate}%
-                                </td>
-                                <td className="text-right py-3 text-[var(--text-secondary)]">
-                                  {step.avg_time_from_prev > 0 ? `${step.avg_time_from_prev.toFixed(1)}h` : '-'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* 步骤表格已由 ResultView 渲染 */}
                 </>
               )}
               
               {/* 路径分析结果 */}
               {pathType === 'path' && result.top_paths && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">总用户数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-cyan)]">
-                          {result.total_users?.toLocaleString()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">不同路径数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-purple)]">
-                          {result.total_paths?.toLocaleString()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">最大路径长度</p>
-                        <p className="text-2xl font-bold text-[var(--neon-orange)]">
-                          {result.max_path_length}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
                   {/* 循环路径警告 */}
                   {result.has_cycle_in_data && (
                     <div className="p-3 rounded-lg bg-[var(--neon-orange)]/10 border border-[var(--neon-orange)]/30">
@@ -1698,83 +1599,14 @@ export function PathAnalysis() {
                     </CardContent>
                   </Card>
                   
-                  {/* 节点详情 */}
-                  {result.node_details && (
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-[var(--text-primary)]">
-                          节点访问统计
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {result.node_details.slice(0, 12).map((node: PathNode) => (
-                            <div 
-                              key={node.name}
-                              className="p-3 rounded-lg bg-[var(--bg-secondary)]"
-                            >
-                              <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                                {node.name}
-                              </p>
-                              <div className="flex items-center gap-4 mt-2 text-xs">
-                                <span className="text-[var(--neon-cyan)]">
-                                  <Users className="w-3 h-3 inline mr-1" />
-                                  {node.unique_users.toLocaleString()}
-                                </span>
-                                <span className="text-[var(--text-muted)]">
-                                  <ArrowRight className="w-3 h-3 inline mr-1" />
-                                  {node.out_degree}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {/* 节点统计已由 ResultView 渲染 */}
                 </>
               )}
               
               {/* 序列模式挖掘结果 */}
               {pathType === 'sequence_mining' && result.frequent_patterns && (
                 <>
-                  {/* 统计概览 */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">用户旅程数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-cyan)]">
-                          {result.total_sequences?.toLocaleString()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">平均序列长度</p>
-                        <p className="text-2xl font-bold text-[var(--neon-purple)]">
-                          {result.avg_sequence_length?.toFixed(1)}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">频繁模式数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-green)]">
-                          {result.frequent_patterns?.length}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">转化率</p>
-                        <p className="text-2xl font-bold text-[var(--neon-orange)]">
-                          {result.sequence_stats?.conversion_rate}%
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {/* 频繁序列模式 */}
+                  {/* 频繁序列模式 — ResultView 已渲染统计指标和表格 */}
                   {result.frequent_patterns && result.frequent_patterns.length > 0 && (
                     <Card className="border-[var(--border-subtle)]">
                       <CardHeader>
@@ -1838,58 +1670,7 @@ export function PathAnalysis() {
                     </Card>
                   )}
                   
-                  {/* 关联规则表格 */}
-                  {result.association_rules && result.association_rules.length > 0 && (
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-[var(--text-primary)]">
-                          关联规则 TOP 15
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-[var(--border-subtle)]">
-                                <th className="text-left p-2 text-[var(--text-muted)]">规则</th>
-                                <th className="text-left p-2 text-[var(--text-muted)]">支持度</th>
-                                <th className="text-left p-2 text-[var(--text-muted)]">置信度</th>
-                                <th className="text-left p-2 text-[var(--text-muted)]">提升度</th>
-                                <th className="text-left p-2 text-[var(--text-muted)]">类型</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {result.association_rules.slice(0, 15).map((rule: any, index: number) => (
-                                <tr key={index} className="border-b border-[var(--border-subtle)]">
-                                  <td className="p-2">
-                                    <span className="text-[var(--neon-cyan)]">{rule.antecedent_str || rule.antecedent}</span>
-                                    <span className="text-[var(--text-muted)] mx-2">→</span>
-                                    <span className="text-[var(--neon-purple)]">{rule.consequent}</span>
-                                  </td>
-                                  <td className="p-2 text-[var(--text-secondary)]">{(rule.support * 100).toFixed(1)}%</td>
-                                  <td className="p-2 text-[var(--text-secondary)]">{(rule.confidence * 100).toFixed(1)}%</td>
-                                  <td className="p-2">
-                                    <span className={rule.lift > 1 ? 'text-[var(--neon-green)]' : 'text-[var(--neon-orange)]'}>
-                                      {rule.lift.toFixed(2)}
-                                    </span>
-                                  </td>
-                                  <td className="p-2">
-                                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                      rule.rule_type === '多前项' 
-                                        ? 'bg-[var(--neon-purple)]/20 text-[var(--neon-purple)]' 
-                                        : 'bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]'
-                                    }`}>
-                                      {rule.rule_type || '单前项'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {/* 关联规则表格已由 ResultView 渲染 */}
                   
                   {/* 高转化模式 */}
                   {result.high_conversion_patterns && result.high_conversion_patterns.length > 0 && (
@@ -1934,25 +1715,6 @@ export function PathAnalysis() {
               {/* 聚类分析结果 */}
               {pathType === 'clustering' && result.clusters && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">总用户数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-cyan)]">
-                          {result.total_users?.toLocaleString()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">聚类数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-purple)]">
-                          {result.n_clusters}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
                   {/* 保存结果按钮 */}
                   <Card className="border-[var(--neon-cyan)]/50 bg-[var(--neon-cyan)]/5">
                     <CardContent className="p-4">
@@ -2078,33 +1840,6 @@ export function PathAnalysis() {
               {/* 关键路径结果 */}
               {pathType === 'key_path' && result.complete_path_count !== undefined && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">完整路径数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-cyan)]">
-                          {result.complete_path_count.toLocaleString()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">平均步数</p>
-                        <p className="text-2xl font-bold text-[var(--neon-purple)]">
-                          {result.avg_steps}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-[var(--border-subtle)]">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-xs text-[var(--text-muted)]">平均耗时</p>
-                        <p className="text-2xl font-bold text-[var(--neon-green)]">
-                          {(result.avg_duration_seconds / 3600).toFixed(1)}h
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
                   {/* 最优路径 */}
                   {result.optimal_paths && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

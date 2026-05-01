@@ -339,6 +339,18 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-16: PathAnalysis ResultView UI Cleanup
+
+- `PathAnalysis.tsx` 清理重复 UI：
+  - 移除 Funnel 旧 metric cards（3 个）+ 步骤详情 HTML table
+  - 移除 Path 旧 metric cards（3 个）+ 节点详情 card grid
+  - 移除 Sequence Mining 旧 metric cards（4 个）+ 关联规则 HTML table
+  - 移除 Clustering 旧 metric cards（2 个）
+  - 移除 Key Path 旧 metric cards（3 个）
+- 保留所有 ECharts 图表、循环警告、视觉路径展示、最优路径卡片、聚类保存按钮、聚类卡片、导出工具栏
+- 清理未使用导入 `Users`
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-15: ResultView Rollout to PathAnalysis Page
 
 - 新增 `app/src/lib/adapters/pathAnalysisResultAdapter.ts` — PathAnalysis 结果 → `AnalysisResult`
