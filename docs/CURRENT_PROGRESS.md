@@ -641,6 +641,27 @@ Upload CSV/Excel
   - 货币符号硬编码为 ¥
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 21.64s，无空 `SelectItem value=""`。
 
+## Phase 4A-6-14: ResultView Rollout to Forecast Page
+
+- **目标**: 将 `ResultView` 推广到 Forecast 页面，验证时间序列预测结果的结构化渲染。
+- **新增文件**:
+  - `app/src/lib/adapters/forecastResultAdapter.ts` — Forecast 结果 → `AnalysisResult`（支持单预测 + 批量预测）
+- **修改文件**:
+  - `app/src/pages/Forecast.tsx` — 接入 `ResultView`，替换 metric cards、decomposition card、promotion impact card、AI summary
+- **适配器设计**:
+  - 自动检测 batch vs single：通过 `forecasts` 数组字段存在性判断
+  - Single：summary + metric + forecast table + decomposition table + promotion impact table + AI text + line chart placeholder + warnings
+  - Batch：summary + metric + SKU table + warnings
+  - 支持两种 forecast 数据格式：并行数组 `{ds, yhat, yhat_lower, yhat_upper}` 和 点对象数组
+  - 防御性处理：`safeNumber`、`safeString`、Array.isArray、typeof 守卫
+- **保留的 UI**:
+  - 错误诊断显示（含 collapsible diagnostics + sample data）— ResultView 错误状态较简单，保留 richer display
+  - What-if 分析结果 — 交互性强，暂不适合 AnalysisResult
+  - 导出 CSV 按钮 — 直接读取 `analysisResult`
+  - 调试信息 — 无 forecast 数据时显示原始数据结构
+- **图表策略**: Forecast 页面原本无真实 ECharts 图表，因此适配器 emit line chart placeholder（符合 4A-6-13 政策）
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.88s。清理了未使用变量 `metrics`、`Calendar`、`BarChart3`。
+
 ## Phase 4A-6-13: Chart Placeholder Policy & Attribution Cleanup
 
 - **目标**: 消除 Attribution 页面中图表占位卡片与真实 ECharts 图表的重复 UI。

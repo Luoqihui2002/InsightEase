@@ -339,6 +339,21 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-14: ResultView Rollout to Forecast Page
+
+- 新增 `app/src/lib/adapters/forecastResultAdapter.ts` — Forecast 结果 → `AnalysisResult`
+- `Forecast.tsx` 接入 `ResultView`：
+  - 替换 single forecast 的 metric cards、decomposition card、promotion impact card、AI summary
+  - 替换 batch forecast 的汇总统计和 SKU 列表
+  - 保留错误诊断显示（rich diagnostics + sample data collapsibles）
+  - 保留 What-if 分析结果（交互性强，暂不适合 AnalysisResult）
+  - 保留导出 CSV 按钮
+- 适配器支持单预测 + 批量预测自动检测
+- 支持两种 forecast 数据格式：并行数组和点对象数组
+- 图表占位：emit line chart placeholder（Forecast 页面原本无真实 ECharts 图表）
+- 防御性处理：safeNumber、safeString、Array.isArray、typeof 守卫
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-13: Chart Placeholder Policy & Attribution Cleanup
 
 - 从 `attributionResultAdapter.ts` 移除 chart placeholder block

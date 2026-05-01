@@ -8,8 +8,6 @@ import {
   Sparkles,
   Loader2,
   Brain,
-  Calendar,
-  BarChart3,
   Info,
   Upload
 } from 'lucide-react';
@@ -29,6 +27,8 @@ import { datasetApi } from '@/api/datasets';
 import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
+import { ResultView } from '@/components/results';
+import { toForecastAnalysisResult } from '@/lib/adapters/forecastResultAdapter';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface ColumnInfo {
@@ -995,108 +995,33 @@ export function Forecast() {
               </div>
             </Card>
           ) : batchResult ? (
-            // 批量预测结果展示
             <div ref={resultRef} className="space-y-6">
-              <Card className="border-[var(--border-subtle)]">
-                <CardHeader>
-                  <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-[var(--neon-cyan)]" />
-                    批量预测结果
-                    <span className="text-sm px-2 py-0.5 rounded bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]">
-                      {batchResult.summary?.success_count || 0} SKU
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* 汇总统计 */}
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)]">
-                        <p className="text-xs text-[var(--text-muted)]">总SKU数</p>
-                        <p className="text-xl font-bold text-[var(--neon-cyan)] mono">
-                          {batchResult.summary?.total_sku || 0}
-                        </p>
+              {(() => {
+                const converted = toForecastAnalysisResult(
+                  batchResult,
+                  datasetInfo,
+                  parseInt(forecastDays)
+                );
+                return converted ? (
+                  <ResultView result={converted} />
+                ) : (
+                  <Card className="border-[var(--border-subtle)]">
+                    <CardContent>
+                      <div className="text-center py-8 text-[var(--text-muted)]">
+                        <p>批量预测完成，但未返回可用数据</p>
                       </div>
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)]">
-                        <p className="text-xs text-[var(--text-muted)]">成功预测</p>
-                        <p className="text-xl font-bold text-[var(--neon-green)] mono">
-                          {batchResult.summary?.success_count || 0}
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)]">
-                        <p className="text-xs text-[var(--text-muted)]">平均增长</p>
-                        <p className={`text-xl font-bold mono ${(batchResult.summary?.avg_growth || 0) >= 0 ? 'text-[var(--neon-green)]' : 'text-[var(--neon-pink)]'}`}>
-                          {(batchResult.summary?.avg_growth || 0) >= 0 ? '+' : ''}{batchResult.summary?.avg_growth?.toFixed(1) || 0}%
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-lg bg-[var(--bg-secondary)]">
-                        <p className="text-xs text-[var(--text-muted)]">预测周期</p>
-                        <p className="text-xl font-bold text-[var(--neon-purple)] mono">
-                          {forecastDays}天
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* 增长最快 */}
-                    {batchResult.summary?.top_growing && (
-                      <div className="p-4 rounded-lg bg-[var(--neon-green)]/10 border border-[var(--neon-green)]/30">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[var(--neon-green)]">🚀</span>
-                          <span className="text-sm text-[var(--text-muted)]">增长最快:</span>
-                          <span className="font-medium text-[var(--text-primary)]">{batchResult.summary.top_growing}</span>
-                          <span className="text-[var(--neon-green)]">+{batchResult.summary.top_growth_rate}%</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* SKU列表 */}
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      <h4 className="text-sm font-medium text-[var(--text-muted)]">各SKU预测详情</h4>
-                      {batchResult.forecasts?.map((item: any) => (
-                        <div 
-                          key={item.column}
-                          className="flex items-center justify-between p-3 rounded bg-[var(--bg-secondary)]"
-                        >
-                          <span className="text-sm text-[var(--text-primary)]">{item.column}</span>
-                          {item.error ? (
-                            <span className="text-xs text-[var(--neon-pink)]">失败: {item.error}</span>
-                          ) : (
-                            <div className="flex items-center gap-4">
-                              <span className="text-xs text-[var(--text-muted)]">
-                                历史均值: <span className="mono text-[var(--text-primary)]">
-                                  {item.forecast?.statistics?.historical_mean?.toFixed(0) || '-'}
-                                </span>
-                              </span>
-                              <span className="text-xs text-[var(--text-muted)]">
-                                预测均值: <span className="mono text-[var(--neon-cyan)]">
-                                  {item.forecast?.statistics?.forecast_mean?.toFixed(0) || '-'}
-                                </span>
-                              </span>
-                              <span className={`text-xs font-medium ${(item.growth_rate || 0) >= 0 ? 'text-[var(--neon-green)]' : 'text-[var(--neon-pink)]'}`}>
-                                {(item.growth_rate || 0) >= 0 ? '↗' : '↘'} {Math.abs(item.growth_rate || 0).toFixed(1)}%
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
             </div>
           ) : (
             <div ref={resultRef} className="space-y-6">
-              <Card className="border-[var(--border-subtle)]">
-                <CardHeader>
-                  <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-[var(--neon-cyan)]" />
-                    预测结果
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* 错误提示 */}
-                  {analysisResult?.error && (
-                    <div className="p-4 rounded-lg bg-[var(--neon-pink)]/10 border border-[var(--neon-pink)]/30 mb-4">
+              {/* 错误提示 — 保留丰富的诊断信息（超出 ResultView 当前能力） */}
+              {analysisResult?.error && (
+                <Card className="border-[var(--border-subtle)]">
+                  <CardContent className="pt-6">
+                    <div className="p-4 rounded-lg bg-[var(--neon-pink)]/10 border border-[var(--neon-pink)]/30">
                       <p className="text-sm text-[var(--neon-pink)]">
                         ⚠️ {analysisResult.error}
                       </p>
@@ -1105,7 +1030,6 @@ export function Forecast() {
                           💡 <b>解决方案:</b> {analysisResult.solution}
                         </p>
                       )}
-                      {/* 数据诊断信息 */}
                       {analysisResult.diagnostic && (
                         <details className="mt-3">
                           <summary className="text-xs text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-primary)]">
@@ -1116,7 +1040,6 @@ export function Forecast() {
                           </div>
                         </details>
                       )}
-                      {/* 样本数据 */}
                       {analysisResult.sample_data && analysisResult.sample_data.length > 0 && (
                         <details className="mt-2">
                           <summary className="text-xs text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-primary)]">
@@ -1128,141 +1051,43 @@ export function Forecast() {
                         </details>
                       )}
                     </div>
-                  )}
-                  
-                  {/* 预测数据展示 */}
-                  {analysisResult?.forecast || analysisResult?.historical_data ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="p-4 rounded-lg bg-[var(--bg-secondary)]">
-                          <p className="text-xs text-[var(--text-muted)]">预测均值</p>
-                          <p className="text-xl font-bold text-[var(--neon-cyan)] mono">
-                            {analysisResult.statistics?.forecast_mean?.toFixed(2) || 
-                             (analysisResult.forecast?.yhat && (analysisResult.forecast.yhat.reduce((a: number, b: number) => a + b, 0) / analysisResult.forecast.yhat.length).toFixed(2)) ||
-                             '-'}
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-[var(--bg-secondary)]">
-                          <p className="text-xs text-[var(--text-muted)]">趋势</p>
-                          <p className="text-xl font-bold text-[var(--neon-green)]">
-                            {analysisResult.statistics?.trend_direction || 
-                             analysisResult.trend?.direction || 
-                             '-'}
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-[var(--bg-secondary)]">
-                          <p className="text-xs text-[var(--text-muted)]">预测天数</p>
-                          <p className="text-xl font-bold text-[var(--neon-purple)] mono">
-                            {analysisResult.forecast_periods || forecastDays}天
-                          </p>
-                        </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* ResultView 统一结果渲染 */}
+              {(() => {
+                const converted = toForecastAnalysisResult(
+                  analysisResult,
+                  datasetInfo,
+                  parseInt(forecastDays)
+                );
+                return converted && !analysisResult?.error ? (
+                  <ResultView result={converted} />
+                ) : analysisResult && !analysisResult.error ? (
+                  <Card className="border-[var(--border-subtle)]">
+                    <CardContent className="pt-6">
+                      <div className="text-center py-8 text-[var(--text-muted)]">
+                        {analysisResult?.error ? '预测失败' : '预测完成，但未返回可用数据'}
                       </div>
-                      
-                      {/* AI 智能解读 */}
-                      {analysisResult.ai_summary && (
-                        <div className="p-4 rounded-lg bg-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/30">
-                          <p className="text-sm font-medium text-[var(--neon-cyan)] mb-2">🤖 AI 智能解读</p>
-                          <p className="text-sm text-[var(--text-primary)] whitespace-pre-line">
-                            {analysisResult.ai_summary}
-                          </p>
-                        </div>
+                      {!analysisResult?.forecast && !analysisResult?.historical_data && !analysisResult?.error && (
+                        <details className="mt-4 rounded bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden">
+                          <summary className="p-2 text-xs text-[var(--text-muted)] cursor-pointer hover:bg-[var(--bg-tertiary)]">
+                            查看原始数据 (调试)
+                          </summary>
+                          <div className="p-2 overflow-auto max-h-48">
+                            <pre className="text-[10px] text-[var(--text-muted)]">
+                              {JSON.stringify(analysisResult, null, 2)}
+                            </pre>
+                          </div>
+                        </details>
                       )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-[var(--text-muted)]">
-                      {analysisResult?.error ? '预测失败' : '预测完成，数据已生成'}
-                    </div>
-                  )}
-                  
-                  {/* 调试信息 - 数据为空时显示原始数据结构 */}
-                  {!analysisResult?.forecast && !analysisResult?.historical_data && !analysisResult?.error && (
-                    <details className="mt-4 rounded bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden">
-                      <summary className="p-2 text-xs text-[var(--text-muted)] cursor-pointer hover:bg-[var(--bg-tertiary)]">
-                        查看原始数据 (调试)
-                      </summary>
-                      <div className="p-2 overflow-auto max-h-48">
-                        <pre className="text-[10px] text-[var(--text-muted)]">
-                          {JSON.stringify(analysisResult, null, 2)}
-                        </pre>
-                      </div>
-                    </details>
-                  )}
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                ) : null;
+              })()}
 
-              {/* 预测分解 - 电商特性 */}
-              {analysisResult?.decomposition && (
-                <Card className="border-[var(--border-subtle)]">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-[var(--neon-purple)]" />
-                      预测分解
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="p-3 rounded-lg bg-[var(--bg-secondary)] text-center">
-                        <p className="text-xs text-[var(--text-muted)]">趋势成分</p>
-                        <p className="text-lg font-bold text-[var(--neon-cyan)]">
-                          {analysisResult.decomposition.trend?.toFixed(1) || '-'}%
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-[var(--bg-secondary)] text-center">
-                        <p className="text-xs text-[var(--text-muted)]">季节性</p>
-                        <p className="text-lg font-bold text-[var(--neon-green)]">
-                          {analysisResult.decomposition.seasonal?.toFixed(1) || '-'}%
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-[var(--bg-secondary)] text-center">
-                        <p className="text-xs text-[var(--text-muted)]">促销效应</p>
-                        <p className="text-lg font-bold text-[var(--neon-pink)]">
-                          {analysisResult.decomposition.promotion?.toFixed(1) || '-'}%
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-[var(--bg-secondary)] text-center">
-                        <p className="text-xs text-[var(--text-muted)]">异常波动</p>
-                        <p className="text-lg font-bold text-[var(--neon-orange)]">
-                          {analysisResult.decomposition.residual?.toFixed(1) || '-'}%
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* 大促影响分析 */}
-              {analysisResult?.promotion_impact && analysisResult.promotion_impact.length > 0 && (
-                <Card className="border-[var(--neon-pink)]/30">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-[var(--neon-pink)]" />
-                      大促影响分析
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {analysisResult.promotion_impact.map((impact: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2 rounded bg-[var(--bg-secondary)]">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${
-                              impact.type === 'burst' ? 'bg-[var(--neon-pink)]' :
-                              impact.type === 'preheat' ? 'bg-[var(--neon-orange)]' : 'bg-[var(--neon-green)]'
-                            }`} />
-                            <span className="text-sm text-[var(--text-primary)]">{impact.name}</span>
-                            <span className="text-xs text-[var(--text-muted)]">{impact.date}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-[var(--neon-pink)]">+{impact.lift?.toFixed(0)}%</span>
-                            <span className="text-xs text-[var(--text-muted)]">销量提升</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* What-if 分析结果 */}
+              {/* What-if 分析结果 — 保留（交互性强，暂不适合 AnalysisResult） */}
               {analysisResult?.what_if && (
                 <Card className="border-[var(--neon-purple)]/30">
                   <CardHeader>
@@ -1273,14 +1098,13 @@ export function Forecast() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {/* 各变量影响 */}
                       <div className="space-y-2">
                         {analysisResult.what_if.adjustments?.map((adj: any, idx: number) => (
                           <div key={idx} className="flex items-center justify-between p-2 rounded bg-[var(--bg-secondary)]">
                             <div className="flex items-center gap-2">
                               <span className="text-sm text-[var(--text-primary)]">{adj.variable}</span>
                               <span className={`text-xs ${
-                                adj.adjustment > 0 ? 'text-[var(--neon-green)]' : 
+                                adj.adjustment > 0 ? 'text-[var(--neon-green)]' :
                                 adj.adjustment < 0 ? 'text-[var(--neon-pink)]' : 'text-[var(--text-muted)]'
                               }`}>
                                 {adj.adjustment > 0 ? '+' : ''}{adj.adjustment}%
@@ -1288,7 +1112,7 @@ export function Forecast() {
                             </div>
                             <div className="flex items-center gap-1">
                               <span className={`text-sm font-bold ${
-                                adj.impact > 0 ? 'text-[var(--neon-green)]' : 
+                                adj.impact > 0 ? 'text-[var(--neon-green)]' :
                                 adj.impact < 0 ? 'text-[var(--neon-pink)]' : 'text-[var(--text-muted)]'
                               }`}>
                                 {adj.impact > 0 ? '+' : ''}{adj.impact.toFixed(1)}%
@@ -1298,13 +1122,11 @@ export function Forecast() {
                           </div>
                         ))}
                       </div>
-                      
-                      {/* 总影响 */}
                       <div className="p-3 rounded-lg border border-[var(--neon-purple)]/30 bg-[var(--neon-purple)]/5">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-[var(--text-primary)]">总销量影响</span>
                           <span className={`text-2xl font-bold ${
-                            analysisResult.what_if.total_impact > 0 ? 'text-[var(--neon-green)]' : 
+                            analysisResult.what_if.total_impact > 0 ? 'text-[var(--neon-green)]' :
                             analysisResult.what_if.total_impact < 0 ? 'text-[var(--neon-pink)]' : 'text-[var(--text-muted)]'
                           }`}>
                             {analysisResult.what_if.total_impact > 0 ? '+' : ''}
@@ -1322,31 +1144,14 @@ export function Forecast() {
                 </Card>
               )}
 
-              {analysisResult?.ai_summary && (
-                <Card className="border-[var(--neon-cyan)]/30">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
-                      <Brain className="w-5 h-5 text-[var(--neon-cyan)]" />
-                      AI 智能解读
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-4 rounded-lg bg-gradient-to-r from-[var(--neon-purple)]/10 to-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/30">
-                      <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">
-                        {analysisResult.ai_summary}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
+              {/* 导出按钮 — 保留 */}
               <div className="flex gap-3">
-                <Button 
+                <Button
                   variant="outline"
                   className="flex-1 border-[var(--neon-cyan)] text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/10"
                   onClick={() => {
                     if (!analysisResult) return;
-                    
+
                     const rows: any[] = [];
                     rows.push(['预测分析报告']);
                     rows.push(['生成时间', new Date().toLocaleString()]);
@@ -1355,14 +1160,12 @@ export function Forecast() {
                     rows.push(['预测目标列', valueColumn || '自动检测']);
                     rows.push(['预测天数', forecastDays]);
                     rows.push([]);
-                    
-                    // 统计汇总
+
                     rows.push(['预测统计']);
                     rows.push(['预测均值', analysisResult.statistics?.forecast_mean?.toFixed(2) || '-']);
                     rows.push(['趋势方向', analysisResult.trend?.direction || '-']);
                     rows.push([]);
-                    
-                    // 预测数据
+
                     if (analysisResult.forecast && Array.isArray(analysisResult.forecast)) {
                       rows.push(['预测数据']);
                       rows.push(['日期', '预测值', '下限', '上限']);
@@ -1375,16 +1178,14 @@ export function Forecast() {
                         ]);
                       });
                     }
-                    
-                    // AI解读
+
                     if (analysisResult.ai_summary) {
                       rows.push([]);
                       rows.push(['AI智能解读']);
                       rows.push([analysisResult.ai_summary]);
                     }
-                    
-                    // 转换为CSV
-                    const csvContent = rows.map((row: any[]) => 
+
+                    const csvContent = rows.map((row: any[]) =>
                       row.map((cell: any) => {
                         const str = String(cell ?? '');
                         if (str.includes(',') || str.includes('\n') || str.includes('"')) {
@@ -1393,7 +1194,7 @@ export function Forecast() {
                         return str;
                       }).join(',')
                     ).join('\n');
-                    
+
                     const BOM = '\uFEFF';
                     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);

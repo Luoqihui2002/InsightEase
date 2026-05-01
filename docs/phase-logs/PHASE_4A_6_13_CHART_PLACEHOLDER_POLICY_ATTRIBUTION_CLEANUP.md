@@ -71,7 +71,7 @@ For Attribution specifically:
 ## Git Information
 
 ### Commit
-- **Hash**: `{TBD}`
+- **Hash**: `71aa87e`
 - **Message**: `fix: clean up attribution chart placeholder`
 
 ### Package Files Modified

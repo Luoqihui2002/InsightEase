@@ -136,11 +136,17 @@
 - 定义保守策略：避免与页面级真实图表重复
 - ResultView 通用 chart fallback 仍保留
 
-#### 4A-6-14: ResultView 推广到 Forecast / PathAnalysis（可选后续）
-- 验证时间序列和漏斗/图结果结构
-- 每个页面需要独立适配器
+#### 4A-6-14: ResultView 推广到 Forecast Page ✅
+- 创建 `forecastResultAdapter.ts`（支持单预测 + 批量预测）
+- `Forecast.tsx` 接入 `ResultView`
+- 保留错误诊断、What-if 结果、导出按钮
+- 验证时间序列结果结构
 
-#### 4A-6-15: ResultChartRenderer 实现（可选后续）
+#### 4A-6-15: ResultView 推广到 PathAnalysis（可选后续）
+- 验证漏斗/图结果结构
+- 独立适配器
+
+#### 4A-6-16: ResultChartRenderer 实现（可选后续）
 - 在 ResultView 内支持真实 ECharts 图表渲染
 - 迁移页面级图表到 ResultView 内部
 
