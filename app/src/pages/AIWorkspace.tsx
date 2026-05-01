@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { KimiAvatar } from '@/components/KimiAvatar';
+import { AssistantAvatar } from '@/components/assistant/AssistantAvatar';
 import { AnalysisResultRenderer } from '@/components/AnalysisResultRenderer';
 import { datasetApi } from '@/api';
 import type { DatasetPreview } from '@/types/api';
@@ -632,7 +632,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         )}>
           {/* 头部 */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] pl-12">
-            <KimiAvatar size="sm" mood="happy" />
+            <AssistantAvatar variant="default" size="sm" />
             <div className="flex-shrink-0">
               <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
               <p className="text-[10px] text-[var(--text-muted)]">规则型数据助手 · 自然语言能力即将开放</p>
@@ -755,7 +755,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       )}
                     >
                       {message.role === 'assistant' && (
-                        <KimiAvatar size="sm" mood={message.isStreaming ? 'thinking' : 'happy'} />
+                        <AssistantAvatar variant={message.isStreaming ? 'processing' : 'default'} size="sm" animated />
                       )}
                       {message.role === 'user' && (
                         <div className="w-8 h-8 rounded-full bg-[var(--neon-purple)]/20 flex items-center justify-center flex-shrink-0">
@@ -801,30 +801,66 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                   )}
                 </div>
 
+                {/* 快速提示芯片（仅数据集已选时显示） */}
+                {selectedDataset && !isLoading && (
+                  <div className="px-4 pt-3 pb-0">
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        '统计各列描述',
+                        '预测未来趋势',
+                        '分析相关性',
+                        '找出异常值',
+                        '做分类汇总',
+                      ].map((prompt) => (
+                        <button
+                          key={prompt}
+                          onClick={() => {
+                            setInputValue(prompt);
+                            inputRef.current?.focus();
+                          }}
+                          className={cn(
+                            'px-2.5 py-1 rounded-lg text-xs',
+                            'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
+                            'border border-[var(--border-subtle)]',
+                            'hover:border-[var(--neon-cyan)]/40 hover:text-[var(--neon-cyan)]',
+                            'transition-all active:scale-95'
+                          )}
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* 输入框 */}
                 <div className="p-4 border-t border-[var(--border-subtle)]">
-                  <div className="flex gap-2">
-                    <Input
-                      ref={inputRef}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={selectedDataset ? '描述你想做的分析，比如"预测下月销售额"...' : '先选择一份数据集...'}
-                      disabled={isLoading || !selectedDataset}
-                      className="flex-1 bg-[var(--bg-tertiary)]"
-                    />
-                    <Button
-                      onClick={handleSend}
-                      disabled={!inputValue.trim() || isLoading || !selectedDataset}
-                      className="bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
-                    >
-                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                  {!selectedDataset && (
-                    <p className="mt-2 text-xs text-[var(--text-muted)]">
-                      提示：请先选择上方数据集，然后描述你想做的分析
-                    </p>
+                  {!selectedDataset ? (
+                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
+                      <Database className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                      <span className="text-sm text-[var(--text-muted)]">
+                        请先在上方的下拉菜单中选择一份数据集，再开始分析
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        ref={inputRef}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder='描述你想做的分析，比如"预测下月销售额"...'
+                        disabled={isLoading}
+                        className="flex-1 bg-[var(--bg-tertiary)]"
+                      />
+                      <Button
+                        onClick={handleSend}
+                        disabled={!inputValue.trim() || isLoading}
+                        className="bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
+                      >
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>

@@ -1,9 +1,9 @@
 /**
  * AssistantAvatar - 球形数据助手头像
  *
- * 视觉方向：圆润、柔和、友好
- * 球形 companion，软青/蓝渐变，简笔双眼表情
- * 适配 InsightEase 暗色主题
+ * 视觉方向：圆润、柔和、与 InsightEase 暗色主题浑然一体
+ * 统一身份：所有变体共享同一 cyan-aqua-neon 球体核心，仅通过 subtle accent 区分状态
+ * 球形 companion，径向渐变球体，简笔双眼表情，柔和呼吸光晕
  */
 
 import { cn } from '@/lib/utils';
@@ -34,28 +34,48 @@ const sizeMap: Record<AssistantAvatarSize, { container: string; eye: string; gap
   lg: { container: 'w-16 h-16', eye: 'w-2.5 h-2.5', gap: 'gap-2.5' },
 };
 
-const variantGradients: Record<AssistantAvatarVariant, string> = {
-  default: 'from-cyan-400/80 via-sky-500/80 to-blue-600/80',
-  dataset: 'from-emerald-400/80 via-teal-500/80 to-cyan-600/80',
-  path: 'from-violet-400/80 via-purple-500/80 to-fuchsia-600/80',
-  forecast: 'from-amber-400/80 via-orange-500/80 to-rose-600/80',
-  experiment: 'from-lime-400/80 via-green-500/80 to-emerald-600/80',
-  text: 'from-pink-400/80 via-rose-500/80 to-red-600/80',
-  warning: 'from-orange-400/80 via-amber-500/80 to-yellow-600/80',
-  processing: 'from-cyan-400/80 via-blue-500/80 to-indigo-600/80',
-  success: 'from-green-400/80 via-emerald-500/80 to-teal-600/80',
+/* ------------------------------------------------------------------
+ * 统一品牌调色板 — 所有变体共享此核心，仅 overlay accent 不同
+ * ------------------------------------------------------------------ */
+const CORE = {
+  start: 'rgba(22, 217, 245, 0.62)',   // cyan
+  mid: 'rgba(43, 168, 247, 0.48)',     // aqua-blue
+  end: 'rgba(37, 99, 235, 0.55)',      // deeper blue
+  highlight: 'rgba(190, 255, 255, 0.75)',
+  shadow: 'rgba(5, 18, 45, 0.45)',
+  glowCyan: 'rgba(0, 229, 255, 0.32)',
+  glowAmbient: 'rgba(139, 92, 246, 0.14)',
 };
 
-const variantGlow: Record<AssistantAvatarVariant, string> = {
-  default: 'shadow-cyan-500/30',
-  dataset: 'shadow-emerald-500/30',
-  path: 'shadow-violet-500/30',
-  forecast: 'shadow-amber-500/30',
-  experiment: 'shadow-lime-500/30',
-  text: 'shadow-pink-500/30',
-  warning: 'shadow-orange-500/30',
-  processing: 'shadow-cyan-500/30',
-  success: 'shadow-green-500/30',
+/** 基础球体渐变 — 所有变体相同 */
+const baseSphere = `radial-gradient(circle at 36% 24%, ${CORE.start} 0%, ${CORE.mid} 42%, ${CORE.end} 100%)`;
+
+/** 基础光晕 — 所有变体相同 */
+const baseGlow = `0 0 20px ${CORE.glowCyan}, 0 0 40px ${CORE.glowAmbient}, 0 4px 12px rgba(0,0,0,0.35)`;
+
+/** 变体仅覆盖 accent（非常 subtle 的装饰层） */
+const variantAccent: Record<AssistantAvatarVariant, React.CSSProperties | undefined> = {
+  default: undefined,
+  dataset: { background: `radial-gradient(circle at 36% 24%, rgba(22,217,245,0.60) 0%, rgba(20,184,166,0.46) 42%, rgba(37,99,235,0.55) 100%)` },
+  path: { background: `radial-gradient(circle at 36% 24%, rgba(22,217,245,0.60) 0%, rgba(43,168,247,0.46) 42%, rgba(59,130,246,0.55) 100%)` },
+  forecast: { background: `radial-gradient(circle at 36% 24%, rgba(22,217,245,0.60) 0%, rgba(14,165,233,0.46) 42%, rgba(29,78,216,0.55) 100%)` },
+  experiment: { background: `radial-gradient(circle at 36% 24%, rgba(22,217,245,0.60) 0%, rgba(6,182,212,0.46) 42%, rgba(30,58,138,0.55) 100%)` },
+  text: { background: `radial-gradient(circle at 36% 24%, rgba(22,217,245,0.58) 0%, rgba(139,92,246,0.42) 42%, rgba(37,99,235,0.55) 100%)` },
+  warning: { background: `radial-gradient(circle at 36% 24%, rgba(22,217,245,0.58) 0%, rgba(43,168,247,0.44) 42%, rgba(202,138,4,0.50) 100%)` },
+  processing: { background: `radial-gradient(circle at 36% 24%, rgba(22,217,245,0.72) 0%, rgba(43,168,247,0.58) 40%, rgba(37,99,235,0.62) 100%)` },
+  success: { background: `radial-gradient(circle at 36% 24%, rgba(22,217,245,0.60) 0%, rgba(20,184,166,0.48) 42%, rgba(37,99,235,0.55) 100%)` },
+};
+
+const variantGlowIntensity: Record<AssistantAvatarVariant, string> = {
+  default: baseGlow,
+  dataset: baseGlow,
+  path: baseGlow,
+  forecast: baseGlow,
+  experiment: baseGlow,
+  text: baseGlow,
+  warning: baseGlow,
+  processing: `0 0 24px rgba(0,229,255,0.50), 0 0 48px rgba(139,92,246,0.22), 0 4px 12px rgba(0,0,0,0.35)`,
+  success: baseGlow,
 };
 
 export function AssistantAvatar({
@@ -65,48 +85,55 @@ export function AssistantAvatar({
   className,
 }: AssistantAvatarProps) {
   const { container, eye, gap } = sizeMap[size];
+  const isProcessing = variant === 'processing';
+
+  const sphereStyle: React.CSSProperties = {
+    background: variantAccent[variant]?.background ?? baseSphere,
+    boxShadow: variantGlowIntensity[variant],
+  };
 
   return (
     <div
       className={cn(
         'relative rounded-full flex items-center justify-center',
-        'bg-gradient-to-br',
-        variantGradients[variant],
-        'shadow-lg',
-        variantGlow[variant],
-        'border border-white/10',
+        'border border-white/[0.08]',
         container,
         className
       )}
+      style={sphereStyle}
     >
       {/* 顶部高光 — 营造球体感 */}
       <div
-        className="absolute top-[15%] left-[20%] w-[35%] h-[25%] rounded-full bg-white/20 blur-[3px]"
+        className="absolute top-[14%] left-[18%] w-[38%] h-[26%] rounded-full bg-[rgba(190,255,255,0.35)] blur-[3px]"
         aria-hidden="true"
       />
 
       {/* 眼睛 */}
-      <div className={cn('flex items-center justify-center', gap)}>
+      <div className={cn('flex items-center justify-center z-10', gap)}>
         <div
           className={cn(
-            'rounded-full bg-white/90 shadow-sm',
+            'rounded-full shadow-sm',
             eye,
-            animated && variant === 'processing' && 'animate-pulse'
+            isProcessing
+              ? 'bg-[rgba(200,255,255,0.95)] animate-pulse'
+              : 'bg-[rgba(255,255,255,0.88)]'
           )}
         />
         <div
           className={cn(
-            'rounded-full bg-white/90 shadow-sm',
+            'rounded-full shadow-sm',
             eye,
-            animated && variant === 'processing' && 'animate-pulse'
+            isProcessing
+              ? 'bg-[rgba(200,255,255,0.95)] animate-pulse'
+              : 'bg-[rgba(255,255,255,0.88)]'
           )}
-          style={animated && variant === 'processing' ? { animationDelay: '150ms' } : undefined}
+          style={isProcessing ? { animationDelay: '150ms' } : undefined}
         />
       </div>
 
       {/* 底部微光 */}
       <div
-        className="absolute bottom-[12%] left-1/2 -translate-x-1/2 w-[50%] h-[15%] rounded-full bg-white/5 blur-[2px]"
+        className="absolute bottom-[12%] left-1/2 -translate-x-1/2 w-[55%] h-[14%] rounded-full bg-white/[0.06] blur-[2px]"
         aria-hidden="true"
       />
 
@@ -114,12 +141,17 @@ export function AssistantAvatar({
       {animated && (
         <div
           className={cn(
-            'absolute inset-0 rounded-full opacity-40',
-            'animate-pulse'
+            'absolute inset-0 rounded-full',
+            isProcessing ? 'opacity-50' : 'opacity-30'
           )}
-          style={{ animationDuration: '3s' }}
+          style={{ animationDuration: isProcessing ? '1.5s' : '3s' }}
         >
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-transparent" />
+          <div
+            className={cn(
+              'absolute inset-0 rounded-full animate-pulse',
+              'bg-gradient-to-br from-white/[0.08] to-transparent'
+            )}
+          />
         </div>
       )}
     </div>
