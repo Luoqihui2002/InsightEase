@@ -789,6 +789,19 @@ Upload CSV/Excel
 - **已知限制**: confidence interval 目前以独立 line 系列显示，非 shaded band；超长预测（>100 点）被截断
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.30s。
 
+## Phase 4A-6-20: Attribution Chart Migration
+
+- **目标**: 将 Attribution 页面的对比柱状图从页面级 ECharts 迁移进 `ResultView`。
+- **修改文件**:
+  - `app/src/lib/adapters/attributionResultAdapter.ts` — 添加真实 bar chart block
+  - `app/src/pages/Attribution.tsx` — 移除页面级图表逻辑和 JSX
+- **变更要点**:
+  - 适配器将嵌套 `models` 数据（`Record<string, Record<string, { percentage: number }>>`）扁平化为 chart rows：`{ touchpoint, [modelKey]: percentage }`
+  - 模型 key 映射为中文显示名（首次触点 / 末次触点 / 线性归因 / 时间衰减 / 位置归因 / Shapley值）
+  - 页面移除 `chartRef`、`chartInstance`、`renderComparisonChart()`、图表 `useEffect`、图表 `<Card>` JSX
+  - 移除未使用导入：`echarts`、`getChartColors`、`withAlpha`、`Card` 系列组件
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.01s。
+
 ## 下一步建议
 
 ### 立即执行

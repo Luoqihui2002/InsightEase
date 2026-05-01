@@ -241,11 +241,40 @@ export function toAttributionAnalysisResult(
     });
   }
 
-  // === Chart block intentionally omitted ===
-  // The real ECharts comparison chart is rendered in Attribution.tsx
-  // outside ResultView. Emitting a chart placeholder here would create
-  // duplicate UI. Chart blocks will be enabled once ResultChartRenderer
-  // is implemented and the page-level chart is migrated into ResultView.
+  // === Chart block: model comparison bar chart ===
+  const modelKeys = Object.keys(models);
+  const firstModelKey = modelKeys[0];
+  const touchpoints = firstModelKey ? Object.keys(models[firstModelKey] || {}) : [];
+
+  if (touchpoints.length > 0 && modelKeys.length > 0) {
+    const chartRows = touchpoints.map((tp) => {
+      const row: Record<string, unknown> = { touchpoint: tp };
+      for (const mk of modelKeys) {
+        const pct = models[mk]?.[tp]?.percentage;
+        row[mk] = typeof pct === "number" ? pct : 0;
+      }
+      return row;
+    });
+
+    const MODEL_NAME_MAP: Record<string, string> = {
+      first_touch: "首次触点",
+      last_touch: "末次触点",
+      linear: "线性归因",
+      time_decay: "时间衰减",
+      position_based: "位置归因",
+      shapley: "Shapley值",
+    };
+
+    blocks.push({
+      type: "chart",
+      title: "各模型归因对比",
+      chartType: "bar",
+      data: chartRows,
+      xKey: "touchpoint",
+      yKeys: modelKeys,
+      seriesNames: modelKeys.map((mk) => MODEL_NAME_MAP[mk] || mk),
+    });
+  }
 
   // === Warning blocks ===
   if (conversionRate < 1) {

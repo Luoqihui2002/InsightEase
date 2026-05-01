@@ -170,8 +170,10 @@
 - 动态 yKeys（actual/forecast/lower/upper 按数据存在性）
 - 第一个真实页面图表迁移
 
-#### 4A-6-20: Attribution Chart Migration（可选后续）
+#### 4A-6-20: Attribution Chart Migration ✅
 - Attribution 对比图表迁移至 ResultView
+- 嵌套 `models` 数据扁平化为 bar chart rows，模型 key 映射中文名
+- 移除页面级 ECharts 图表逻辑和未使用导入
 
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
 - 纯研究文档，不实现

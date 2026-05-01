@@ -10,7 +10,6 @@ import {
   GitBranch,
   Loader2
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DatasetSelector } from '@/components/DatasetSelector';
 import { DataTypeValidation } from '@/components/DataTypeValidation';
@@ -20,14 +19,12 @@ import type { Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
-import * as echarts from 'echarts';
 import {
   AnalysisPageShell,
   AnalysisConfigPanel,
   AnalysisResultPanel,
   AnalysisActionBar,
 } from '@/components/analysis';
-import { getChartColors, withAlpha } from '@/hooks/useChartColors';
 import { ResultView } from '@/components/results';
 import { toAttributionAnalysisResult } from '@/lib/adapters/attributionResultAdapter';
 
@@ -147,8 +144,6 @@ export function Attribution() {
   const [columns, setColumns] = useState<ColumnInfo[]>([]);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartInstance = useRef<echarts.ECharts | null>(null);
 
   // 归因分析配置
   const [userIdCol, setUserIdCol] = useState('');
@@ -238,73 +233,6 @@ export function Attribution() {
       );
     }
   }, [showResult]);
-
-  useEffect(() => {
-    if (analysisResult?.models && chartRef.current) {
-      renderComparisonChart();
-    }
-    return () => {
-      chartInstance.current?.dispose();
-    };
-  }, [analysisResult]);
-
-  const renderComparisonChart = () => {
-    const colors = getChartColors();
-    if (!chartRef.current || !analysisResult?.models) return;
-    
-    chartInstance.current?.dispose();
-    chartInstance.current = echarts.init(chartRef.current);
-
-    const models = Object.keys(analysisResult.models);
-    const touchpoints = Object.keys(analysisResult.models[models[0]] || {});
-    
-    const series = models.map(modelKey => {
-      const modelData = analysisResult.models[modelKey];
-      const modelInfo = ATTRIBUTION_MODELS.find(m => m.key === modelKey);
-      return {
-        name: modelInfo?.name || modelKey,
-        type: 'bar',
-        data: touchpoints.map(tp => modelData[tp]?.percentage || 0),
-        itemStyle: { color: modelInfo?.color }
-      };
-    });
-
-    const option = {
-      backgroundColor: 'transparent',
-      title: {
-        text: '各模型归因对比',
-        textStyle: { color: colors.textPrimary, fontSize: 14 }
-      },
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: withAlpha(colors.bgSecondary, 0.95),
-        borderColor: withAlpha(colors.primary, 0.3),
-        textStyle: { color: colors.textPrimary }
-      },
-      legend: {
-        data: series.map(s => s.name),
-        textStyle: { color: colors.textSecondary },
-        bottom: 0
-      },
-      grid: { left: '3%', right: '4%', bottom: '15%', top: '15%', containLabel: true },
-      xAxis: {
-        type: 'category',
-        data: touchpoints,
-        axisLabel: { color: colors.textSecondary, rotate: 30 },
-        axisLine: { lineStyle: { color: colors.borderSubtle } }
-      },
-      yAxis: {
-        type: 'value',
-        name: '贡献度(%)',
-        nameTextStyle: { color: colors.textSecondary },
-        axisLabel: { color: colors.textSecondary },
-        splitLine: { lineStyle: { color: colors.borderSubtle } }
-      },
-      series
-    };
-
-    chartInstance.current.setOption(option);
-  };
 
   const handleAnalyze = async () => {
     if (!selectedDataset) {
@@ -765,20 +693,6 @@ export function Attribution() {
                   </div>
                 );
               })()}
-
-              {/* ECharts 对比图表 — 保留现有图表渲染，未来由 ResultView 图表块替代 */}
-              {analysisResult?.models && (
-                <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-[var(--text-primary)]">
-                      模型对比分析
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div ref={chartRef} className="w-full h-80" />
-                  </CardContent>
-                </Card>
-              )}
             </div>
           )}
         </AnalysisResultPanel>

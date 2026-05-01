@@ -71,6 +71,15 @@
 - 更新 `ARCHITECTURE_DECISIONS.md` 至 v2.0
 - 浏览器端到端回归测试待人工验证
 
+## Phase 4A-6-20: Attribution Chart Migration
+
+- **目标**: 将 Attribution 页面对比柱状图从页面级 ECharts 迁移进 `ResultView`。
+- **修改文件**:
+  - `app/src/lib/adapters/attributionResultAdapter.ts` — 添加真实 `bar` chart block，将嵌套 `models` 数据扁平化为 `{ touchpoint, [modelKey]: percentage }` 行，映射模型 key 为中文显示名
+  - `app/src/pages/Attribution.tsx` — 移除 `chartRef`、`chartInstance`、`renderComparisonChart()`、图表 `useEffect`、图表 `<Card>` JSX；清理未使用导入 (`echarts`、`getChartColors`、`withAlpha`、`Card` 系列)
+- **架构对齐**: Attribution 图表现在走 `ResultView → ResultChartRenderer → BaseEChart → buildChartOption("bar")`，与 Forecast line chart 迁移模式一致
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` 成功。
+
 ## Phase 4A-3-1 Hotfix
 
 - **问题**: Settings 页面 shadcn `SelectItem` 传入空字符串 `value=""`，触发 Radix UI 运行时断言错误，页面崩溃。
