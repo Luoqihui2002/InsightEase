@@ -339,6 +339,18 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-11: ResultView Rollout to Semantic Page
+
+- 新增 `app/src/lib/adapters/semanticResultAdapter.ts` — Semantic (comprehensive) 结果 → `AnalysisResult`
+- `Semantic.tsx` 接入 `ResultView`：
+  - 替换原有的字段语义卡片列表（含 per-column badges、数值/分类统计内联卡片）
+  - 移除 `Tag` 和 `Sparkles` 图标导入
+- 适配器产出：summary + metric + table + text + warning blocks
+- 表格包含 13 列，支持 `top_values` (string[]) → "常见值" 字符串转换
+- 防御性处理：Array.isArray、typeof 守卫、稳定 ID
+- 导出行为保持不变 (`handleExportJSON` 仍读取原始 `analysisResult`)
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-10: Statistics ResultView QA & Polish
 
 - 增强 `statisticsResultAdapter.ts` 安全性：

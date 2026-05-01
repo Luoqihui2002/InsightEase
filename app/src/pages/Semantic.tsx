@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  Tag,
-  Sparkles,
   Brain,
   Loader2
 } from 'lucide-react';
@@ -18,6 +16,8 @@ import {
   AnalysisResultPanel,
   AnalysisActionBar,
 } from '@/components/analysis';
+import { ResultView } from '@/components/results';
+import { toSemanticAnalysisResult } from '@/lib/adapters/semanticResultAdapter';
 
 export function Semantic() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -224,119 +224,20 @@ export function Semantic() {
           ) : undefined}
         >
           {showResult && (
-            <div ref={resultRef} className="space-y-6">
-              <div>
-                <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)] mb-4">
-                  <Tag className="w-5 h-5 text-[var(--neon-cyan)]" />
-                  字段语义识别
-                </div>
-                {analysisResult?.column_stats ? (
-                  <div className="space-y-3">
-                    {/* 汇总统计 */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      <div className="p-3 rounded-lg bg-[var(--bg-tertiary)] text-center">
-                        <p className="text-xs text-[var(--text-muted)]">总行数</p>
-                        <p className="text-xl font-bold text-[var(--neon-cyan)]">{analysisResult.total_rows?.toLocaleString()}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-[var(--bg-tertiary)] text-center">
-                        <p className="text-xs text-[var(--text-muted)]">总列数</p>
-                        <p className="text-xl font-bold text-[var(--neon-cyan)]">{analysisResult.total_columns}</p>
-                      </div>
-                      <div className="p-3 rounded-lg bg-[var(--bg-tertiary)] text-center">
-                        <p className="text-xs text-[var(--text-muted)]">数值列</p>
-                        <p className="text-xl font-bold text-[var(--neon-purple)]">
-                          {analysisResult.column_stats.filter((c: any) => c.type === 'numeric').length}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* 字段详情 */}
-                    <div className="max-h-80 overflow-y-auto space-y-2">
-                      {analysisResult.column_stats.map((col: any, index: number) => (
-                        <div 
-                          key={index}
-                          className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--neon-cyan)]/30 transition-colors"
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-[var(--neon-cyan)]">{col.name}</span>
-                            <span className="text-xs px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-muted)]">
-                              {col.dtype}
-                            </span>
-                            <span className={`text-xs px-2 py-0.5 rounded ${
-                              col.type === 'numeric' 
-                                ? 'bg-[var(--neon-purple)]/20 text-[var(--neon-purple)]' 
-                                : 'bg-[var(--neon-green)]/20 text-[var(--neon-green)]'
-                            }`}>
-                              {col.type === 'numeric' ? '数值型' : '分类型'}
-                            </span>
-                          </div>
-                          
-                          {/* 缺失值信息 */}
-                          <div className="text-xs text-[var(--text-muted)] mb-1">
-                            非空: {col.non_null_count} | 缺失: {col.null_count} ({col.null_percentage}%)
-                          </div>
-                          
-                          {/* 数值型额外统计 */}
-                          {col.type === 'numeric' && (
-                            <div className="grid grid-cols-4 gap-2 mt-2 pt-2 border-t border-[var(--border-subtle)]">
-                              <div>
-                                <span className="text-xs text-[var(--text-muted)]">均值</span>
-                                <p className="text-sm text-[var(--text-primary)]">{col.mean?.toFixed(2) || '-'}</p>
-                              </div>
-                              <div>
-                                <span className="text-xs text-[var(--text-muted)]">中位数</span>
-                                <p className="text-sm text-[var(--text-primary)]">{col.median?.toFixed(2) || '-'}</p>
-                              </div>
-                              <div>
-                                <span className="text-xs text-[var(--text-muted)]">标准差</span>
-                                <p className="text-sm text-[var(--text-primary)]">{col.std?.toFixed(2) || '-'}</p>
-                              </div>
-                              <div>
-                                <span className="text-xs text-[var(--text-muted)]">范围</span>
-                                <p className="text-sm text-[var(--text-primary)]">{col.min?.toFixed(0) || '-'} ~ {col.max?.toFixed(0) || '-'}</p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* 分类型额外统计 */}
-                          {col.type === 'categorical' && col.unique_count !== undefined && (
-                            <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]">
-                              <span className="text-xs text-[var(--text-muted)]">唯一值: {col.unique_count}</span>
-                              {Array.isArray(col.top_values) && col.top_values.length > 0 && (
-                                <span className="text-xs text-[var(--text-secondary)] ml-3">
-                                  最常见: {col.top_values.slice(0, 3).join(', ')}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+            <div ref={resultRef}>
+              {(() => {
+                const converted = toSemanticAnalysisResult(
+                  analysisResult,
+                  datasetInfo
+                );
+                return converted ? (
+                  <ResultView result={converted} />
                 ) : (
                   <div className="text-center py-8 text-[var(--text-muted)]">
-                    分析完成，数据已生成
+                    <p>分析完成，但未返回统计数据</p>
                   </div>
-                )}
-              </div>
-
-              {analysisResult?.ai_summary && (
-                <div className="rounded-xl border border-[var(--neon-cyan)]/30 bg-[var(--bg-secondary)] overflow-hidden">
-                  <div className="p-4 border-b border-[var(--border-subtle)]">
-                    <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
-                      <Sparkles className="w-5 h-5 text-[var(--neon-cyan)]" />
-                      AI 智能解读
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="p-4 rounded-lg bg-gradient-to-r from-[var(--neon-purple)]/10 to-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/30">
-                      <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">
-                        {analysisResult.ai_summary}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
         </AnalysisResultPanel>

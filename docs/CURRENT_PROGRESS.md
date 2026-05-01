@@ -641,6 +641,25 @@ Upload CSV/Excel
   - 货币符号硬编码为 ¥
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 21.64s，无空 `SelectItem value=""`。
 
+## Phase 4A-6-11: ResultView Rollout to Semantic Page
+
+- **目标**: 将 `ResultView` 推广到 Semantic 分析页面，验证 adapter 模式的可复用性。
+- **新增文件**:
+  - `app/src/lib/adapters/semanticResultAdapter.ts` — Semantic (comprehensive) 结果 → `AnalysisResult`
+- **修改文件**:
+  - `app/src/pages/Semantic.tsx` — 替换原有的字段语义卡片列表为 `ResultView`
+- **适配器设计**:
+  - Summary block: 字段语义识别概况
+  - Metric block: 4 KPIs（行数、字段数、数值型、分类型）
+  - Table block: 13 列统一表格（含 `top_values` → "常见值" 字符串）
+  - Text block: AI 总结
+  - Warning block: 空值率 > 10% 自动触发
+- **与 Statistics 的差异**:
+  - 使用 `top_values` (string[]) 而非 `most_common` (string)
+  - 有 `total_rows` / `total_columns` 顶层字段
+  - 无 `q1` / `q3` 字段
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.05s。
+
 ## 下一步建议
 
 ### 立即执行
@@ -649,7 +668,7 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **ResultView 单页集成试点** — 从 Statistics 页面开始，将 `ResultView` 接入真实结果渲染
+1. **ResultView 推广到 Attribution 页面** — 验证更复杂的结果结构（模型对比、系数表、图表元数据）
 2. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
 
 ### 远期规划（不变）

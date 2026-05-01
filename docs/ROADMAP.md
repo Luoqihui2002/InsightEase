@@ -120,8 +120,13 @@
 - 空结果提示优化
 - Statistics 页面作为其他页面的参考模式
 
-#### 4A-6-11: ResultView 多页推广（可选后续）
-- Semantic、Attribution、Forecast、PathAnalysis 等页面接入 `ResultView`
+#### 4A-6-11: ResultView Rollout to Semantic Page ✅
+- `semanticResultAdapter.ts` 产出 summary + metric + table + text + warning blocks
+- 13 列统一表格含 `top_values` 转换
+- Statistics + Semantic 双页面已验证 adapter + ResultView 模式
+
+#### 4A-6-12: ResultView 推广到 Attribution 页面（可选后续）
+- 验证更复杂结果结构：模型对比、系数表、图表元数据
 - 每个页面需要独立适配器
 
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
