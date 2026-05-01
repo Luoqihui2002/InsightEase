@@ -3,6 +3,9 @@
  *
  * These types define the metadata schema used by the assistant to understand
  * datasets without accessing full raw data.
+ *
+ * NOTE: This project uses snake_case in frontend types to match backend
+ * JSON serialization conventions (consistent with Dataset, Analysis, etc.).
  */
 
 export type ColumnRole =
@@ -49,12 +52,12 @@ export type TableType =
 export interface ColumnProfile {
   name: string;
   dtype: string;
-  semanticType: SemanticType;
+  semantic_type: SemanticType;
   role: ColumnRole;
-  nullCount: number;
-  nullRate: number;
-  uniqueCount: number;
-  uniqueRate: number;
+  null_count: number;
+  null_rate: number;
+  unique_count: number;
+  unique_rate: number;
   examples: unknown[];
   min?: number | string | null;
   max?: number | string | null;
@@ -64,25 +67,25 @@ export interface ColumnProfile {
 }
 
 export interface TableClassification {
-  tableType: TableType;
+  table_type: TableType;
   confidence: number;
   evidence: string[];
-  recommendedAnalyses: string[];
+  recommended_analyses: string[];
   warnings?: string[];
 }
 
 export interface DatasetProfile {
-  datasetId: string;
+  dataset_id: string;
   name: string;
-  rowCount: number;
-  columnCount: number;
+  row_count: number;
+  column_count: number;
   columns: ColumnProfile[];
   classification: TableClassification;
-  qualityWarnings: string[];
-  generatedAt: string;
+  quality_warnings: string[];
+  generated_at: string;
 }
 
 export interface ProfileDatasetRequest {
-  datasetId: string;
-  includeExamples?: boolean;
+  dataset_id: string;
+  include_examples?: boolean;
 }

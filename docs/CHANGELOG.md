@@ -71,6 +71,19 @@
 - 更新 `ARCHITECTURE_DECISIONS.md` 至 v2.0
 - 浏览器端到端回归测试待人工验证
 
+## Phase 4B-2B: Dataset Profile API Contract Smoke Test & Casing Fix
+
+- **目标**: 验证并稳定后端画像端点与前端的 API 契约，解决 snake_case / camelCase 不匹配。
+- **检查内容**:
+  - 后端 `ResponseModel` 包装：`{ code, message, data }`
+  - 后端服务返回 snake_case 键名
+  - 前端 axios 拦截器直接返回 `response.data`
+  - 现有前端类型（`Dataset`, `Analysis`, `FieldSchema`）均使用 snake_case
+- **决策**: `app/src/types/assistant.ts` 统一改为 snake_case，与后端输出和项目约定一致
+- **修改文件**:
+  - `app/src/types/assistant.ts` — 全部字段改为 snake_case
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` 成功，后端 `compileall` 通过。
+
 ## Phase 4B-2: Dataset Profile Contract + Metadata Service
 
 - **目标**: 实现 AI 助手第一层契约：确定性、非 LLM、元数据优先的数据集画像服务。

@@ -868,6 +868,19 @@ Upload CSV/Excel
   - 只读保证：端点仅读取数据文件，不修改源数据集、不创建新数据集、不触发预处理
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` 成功，`python -m compileall app` 无语法错误
 
+## Phase 4B-2B: Dataset Profile API Contract Smoke Test & Casing Fix
+
+- **目标**: 验证并稳定后端画像端点与前端的 API 契约，解决潜在的 snake_case / camelCase 不匹配。
+- **检查内容**:
+  - 后端 `ResponseModel` 包装行为：`{ code, message, data }`
+  - 后端服务返回的键名：全部为 snake_case
+  - 前端 axios 拦截器：`response.data` 直接返回
+  - 现有前端类型约定：`Dataset`、`Analysis`、`FieldSchema` 均使用 snake_case
+- **决策**: 将 `app/src/types/assistant.ts` 从 camelCase 统一改为 snake_case，与后端输出和现有项目约定保持一致
+- **修改文件**:
+  - `app/src/types/assistant.ts` — 全部字段改为 snake_case（dataset_id, row_count, semantic_type, null_rate, table_type, recommended_analyses, quality_warnings, generated_at 等）
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` 成功，后端 `compileall` 通过
+
 ## 下一步建议
 
 ### 立即执行

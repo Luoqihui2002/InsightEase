@@ -199,6 +199,11 @@
 - 前端 API 客户端 `assistantApi.profileDataset()`
 - 无 AI 调用，只读，不修改数据集
 
+#### 4B-2B: API Contract Smoke Test & Casing Fix ✅
+- 验证后端 ResponseModel 包装行为和 snake_case 输出
+- 确认前端现有类型约定为 snake_case
+- `assistant.ts` 类型统一改为 snake_case，与后端和项目约定一致
+
 #### 4B-3: Static Dataset Understanding UI
 - 基于 `DatasetProfile` 的数据集概览卡片
 - 字段角色检测（非 LLM）
