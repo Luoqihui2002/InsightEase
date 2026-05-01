@@ -672,3 +672,16 @@
 - `SmartAnalysis.tsx`: 诊断/预处理卡片增加「演示数据」Badge；模拟代码段加注释
 - `App.tsx`: `/app/ai-workspace` 独立路由重定向到 `/app/dashboard`
 - 验证: `tsc --noEmit` 0 errors, `npm run build` built in 20.23s
+
+## Phase 4B-3F: AI Companion Hard Reset
+
+- 重写 `app/src/components/AICompanion.tsx` — 严格三态模型：collapsed / notification / workspace_open
+- 删除旧版 320px 气泡卡片、拖拽行为、底部第二个头像、双击打开
+- 新增 `app/src/components/assistant/AssistantAvatar.tsx` — 球形柔和头像，9 种变体，纯 CSS/div
+- 新增 `app/src/components/assistant/index.ts` — barrel export
+- 简化 `app/src/services/companion-service.ts`:
+  - 删除 `generateAIContent()` 模拟 AI、idle 追踪、4 个非核心触发器
+  - 保留 `setPage()` / `recordAction()` / `updateContext()`（11 个页面依赖）
+  - 保留 `companion-navigate` 事件导航（4B-3D 修复不回归）
+  - 上传完成通知文案改为「查看数据理解 / 进入数据工坊 / 稍后再说」
+- 验证: `tsc --noEmit` 0 errors, `npm run build` built in 19.34s

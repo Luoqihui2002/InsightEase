@@ -949,6 +949,25 @@ Upload CSV/Excel
   - 移除 `App.tsx` 中未使用的 `AIWorkspace` import
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 20.23s
 
+## Phase 4B-3F: AI Companion Hard Reset
+
+- **目标**: 彻底重建浮动 AI 助手外壳，消除旧版变形/胶囊/输入态 UI。
+- **根因分析**:
+  - 旧版 `AICompanion.tsx` 在 `isVisible = true` 时渲染 320px 宽气泡卡片 + 底部第二个头像 + 拖拽行为
+  - 该气泡视觉上类似长条输入框/胶囊，且可拖拽，造成「破损的输入态」观感
+- **重建内容**:
+  - **新状态模型**: collapsed | notification | workspace_open（三态严格限制）
+  - **删除旧 UI**: 移除拖拽约束、320px 气泡、第二个头像、双击行为
+  - **新增启动器**: 固定右下角球体，单击打开工作台，悬停提示「打开 AI 工作台」
+  - **新增通知卡片**: 280px 紧凑卡片位于启动器上方，含消息 + 最多 3 个按钮 + 关闭按钮
+  - **新头像组件** `AssistantAvatar.tsx`: 球形柔和渐变，白点双眼，顶部高光营造 3D 球体感，9 种变体
+- **服务简化**:
+  - 删除 `generateAIContent()` 模拟 AI、idle 追踪、4 个非核心触发器
+  - 保留 `setPage()` / `recordAction()` / `updateContext()`（11 个页面依赖）
+  - 保留 `companion-navigate` 事件导航（4B-3D 修复）
+  - 更新上传完成文案：「查看数据理解 / 进入数据工坊 / 稍后再说」
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.34s
+
 ## 下一步建议
 
 ### 立即执行
