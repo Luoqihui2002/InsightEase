@@ -342,17 +342,25 @@ class CompanionService {
         window.dispatchEvent(new CustomEvent('companion-action', { detail: { type: 'tour' } }));
         break;
       case 'goto-upload':
-        window.location.href = '/app/upload';
+        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/upload' } }));
         break;
       case 'goto-workshop':
-        window.location.href = '/app/data-workshop';
+        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/data-workshop' } }));
         break;
       case 'goto-analysis':
-        window.location.href = '/app/smart-analysis';
+        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/smart-analysis' } }));
         break;
       case 'auto-analyze':
-        // 跳转到智能分析向导页面
-        window.location.href = '/app/smart-analysis';
+        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/smart-analysis' } }));
+        break;
+      case 'goto-forecast':
+        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/forecast' } }));
+        break;
+      case 'goto-clustering':
+        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/statistics' } }));
+        break;
+      case 'goto-association':
+        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/statistics' } }));
         break;
       case 'learn-security':
         window.dispatchEvent(new CustomEvent('companion-action', { detail: { type: 'learn-security' } }));

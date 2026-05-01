@@ -77,7 +77,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     {
       id: 'welcome',
       role: 'assistant',
-      content: '你好！我是你的 AI 数据分析助手。\n\n告诉我你想分析什么，比如：\n• "帮我统计一下销售额的平均值"\n• "预测下个月的业绩趋势"\n• "看一下各渠道的相关性"',
+      content: '你好！我是 InsightEase AI 数据助手。\n\n当前支持规则型分析导航：选择数据集后，描述你想做的分析，比如：\n• "帮我统计一下销售额的平均值"\n• "预测下个月的业绩趋势"\n• "看一下各渠道的相关性"\n\n自然语言智能规划将在后续阶段开放。',
       type: 'text',
       timestamp: new Date(),
     }
@@ -503,7 +503,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="absolute inset-0 bg-[var(--bg-primary)]/60 backdrop-blur-sm"
-        onClick={onClose}
       />
 
       {/* 主面板 */}
@@ -636,7 +635,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             <KimiAvatar size="sm" mood="happy" />
             <div className="flex-shrink-0">
               <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
-              <p className="text-[10px] text-[var(--text-muted)]">智能数据分析助手</p>
+              <p className="text-[10px] text-[var(--text-muted)]">规则型数据助手 · 自然语言能力即将开放</p>
             </div>
             
             <div className="flex-1"></div>

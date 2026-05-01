@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
 import { AIWorkspace } from '@/pages/AIWorkspace';
 import { AICompanion } from './AICompanion';
 
 export function AppLayout() {
+  const navigate = useNavigate();
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
 
-  // 监听 AI Companion 的事件
+  // 监听 AI Companion 的动作事件
   useEffect(() => {
     const handleCompanionAction = (e: CustomEvent) => {
       if (e.detail?.type === 'open-chat') {
@@ -19,6 +20,19 @@ export function AppLayout() {
     window.addEventListener('companion-action', handleCompanionAction as EventListener);
     return () => window.removeEventListener('companion-action', handleCompanionAction as EventListener);
   }, []);
+
+  // 监听 AI Companion 的导航事件（替代 window.location.href 整页刷新）
+  useEffect(() => {
+    const handleCompanionNavigate = (e: CustomEvent) => {
+      const path = e.detail?.path;
+      if (path && typeof path === 'string') {
+        navigate(path);
+      }
+    };
+
+    window.addEventListener('companion-navigate', handleCompanionNavigate as EventListener);
+    return () => window.removeEventListener('companion-navigate', handleCompanionNavigate as EventListener);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">

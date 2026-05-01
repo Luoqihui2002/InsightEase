@@ -924,6 +924,31 @@ Upload CSV/Excel
   - 中期：构建 AssistantPanel、实现 Result Explainer、添加关系推断
 - **零代码变更**: 纯审计阶段
 
+## Phase 4B-3D: AI Assistant Surface Stabilization
+
+- **目标**: 稳定当前 AI 助手表面，修复 4B-3C 审计发现的 P0 交互和架构问题。
+- **删除死代码**:
+  - 删除 `app/src/components/AIAssistant.tsx`（251 行，0 处引用）
+- **修复伙伴导航**:
+  - `companion-service.ts`: `window.location.href` → `companion-navigate` 自定义事件
+  - `AppLayout.tsx`: 新增 `useNavigate()` 监听器处理导航事件
+  - 7 个导航动作全部改为客户端路由，消除整页刷新
+- **稳定 AICompanion**:
+  - 悬停提示 `双击对话` → `双击打开工作台`
+  - JSX 注释中的用户可见 `Kimi` 文本替换为 `AI 助手`
+- **AIWorkspace 关闭保护**:
+  - 移除背景遮罩的 `onClick={onClose}`，仅通过左上角关闭按钮关闭
+- **非 LLM 边界澄清**:
+  - 欢迎消息增加「当前支持规则型分析导航...自然语言智能规划将在后续阶段开放」
+  - 副标题改为「规则型数据助手 · 自然语言能力即将开放」
+- **SmartAnalysis 模拟标注**:
+  - 数据质量诊断、预处理完成卡片增加「演示数据」Badge
+  - 模拟代码段增加 `⚠️ 模拟` 注释
+- **路由清理**:
+  - `/app/ai-workspace` 独立路由重定向到 `/app/dashboard`
+  - 移除 `App.tsx` 中未使用的 `AIWorkspace` import
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 20.23s
+
 ## 下一步建议
 
 ### 立即执行
@@ -932,7 +957,7 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **Phase 4B-3D: 执行审计建议** — 删除死代码、修复导航、优化意图识别
+1. **Phase 4B-3E: 预填充导航骨架** — 为分析页面添加 query param 解析，使助手推荐可生成预填充链接
 2. **或继续 ResultChartRenderer 打磨** — tooltip 格式化、ResizeObserver、confidence band
 
 ### 远期规划（不变）

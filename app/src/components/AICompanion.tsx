@@ -65,13 +65,13 @@ export function AICompanion() {
               >
                 <span className="px-3 py-1.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] flex items-center gap-1">
                   <GripHorizontal className="w-3 h-3" />
-                  拖拽移动 / 双击对话
+                  拖拽移动 / 双击打开工作台
                 </span>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Kimi 头像按钮 */}
+          {/* AI 助手头像按钮 */}
           <motion.div
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -107,7 +107,7 @@ export function AICompanion() {
               className="absolute inset-0 rounded-full border-2 border-blue-400/50"
             />
 
-            {/* Kimi 头像 */}
+            {/* AI 助手头像 */}
             <KimiAvatar size="lg" mood="idle" />
           </motion.div>
         </motion.div>
@@ -160,7 +160,7 @@ export function AICompanion() {
 
             {/* 消息内容 */}
             <div className="flex items-start gap-3">
-              {/* Kimi 风格头像 */}
+              {/* AI 助手头像 */}
               <KimiAvatar size="sm" mood={state.mood} />
 
               <div className="flex-1 min-w-0">
@@ -196,7 +196,7 @@ export function AICompanion() {
           </motion.div>
         </AnimatePresence>
 
-        {/* 底部 Kimi 头像 */}
+        {/* 底部 AI 助手头像 */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}

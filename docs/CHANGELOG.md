@@ -661,3 +661,14 @@
 - 关键发现：`AIAssistant.tsx` 死代码；`SmartAnalysis` 大量模拟数据；3 个不共享状态的助手入口；4/5 后端 `/ai` 端点未被调用
 - 推荐方向：统一助手入口、删除死代码、实现预填充导航、优化意图识别
 - 零代码变更
+
+## Phase 4B-3D: AI Assistant Surface Stabilization
+
+- 删除 `app/src/components/AIAssistant.tsx`（死代码，251 行，0 处引用）
+- `companion-service.ts`: `window.location.href` → `companion-navigate` 自定义事件
+- `AppLayout.tsx`: 新增 `useNavigate()` 监听器，消除伙伴导航整页刷新
+- `AICompanion.tsx`: 悬停提示 `双击对话` → `双击打开工作台`；用户可见 `Kimi` 文本替换为 `AI 助手`
+- `AIWorkspace.tsx`: 移除背景遮罩点击关闭；欢迎消息和副标题澄清非 LLM 边界
+- `SmartAnalysis.tsx`: 诊断/预处理卡片增加「演示数据」Badge；模拟代码段加注释
+- `App.tsx`: `/app/ai-workspace` 独立路由重定向到 `/app/dashboard`
+- 验证: `tsc --noEmit` 0 errors, `npm run build` built in 20.23s

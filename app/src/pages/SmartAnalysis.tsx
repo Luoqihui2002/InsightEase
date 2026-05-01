@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { DatasetSelector } from '@/components/DatasetSelector';
 import { datasetApi } from '@/api/datasets';
 import { analysisApi } from '@/api/analysis';
@@ -105,7 +106,7 @@ export function SmartAnalysis() {
     setIsDiagnosing(true);
     setCurrentStep('diagnose');
     
-    // 模拟诊断（实际应该调用后端API）
+    // ⚠️ 模拟诊断（尚未接入真实 AI 诊断后端，结果仅供演示）
     setTimeout(() => {
       const issues = [];
       
@@ -237,7 +238,7 @@ export function SmartAnalysis() {
     setIsPreprocessing(true);
     setCurrentStep('preprocess');
     
-    // 模拟预处理
+    // ⚠️ 模拟预处理（尚未接入真实预处理后端，结果仅供演示）
     setTimeout(() => {
       setPreprocessResult({
         originalRows: datasetInfo?.row_count || 0,
@@ -276,7 +277,7 @@ export function SmartAnalysis() {
           await pollAnalysisResult(res.data.id);
         }
       } else {
-        // 其他分析类型先模拟
+        // ⚠️ 其他分析类型先模拟（尚未全部接入真实后端，结果仅供演示）
         setTimeout(() => {
           setAnalysisResult({
             type: rec.type,
@@ -468,6 +469,7 @@ export function SmartAnalysis() {
                 <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-[var(--neon-cyan)]" />
                   数据质量诊断
+                  <Badge variant="outline" className="text-[10px] border-[var(--neon-orange)]/40 text-[var(--neon-orange)]">演示数据</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -589,6 +591,7 @@ export function SmartAnalysis() {
                 <CardTitle className="text-lg text-[var(--neon-green)] flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5" />
                   预处理完成
+                  <Badge variant="outline" className="text-[10px] border-[var(--neon-orange)]/40 text-[var(--neon-orange)]">演示数据</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
