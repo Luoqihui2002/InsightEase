@@ -579,6 +579,24 @@ Upload CSV/Excel
 - **未实现**: 零代码变更、零组件实现、零 API 修改
 - **状态**: 设计文档已完成，待未来开发阶段实施
 
+## Phase 4A-6-9: Integrate ResultView with Statistics Page
+
+- **目标**: 将 `ResultView` 接入 Statistics 分析页面，验证统一结果系统在产品流中的可用性。
+- **新增文件**:
+  - `app/src/lib/adapters/statisticsResultAdapter.ts` — 将 Statistics 后端结果转换为 `AnalysisResult`
+- **修改文件**:
+  - `app/src/pages/Statistics.tsx` — 用 `ResultView` 替换原有的 `renderStatsResult()` 卡片渲染，保留 AI 解读区块
+- **适配器设计**:
+  - Summary block: 整体分析概况（字段数、类型分布、空值提醒）
+  - Metric block: 4 个 KPI（分析字段数、数据行数、数值型字段数、总空值数）
+  - Table block: 统一表格展示所有字段的统计指标（12 列）
+  - Warning block: 空值率 > 10% 的字段自动生成警告
+  - Status: 正常 → `success`，空值率 > 50% → `warning`
+- **已知限制**:
+  - AI 解读仍独立于 `ResultView` 之外
+  - 其他分析页面仍使用各自的 ad-hoc 渲染
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.67s。
+
 ## Phase 4A-6-8: Result Schema + Mock ResultView Skeleton
 
 - **目标**: 实现 Phase 4A-6-7 设计文档的第一个代码层。

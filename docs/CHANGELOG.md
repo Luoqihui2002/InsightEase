@@ -339,6 +339,17 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-9: Integrate ResultView with Statistics Page
+
+- 新增 `app/src/lib/adapters/statisticsResultAdapter.ts` — Statistics 结果 → `AnalysisResult` 适配器
+- `Statistics.tsx` 接入 `ResultView`：
+  - 替换原有的 `renderStatsResult()` 卡片渲染
+  - 保留 AI 解读区块
+  - 移除已弃用的 `Card` 导入和 `BarChart3` 图标
+- 适配器产出：summary + metric + table + warning blocks
+- 空值率 > 10% 自动生成 warning block，> 50% 升级为 critical
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-8: Result Schema + Mock ResultView Skeleton
 
 - 新增 `app/src/types/result.ts` — `AnalysisResult` 共享 schema + 6 种 `ResultBlock` + Column Contract + `ResultDiagnostics`

@@ -109,9 +109,14 @@
 - 3 个 mock payload
 - 图表块占位、未知块安全降级
 
-#### 4A-6-9: ResultView 单页集成试点（可选后续）
-- 从 Statistics 页面开始接入 `ResultView`
-- 逐步替换各分析页面的 ad-hoc 结果渲染
+#### 4A-6-9: ResultView 单页集成试点 ✅
+- Statistics 页面接入 `ResultView`
+- `statisticsResultAdapter.ts` 产出 summary + metric + table + warning blocks
+- AI 解读区块保留
+
+#### 4A-6-10: ResultView 多页推广（可选后续）
+- Semantic、Attribution、Forecast、PathAnalysis 等页面接入 `ResultView`
+- 每个页面需要独立适配器
 
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
 - 纯研究文档，不实现

@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { companionService } from '@/services';
 import { 
-  BarChart3, 
   Play, 
   Sparkles,
   Loader2
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Button } from '@/components/ui/button';
 import { DatasetSelector } from '@/components/DatasetSelector';
 import { DataTypeValidation } from '@/components/DataTypeValidation';
@@ -22,6 +21,8 @@ import {
   AnalysisResultPanel,
   AnalysisActionBar,
 } from '@/components/analysis';
+import { ResultView } from '@/components/results';
+import { toStatisticsAnalysisResult } from '@/lib/adapters/statisticsResultAdapter';
 
 interface ColumnInfo {
   name: string;
@@ -258,92 +259,6 @@ export function Statistics() {
     toast.success('报告已导出为 CSV');
   };
 
-  // 渲染统计结果
-  const renderStatsResult = () => {
-    if (!analysisResult?.column_stats) return null;
-
-    const targetColumns = selectedColumn === 'all' 
-      ? analysisResult.column_stats 
-      : analysisResult.column_stats.filter((c: any) => c.name === selectedColumn);
-
-    return (
-      <div className="space-y-6">
-        {targetColumns.map((col: any) => (
-          <Card key={col.name} className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
-            <CardHeader>
-              <CardTitle className="text-base text-[var(--text-primary)] flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[var(--neon-cyan)]" />
-                {col.name} 
-                <span className="text-xs text-[var(--text-muted)] font-normal">
-                  ({col.dtype})
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                  <p className="text-xs text-[var(--text-muted)]">非空值</p>
-                  <p className="text-lg font-bold text-[var(--neon-cyan)]">{col.non_null_count}</p>
-                </div>
-                <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                  <p className="text-xs text-[var(--text-muted)]">空值</p>
-                  <p className="text-lg font-bold text-[var(--neon-pink)]">{col.null_count}</p>
-                </div>
-                <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                  <p className="text-xs text-[var(--text-muted)]">空值占比</p>
-                  <p className="text-lg font-bold text-[var(--neon-orange)]">{col.null_percentage}%</p>
-                </div>
-                {col.type === 'numeric' ? (
-                  <>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                      <p className="text-xs text-[var(--text-muted)]">平均值</p>
-                      <p className="text-lg font-bold text-[var(--neon-cyan)]">{col.mean?.toFixed(2) || '-'}</p>
-                    </div>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                      <p className="text-xs text-[var(--text-muted)]">中位数</p>
-                      <p className="text-lg font-bold text-[var(--neon-cyan)]">{col.median?.toFixed(2) || '-'}</p>
-                    </div>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                      <p className="text-xs text-[var(--text-muted)]">标准差</p>
-                      <p className="text-lg font-bold text-[var(--neon-cyan)]">{col.std?.toFixed(2) || '-'}</p>
-                    </div>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                      <p className="text-xs text-[var(--text-muted)]">最小值</p>
-                      <p className="text-lg font-bold text-[var(--neon-cyan)]">{col.min?.toFixed(2) || '-'}</p>
-                    </div>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                      <p className="text-xs text-[var(--text-muted)]">最大值</p>
-                      <p className="text-lg font-bold text-[var(--neon-cyan)]">{col.max?.toFixed(2) || '-'}</p>
-                    </div>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                      <p className="text-xs text-[var(--text-muted)]">Q1 (25%)</p>
-                      <p className="text-lg font-bold text-[var(--neon-purple)]">{col.q1?.toFixed(2) || '-'}</p>
-                    </div>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                      <p className="text-xs text-[var(--text-muted)]">Q3 (75%)</p>
-                      <p className="text-lg font-bold text-[var(--neon-purple)]">{col.q3?.toFixed(2) || '-'}</p>
-                    </div>
-                  </>
-                ) : col.type === 'categorical' ? (
-                  <>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)]">
-                      <p className="text-xs text-[var(--text-muted)]">唯一值</p>
-                      <p className="text-lg font-bold text-[var(--neon-cyan)]">{col.unique_count}</p>
-                    </div>
-                    <div className="p-3 rounded bg-[var(--bg-secondary)] col-span-2">
-                      <p className="text-xs text-[var(--text-muted)]">最常见</p>
-                      <p className="text-sm font-bold text-[var(--neon-cyan)] truncate">{col.most_common || '-'}</p>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <AnalysisPageShell
       title="统计分析"
@@ -446,8 +361,21 @@ export function Statistics() {
         >
           {showResult && (
             <div ref={resultRef} className="space-y-6">
-              {/* 统计结果 */}
-              {renderStatsResult()}
+              {/* 统一结果视图 */}
+              {(() => {
+                const converted = toStatisticsAnalysisResult(
+                  analysisResult,
+                  datasetInfo,
+                  selectedColumn
+                );
+                return converted ? (
+                  <ResultView result={converted} />
+                ) : (
+                  <div className="text-center py-8 text-[var(--text-muted)]">
+                    <p>无法解析分析结果</p>
+                  </div>
+                );
+              })()}
 
               {/* AI 解读 */}
               {analysisResult?.ai_summary && (
