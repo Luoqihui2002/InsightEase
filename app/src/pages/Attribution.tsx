@@ -28,6 +28,8 @@ import {
   AnalysisActionBar,
 } from '@/components/analysis';
 import { getChartColors, withAlpha } from '@/hooks/useChartColors';
+import { ResultView } from '@/components/results';
+import { toAttributionAnalysisResult } from '@/lib/adapters/attributionResultAdapter';
 
 interface ColumnInfo {
   name: string;
@@ -749,134 +751,31 @@ export function Attribution() {
         >
           {showResult && (
             <div ref={resultRef} className="space-y-6">
-              {/* 汇总统计 */}
-              {analysisResult?.summary && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
-                    <CardContent className="p-4 text-center">
-                      <p className="text-xs text-[var(--text-muted)]">用户旅程数</p>
-                      <p className="text-2xl font-bold text-[var(--neon-cyan)]">
-                        {analysisResult.user_journey_count?.toLocaleString()}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
-                    <CardContent className="p-4 text-center">
-                      <p className="text-xs text-[var(--text-muted)]">总转化数</p>
-                      <p className="text-2xl font-bold text-[var(--neon-purple)]">
-                        {analysisResult.total_conversions?.toLocaleString()}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
-                    <CardContent className="p-4 text-center">
-                      <p className="text-xs text-[var(--text-muted)]">转化率</p>
-                      <p className="text-2xl font-bold text-[var(--neon-green)]">
-                        {analysisResult.summary?.conversion_rate}%
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
-                    <CardContent className="p-4 text-center">
-                      <p className="text-xs text-[var(--text-muted)]">平均触点数</p>
-                      <p className="text-2xl font-bold text-[var(--neon-orange)]">
-                        {analysisResult.summary?.avg_touchpoints_per_journey}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+              {/* 统一结果视图 */}
+              {(() => {
+                const converted = toAttributionAnalysisResult(
+                  analysisResult,
+                  datasetInfo
+                );
+                return converted ? (
+                  <ResultView result={converted} />
+                ) : (
+                  <div className="text-center py-8 text-[var(--text-muted)]">
+                    <p>分析完成，但未返回归因数据</p>
+                  </div>
+                );
+              })()}
 
-              {/* 对比图表 */}
-              <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
-                <CardHeader>
-                  <CardTitle className="text-lg text-[var(--text-primary)]">
-                    模型对比分析
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div ref={chartRef} className="w-full h-80" />
-                </CardContent>
-              </Card>
-
-              {/* 各模型详细结果 */}
+              {/* ECharts 对比图表 — 保留现有图表渲染，未来由 ResultView 图表块替代 */}
               {analysisResult?.models && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(analysisResult.models).map(([modelKey, modelData]: [string, any]) => {
-                    const modelInfo = ATTRIBUTION_MODELS.find(m => m.key === modelKey);
-                    return (
-                      <Card key={modelKey} className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
-                        <CardHeader>
-                          <CardTitle className="text-base text-[var(--text-primary)] flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: modelInfo?.color }} />
-                            {modelInfo?.name}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            {Object.entries(modelData).slice(0, 5).map(([touchpoint, data]: [string, any]) => (
-                              <div key={touchpoint} className="flex items-center justify-between">
-                                <span className="text-sm text-[var(--text-secondary)]">{touchpoint}</span>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-24 h-2 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
-                                    <div 
-                                      className="h-full rounded-full" 
-                                      style={{ 
-                                        width: `${data.percentage}%`,
-                                        backgroundColor: modelInfo?.color 
-                                      }}
-                                    />
-                                  </div>
-                                  <span className="text-xs text-[var(--neon-cyan)] w-12 text-right">
-                                    {data.percentage}%
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* 模型对比表 */}
-              {analysisResult?.summary?.model_comparison && (
                 <Card className="bg-[var(--bg-secondary)] border-[var(--border-subtle)]">
                   <CardHeader>
                     <CardTitle className="text-lg text-[var(--text-primary)]">
-                      各模型Top3触点对比
+                      模型对比分析
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-[var(--border-subtle)]">
-                            <th className="text-left p-2 text-[var(--text-muted)]">模型</th>
-                            <th className="text-left p-2 text-[var(--text-muted)]">Top1</th>
-                            <th className="text-left p-2 text-[var(--text-muted)]">Top2</th>
-                            <th className="text-left p-2 text-[var(--text-muted)]">Top3</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {analysisResult.summary.model_comparison.map((item: any) => (
-                            <tr key={item.model} className="border-b border-[var(--border-subtle)]">
-                              <td className="p-2 text-[var(--text-primary)] font-medium">
-                                {item.model_name}
-                              </td>
-                              {item.top3.map((tp: any, i: number) => (
-                                <td key={i} className="p-2">
-                                  <span className="text-[var(--text-secondary)]">{tp.touchpoint}</span>
-                                  <span className="text-xs text-[var(--neon-cyan)] ml-1">({tp.percentage}%)</span>
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <div ref={chartRef} className="w-full h-80" />
                   </CardContent>
                 </Card>
               )}

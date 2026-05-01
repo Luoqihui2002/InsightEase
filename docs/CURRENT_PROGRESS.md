@@ -641,24 +641,26 @@ Upload CSV/Excel
   - 货币符号硬编码为 ¥
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 21.64s，无空 `SelectItem value=""`。
 
-## Phase 4A-6-11: ResultView Rollout to Semantic Page
+## Phase 4A-6-12: ResultView Rollout to Attribution Page
 
-- **目标**: 将 `ResultView` 推广到 Semantic 分析页面，验证 adapter 模式的可复用性。
+- **目标**: 将 `ResultView` 推广到 Attribution 页面，验证 schema 对复杂分析结果（嵌套模型数据、对比表、图表元数据）的支持能力。
 - **新增文件**:
-  - `app/src/lib/adapters/semanticResultAdapter.ts` — Semantic (comprehensive) 结果 → `AnalysisResult`
+  - `app/src/lib/adapters/attributionResultAdapter.ts` — Attribution 结果 → `AnalysisResult`
 - **修改文件**:
-  - `app/src/pages/Semantic.tsx` — 替换原有的字段语义卡片列表为 `ResultView`
+  - `app/src/pages/Attribution.tsx` — 替换 metric cards + model cards + comparison table 为 `ResultView`
 - **适配器设计**:
-  - Summary block: 字段语义识别概况
-  - Metric block: 4 KPIs（行数、字段数、数值型、分类型）
-  - Table block: 13 列统一表格（含 `top_values` → "常见值" 字符串）
-  - Text block: AI 总结
-  - Warning block: 空值率 > 10% 自动触发
-- **与 Statistics 的差异**:
-  - 使用 `top_values` (string[]) 而非 `most_common` (string)
-  - 有 `total_rows` / `total_columns` 顶层字段
-  - 无 `q1` / `q3` 字段
-- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.05s。
+  - Summary block: 归因分析概况（旅程数、转化数、转化率、平均触点数）
+  - Metric block: 4 KPIs
+  - Table block 1: "各模型触点归因" — 将嵌套 `models` 对象扁平化为行（模型 × 触点 × 占比）
+  - Table block 2: "各模型 Top3 触点对比" — 来自 `summary.model_comparison`
+  - Chart placeholder: "模型对比分析" bar chart 元数据（未来渲染）
+  - Warning block: 转化率 < 1% 或平均触点数 > 10 时自动触发
+- **保留的 UI**:
+  - ECharts 对比图表 — ResultView 图表块目前仅渲染占位卡片，真实图表保留在页面级别
+- **已知限制**:
+  - 图表占位卡片与真实图表并存（临时状态）
+  - 原 model card 中的进度条被表格替代
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.85s。
 
 ## 下一步建议
 
@@ -668,7 +670,7 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **ResultView 推广到 Attribution 页面** — 验证更复杂的结果结构（模型对比、系数表、图表元数据）
+1. **ResultView 推广到 Forecast / PathAnalysis 页面** — 验证时间序列和漏斗/图结果结构
 2. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
 
 ### 远期规划（不变）

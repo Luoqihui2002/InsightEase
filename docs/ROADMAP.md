@@ -125,8 +125,14 @@
 - 13 列统一表格含 `top_values` 转换
 - Statistics + Semantic 双页面已验证 adapter + ResultView 模式
 
-#### 4A-6-12: ResultView 推广到 Attribution 页面（可选后续）
-- 验证更复杂结果结构：模型对比、系数表、图表元数据
+#### 4A-6-12: ResultView Rollout to Attribution Page ✅
+- `attributionResultAdapter.ts` 处理嵌套 `models` 对象扁平化
+- 产出 summary + metric + 2 tables + chart placeholder + warnings
+- ECharts 图表保留在页面级别（未来迁移）
+- Statistics + Semantic + Attribution 三页面已验证
+
+#### 4A-6-13: ResultView 推广到 Forecast / PathAnalysis（可选后续）
+- 验证时间序列和漏斗/图结果结构
 - 每个页面需要独立适配器
 
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
