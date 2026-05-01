@@ -192,13 +192,15 @@
 - 定义 6 个能力模块、核心契约、集成策略、安全原则、实施路线图
 - 纯文档阶段，零代码变更
 
-#### 4B-2: Dataset Profile Contract & Metadata Service
-- 定义 `DatasetProfile` / `ColumnProfile` 类型
-- 添加静态 profiling 后端端点
-- 无 AI 调用
+#### 4B-2: Dataset Profile Contract & Metadata Service ✅
+- 定义 `DatasetProfile` / `ColumnProfile` / `ColumnRole` 前端契约
+- 添加后端 `assistant_profile_service.py`（确定性启发式规则）
+- 添加后端端点 `POST /assistant/profile-dataset`
+- 前端 API 客户端 `assistantApi.profileDataset()`
+- 无 AI 调用，只读，不修改数据集
 
 #### 4B-3: Static Dataset Understanding UI
-- 基于启发式规则的数据集概览卡片
+- 基于 `DatasetProfile` 的数据集概览卡片
 - 字段角色检测（非 LLM）
 
 #### 4B-4: Assistant Panel Mock UI

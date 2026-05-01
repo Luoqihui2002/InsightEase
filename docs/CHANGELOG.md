@@ -71,6 +71,24 @@
 - 更新 `ARCHITECTURE_DECISIONS.md` 至 v2.0
 - 浏览器端到端回归测试待人工验证
 
+## Phase 4B-2: Dataset Profile Contract + Metadata Service
+
+- **目标**: 实现 AI 助手第一层契约：确定性、非 LLM、元数据优先的数据集画像服务。
+- **新增文件**:
+  - `app/src/types/assistant.ts` — 前端契约：`ColumnRole`, `SemanticType`, `TableType`, `ColumnProfile`, `TableClassification`, `DatasetProfile`
+  - `app/src/api/assistant.ts` — 前端 API 客户端：`assistantApi.profileDataset()`
+  - `insightease-backend/app/services/assistant_profile_service.py` — 后端画像服务（启发式规则）
+  - `insightease-backend/app/api/v1/endpoints/assistant.py` — 端点 `POST /assistant/profile-dataset`
+- **修改文件**:
+  - `insightease-backend/app/api/v1/api.py` — 注册 assistant router
+- **实现要点**:
+  - 字段角色检测：基于列名模式、dtype、唯一值率、空值率的确定性启发式
+  - 表分类：基于角色组合推断业务实体类型（user/order/event_log/experiment 等）
+  - 质量警告：行数/列数/缺失率/常数列/唯一值异常
+  - 复用 Phase 4A-6-22 的 `normalize_missing_values` 统一识别字符串缺失 token
+  - 只读：不修改源数据集、不创建新数据集
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` 成功，后端 `compileall` 通过。
+
 ## Phase 4B-1: AI Data Assistant Design
 
 - **目标**: 设计 InsightEase AI Data Assistant 的产品形态和架构。

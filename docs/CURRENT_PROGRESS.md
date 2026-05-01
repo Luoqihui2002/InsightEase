@@ -850,6 +850,24 @@ Upload CSV/Excel
   - 实施路线图：4B-2 元数据服务 → 4B-3 静态理解 UI → 4B-4 面板 Mock → 4B-5 计划 Mock → 4B-6 真实 AI 集成 → 4B-7 结果解释器
 - **零代码变更**: 纯文档阶段，未修改任何应用源代码或 package 文件
 
+## Phase 4B-2: Dataset Profile Contract + On-demand Metadata Service
+
+- **目标**: 实现 AI 助手的第一层契约：确定性、非 LLM、元数据优先的数据集画像服务。
+- **新增文件**:
+  - `app/src/types/assistant.ts` — 前端契约：`ColumnRole`, `SemanticType`, `TableType`, `ColumnProfile`, `TableClassification`, `DatasetProfile`
+  - `app/src/api/assistant.ts` — 前端 API 客户端：`assistantApi.profileDataset(datasetId)`
+  - `insightease-backend/app/services/assistant_profile_service.py` — 后端画像服务（确定性启发式规则）
+  - `insightease-backend/app/api/v1/endpoints/assistant.py` — 后端端点 `POST /assistant/profile-dataset`
+- **修改文件**:
+  - `insightease-backend/app/api/v1/api.py` — 注册 `assistant.router`
+- **实现要点**:
+  - 字段角色检测：基于列名模式匹配、dtype、唯一值率、空值率的确定性启发式
+  - 表分类：基于检测到的角色组合推断业务实体类型（user/order/event_log/experiment/review_text/metric_summary 等）
+  - 质量警告：数据集级别（行数少、列数多、无时间列、整体缺失率高）和列级别（缺失率>50%、常数列、接近唯一值）
+  - 缺失值处理：复用 Phase 4A-6-22 的 `normalize_missing_values`，统一识别字符串缺失 token
+  - 只读保证：端点仅读取数据文件，不修改源数据集、不创建新数据集、不触发预处理
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` 成功，`python -m compileall app` 无语法错误
+
 ## 下一步建议
 
 ### 立即执行
@@ -858,9 +876,8 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **Phase 4B-2: Dataset Profile Contract & Metadata Service** — 定义共享类型，添加静态 profiling 端点
-2. **Phase 4B-3: Static Dataset Understanding UI** — 基于启发式规则的数据集概览卡片
-3. **或继续 ResultChartRenderer 打磨** — tooltip 格式化、ResizeObserver、confidence band
+1. **Phase 4B-3: Static Dataset Understanding UI** — 基于 `DatasetProfile` 的数据集概览卡片
+2. **或继续 ResultChartRenderer 打磨** — tooltip 格式化、ResizeObserver、confidence band
 
 ### 远期规划（不变）
 
