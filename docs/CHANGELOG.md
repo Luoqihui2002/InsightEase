@@ -71,6 +71,20 @@
 - 更新 `ARCHITECTURE_DECISIONS.md` 至 v2.0
 - 浏览器端到端回归测试待人工验证
 
+## Phase 4A-6-22: Critical QA Bug Triage
+
+- **目标**: 修复手动 QA 发现的预处理自动保存缺陷和路径聚类超时问题。
+- **修改文件**:
+  - `insightease-backend/app/api/v1/endpoints/analysis.py` — `normalize_missing_values()` 规范化字符串缺失 token；`smart_process` 新增 `preview_only` 模式
+  - `insightease-backend/app/services/path_analysis_service.py` — 路径聚类增加 `max_sessions=1000` 采样上限；修复 `combined_entropy` 计算 bug
+  - `app/src/pages/SmartProcess.tsx` — 主按钮改为"预览处理"，预览后显示"保存结果"，UI 区分预览/已保存状态
+- **修复要点**:
+  - 缺失值 token 列表：`null`, `NULL`, `NaN`, `nan`, `N/A`, `NA`, `-`, `unknown`, `无`, `缺失` 等统一替换为 `pd.NA`
+  - 预览模式：后端仅返回统计，不写文件、不创建 Dataset 记录
+  - 保存模式：后端执行完整处理并持久化
+  - 聚类采样：超过 1000 用户时随机采样并返回警告
+- **验证**: `tsc --noEmit` 0 errors，`npm run build` 成功。
+
 ## Phase 4A-6-21: Manual QA Test Dataset Pack
 
 - **目标**: 创建稳定的手动 QA 测试数据集包，覆盖端到端功能验证。

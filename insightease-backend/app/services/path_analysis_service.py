@@ -357,7 +357,18 @@ class PathAnalysisService:
                 df[event_col] = df[all_cols].astype(str).agg('_'.join, axis=1)
         
         # 获取用户列表
-        user_ids = df[user_id_col].unique().tolist()
+        user_ids_all = df[user_id_col].unique().tolist()
+        max_sessions = 1000
+        sampled = False
+        
+        if len(user_ids_all) > max_sessions:
+            import random as rnd
+            rnd.seed(42)
+            user_ids = rnd.sample(user_ids_all, max_sessions)
+            df = df[df[user_id_col].isin(user_ids)].copy()
+            sampled = True
+        else:
+            user_ids = user_ids_all
         
         if len(user_ids) < n_clusters:
             n_clusters = max(1, len(user_ids) // 2)
@@ -365,7 +376,7 @@ class PathAnalysisService:
         if n_clusters < 2:
             return {
                 "message": "用户数量不足，无法进行聚类分析",
-                "total_users": len(user_ids)
+                "total_users": len(user_ids_all)
             }
         
         if mode == "custom" and custom_columns:
@@ -436,8 +447,8 @@ class PathAnalysisService:
                 cluster, feature_columns, mode
             )
         
-        return {
-            "total_users": len(user_ids),
+        result = {
+            "total_users": len(user_ids_all),
             "n_clusters": n_clusters,
             "mode": mode,
             "feature_columns": feature_columns,
@@ -450,6 +461,11 @@ class PathAnalysisService:
                 feature_df.values, labels, feature_columns
             )
         }
+        if sampled:
+            result["sampled"] = True
+            result["sampled_users"] = len(user_ids)
+            result["warning"] = f"数据量较大，聚类分析基于随机采样的 {len(user_ids)} 个用户进行"
+        return result
     
     # 可用的智能特征列表
     AVAILABLE_SMART_FEATURES = {
@@ -571,11 +587,11 @@ class PathAnalysisService:
                         if "combined_unique" in selected_features:
                             feature_dict["combined_unique"] = len(set(combined_events))
                         if "combined_entropy" in selected_features:
+                            counts = Counter(combined_events)
+                            total = sum(counts.values())
                             feature_dict["combined_entropy"] = -sum(
-                                p * np.log2(p) for p in Counter(combined_events).values() 
-                                for count in [sum(Counter(combined_events).values())]
-                                for p in [count / sum(Counter(combined_events).values())]
-                            ) if combined_events else 0
+                                (c / total) * np.log2(c / total) for c in counts.values() if c > 0
+                            ) if total > 0 else 0
                     else:
                         if "combined_unique" in selected_features:
                             feature_dict["combined_unique"] = unique_events if 'unique_events' in dir() else user_df[event_col].nunique()

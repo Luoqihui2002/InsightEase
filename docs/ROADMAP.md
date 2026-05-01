@@ -180,6 +180,11 @@
 - 覆盖 Statistics / Semantic / Forecast / Attribution / PathAnalysis / A/B / 回归 / 数据质量
 - 为进入 Phase 4B 提供端到端验证基础
 
+#### 4A-6-22: Critical QA Bug Triage ✅
+- 修复 SmartProcess 自动保存缺陷：新增 preview_only 模式，预览不持久化
+- 修复缺失值检测：字符串 token（`null`, `N/A`, `-`, `unknown` 等）统一替换为 NaN
+- 修复路径聚类超时：增加 `max_sessions=1000` 采样上限，修复 `combined_entropy` 计算 bug
+
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
 - 纯研究文档，不实现
 - 分析 PathAnalysis、Forecast、Attribution 结果表共性

@@ -25,6 +25,25 @@ from app.api.v1.endpoints.datasets import read_csv_with_auto_header
 router = APIRouter()
 
 
+# Common string tokens that should be treated as missing values across the platform.
+MISSING_VALUE_TOKENS = [
+    '', 'null', 'NULL', 'NaN', 'nan', 'N/A', 'NA', '-', 'unknown', 'UNKNOWN',
+    '无', '缺失', 'None', 'none', 'NIL', 'nil'
+]
+
+
+def normalize_missing_values(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Replace common missing-value string tokens with actual NaN so that
+    pandas isnull() and fillna() work correctly.
+    """
+    df = df.copy()
+    for col in df.columns:
+        if df[col].dtype == object or str(df[col].dtype) == 'string':
+            df[col] = df[col].replace(MISSING_VALUE_TOKENS, pd.NA)
+    return df
+
+
 def clean_json_data(obj):
     """
     清理数据中的特殊值，使其可以被 JSON 序列化并存储到 MySQL
@@ -277,6 +296,10 @@ async def execute_analysis_task(analysis_id: str, dataset_id: str,
                 outlier_threshold = params.get("outlierThreshold", 1.5)
                 standardization = params.get("standardization", "none")
                 type_conversion = params.get("typeConversion", True)
+                preview_only = params.get("preview_only", False)
+                
+                # === Normalize common missing-value string tokens before counting ===
+                df = normalize_missing_values(df)
                 
                 # 记录原始数据状态
                 original_rows = len(df)
@@ -288,16 +311,16 @@ async def execute_analysis_task(analysis_id: str, dataset_id: str,
                         df = df.dropna()
                     elif missing_strategy == "mean":
                         for col in df.select_dtypes(include=['number']).columns:
-                            df[col].fillna(df[col].mean(), inplace=True)
+                            df[col] = df[col].fillna(df[col].mean())
                     elif missing_strategy == "median":
                         for col in df.select_dtypes(include=['number']).columns:
-                            df[col].fillna(df[col].median(), inplace=True)
+                            df[col] = df[col].fillna(df[col].median())
                     elif missing_strategy == "mode":
                         for col in df.columns:
                             if not df[col].mode().empty:
-                                df[col].fillna(df[col].mode()[0], inplace=True)
+                                df[col] = df[col].fillna(df[col].mode()[0])
                     elif missing_strategy == "fill":
-                        df.fillna(missing_fill_value, inplace=True)
+                        df = df.fillna(missing_fill_value)
                 
                 # 2. 处理重复值
                 duplicates_removed = 0
@@ -377,101 +400,7 @@ async def execute_analysis_task(analysis_id: str, dataset_id: str,
                 removed_rows = original_rows - processed_rows
                 fixed_nulls = original_nulls - processed_nulls
                 
-                # 生成新数据集文件
-                import os
-                import re
-                from datetime import datetime
-                
-                # 创建输出文件名：原数据名称_处理日期_第几次处理.原格式
-                # 获取原始文件名（不含uuid前缀）
-                original_filename = os.path.basename(file_path)
-                # 去掉可能的uuid前缀 (8-4-4-4-12 格式)
-                base_name = re.sub(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_', '', 
-                                  os.path.splitext(original_filename)[0])
-                original_ext = os.path.splitext(original_filename)[1]  # 获取原格式
-                date_str = datetime.now().strftime("%Y%m%d")
-                
-                # 查找已有的处理次数
-                result_existing = await db.execute(
-                    select(Dataset).where(
-                        Dataset.user_id == user_id,
-                        Dataset.filename.like(f"{base_name}_%")
-                    )
-                )
-                existing_datasets = result_existing.scalars().all()
-                
-                # 计算处理次数
-                process_count = 1
-                for ds in existing_datasets:
-                    match = re.search(rf'{re.escape(base_name)}_\d{{8}}_(\d+)\.', ds.filename)
-                    if match:
-                        process_count = max(process_count, int(match.group(1)) + 1)
-                
-                output_filename = f"{base_name}_{date_str}_{process_count}{original_ext}"
-                output_path = os.path.join(os.path.dirname(file_path), output_filename)
-                
-                # 保存处理后的数据 - 保持与原文件相同的格式
-                if original_ext.lower() in ['.xlsx', '.xls']:
-                    df.to_excel(output_path, index=False, engine='openpyxl')
-                else:
-                    # CSV 格式，确保数据完整性
-                    df.to_csv(output_path, index=False, encoding='utf-8-sig')
-                logger.info(f"Processed data saved to: {output_path}")
-                
-                # 计算文件大小
-                file_size = os.path.getsize(output_path)
-                
-                # 生成数据集ID
-                output_dataset_id = str(uuid.uuid4())
-                
-                # 计算质量评分
-                quality_score = calculate_quality_score(df)
-                logger.info(f"Calculated quality score: {quality_score}")
-                
-                # 生成 schema
-                schema = []
-                for col in df.columns:
-                    dtype = str(df[col].dtype)
-                    unique_count = int(df[col].nunique())
-                    sample_values = df[col].dropna().head(5).tolist()
-                    
-                    # 确定列类型
-                    col_type = 'other'
-                    if df[col].dtype in ['int64', 'float64', 'int32', 'float32']:
-                        col_type = 'numeric'
-                    elif df[col].dtype == 'object':
-                        col_type = 'categorical'
-                    elif 'datetime' in str(df[col].dtype):
-                        col_type = 'datetime'
-                    
-                    schema.append({
-                        "name": col,
-                        "dtype": dtype,
-                        "type": col_type,
-                        "unique_count": unique_count,
-                        "sample_values": sample_values
-                    })
-                
-                # 创建数据集记录
-                new_dataset = Dataset(
-                    id=output_dataset_id,
-                    user_id=user_id,
-                    filename=output_filename,
-                    storage_path=output_path,
-                    file_size=file_size,
-                    row_count=len(df),
-                    col_count=len(df.columns),
-                    status="ready",
-                    is_deleted=False,
-                    quality_score=quality_score,
-                    schema=clean_json_data(schema)
-                )
-                db.add(new_dataset)
-                await db.commit()
-                
-                logger.info(f"New dataset created: {output_dataset_id}")
-                
-                # 构建结果
+                # 构建公共结果
                 result_data = {
                     "original_rows": original_rows,
                     "processed_rows": processed_rows,
@@ -481,8 +410,7 @@ async def execute_analysis_task(analysis_id: str, dataset_id: str,
                     "fixed_nulls": int(fixed_nulls),
                     "duplicates_removed": duplicates_removed,
                     "outliers_removed": outliers_removed,
-                    "output_dataset_id": output_dataset_id,
-                    "output_dataset_name": output_filename,
+                    "preview_only": preview_only,
                     "processing_config": {
                         "missing_strategy": missing_strategy,
                         "duplicate_strategy": duplicate_strategy,
@@ -491,7 +419,87 @@ async def execute_analysis_task(analysis_id: str, dataset_id: str,
                     }
                 }
                 
-                logger.info(f"Smart processing completed: {result_data}")
+                # 仅当非预览模式时才保存数据集
+                if not preview_only:
+                    import os
+                    import re
+                    from datetime import datetime
+                    
+                    original_filename = os.path.basename(file_path)
+                    base_name = re.sub(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_', '', 
+                                      os.path.splitext(original_filename)[0])
+                    original_ext = os.path.splitext(original_filename)[1]
+                    date_str = datetime.now().strftime("%Y%m%d")
+                    
+                    result_existing = await db.execute(
+                        select(Dataset).where(
+                            Dataset.user_id == user_id,
+                            Dataset.filename.like(f"{base_name}_%")
+                        )
+                    )
+                    existing_datasets = result_existing.scalars().all()
+                    
+                    process_count = 1
+                    for ds in existing_datasets:
+                        match = re.search(rf'{re.escape(base_name)}_\d{{8}}_(\d+)\.', ds.filename)
+                        if match:
+                            process_count = max(process_count, int(match.group(1)) + 1)
+                    
+                    output_filename = f"{base_name}_{date_str}_{process_count}{original_ext}"
+                    output_path = os.path.join(os.path.dirname(file_path), output_filename)
+                    
+                    if original_ext.lower() in ['.xlsx', '.xls']:
+                        df.to_excel(output_path, index=False, engine='openpyxl')
+                    else:
+                        df.to_csv(output_path, index=False, encoding='utf-8-sig')
+                    
+                    file_size = os.path.getsize(output_path)
+                    output_dataset_id = str(uuid.uuid4())
+                    quality_score = calculate_quality_score(df)
+                    
+                    schema = []
+                    for col in df.columns:
+                        dtype = str(df[col].dtype)
+                        unique_count = int(df[col].nunique())
+                        sample_values = df[col].dropna().head(5).tolist()
+                        col_type = 'other'
+                        if df[col].dtype in ['int64', 'float64', 'int32', 'float32']:
+                            col_type = 'numeric'
+                        elif df[col].dtype == 'object':
+                            col_type = 'categorical'
+                        elif 'datetime' in str(df[col].dtype):
+                            col_type = 'datetime'
+                        schema.append({
+                            "name": col,
+                            "dtype": dtype,
+                            "type": col_type,
+                            "unique_count": unique_count,
+                            "sample_values": sample_values
+                        })
+                    
+                    new_dataset = Dataset(
+                        id=output_dataset_id,
+                        user_id=user_id,
+                        filename=output_filename,
+                        storage_path=output_path,
+                        file_size=file_size,
+                        row_count=len(df),
+                        col_count=len(df.columns),
+                        status="ready",
+                        is_deleted=False,
+                        quality_score=quality_score,
+                        schema=clean_json_data(schema)
+                    )
+                    db.add(new_dataset)
+                    await db.commit()
+                    
+                    result_data["output_dataset_id"] = output_dataset_id
+                    result_data["output_dataset_name"] = output_filename
+                    logger.info(f"Smart processing saved: {output_dataset_id}")
+                else:
+                    logger.info("Smart processing preview completed (not saved)")
+                
+                logger.info(f"Smart processing result: {result_data}")
             
             elif analysis_type == "path":
                 # 路径分析

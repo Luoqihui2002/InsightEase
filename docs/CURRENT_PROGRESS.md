@@ -821,6 +821,19 @@ Upload CSV/Excel
   - 数据质量表包含 >60% 缺失、常数列、高基数、混合类型、异常值
 - **验证**: 脚本运行成功，10 个 CSV 生成完毕，未修改任何应用源代码
 
+## Phase 4A-6-22: Critical QA Bug Triage — Preprocessing Integrity & Path Clustering Timeout
+
+- **目标**: 修复手动 QA 发现的两个严重问题：预处理模块自动保存缺陷 + 路径聚类超时。
+- **修改文件**:
+  - `insightease-backend/app/api/v1/endpoints/analysis.py` — 新增 `normalize_missing_values()` 助手；`smart_process` 支持 `preview_only` 参数；缺失值规范化在计数和填充前执行
+  - `insightease-backend/app/services/path_analysis_service.py` — 路径聚类增加 `max_sessions=1000` 上限和随机采样；修复 `combined_entropy` 计算 bug；采样时返回警告
+  - `app/src/pages/SmartProcess.tsx` — 主按钮改为"预览处理"；预览完成后显示"保存结果"按钮；预览不传 `output_dataset_id`，保存才持久化
+- **根因分析**:
+  1. **自动保存**: `smart_process` 后端在分析任务中直接写文件 + 创建 Dataset DB 记录，没有预览/保存区分
+  2. **缺失值检测**: 仅使用 `df.isnull()`，字符串 token（`null`, `N/A`, `-`, `unknown`, `无`, `缺失`）未被识别为缺失
+  3. **聚类超时**: 无用户数量上限；`combined_entropy` 嵌套生成器表达式存在变量遮蔽和重复 Counter 构造
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 20.22s。
+
 ## 下一步建议
 
 ### 立即执行

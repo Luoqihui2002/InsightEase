@@ -7,7 +7,8 @@ import {
   Filter,
   AlertTriangle,
   FileSpreadsheet,
-  RotateCcw
+  RotateCcw,
+  Save
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,7 @@ interface ProcessResult {
   outliersRemoved: number;
   outputDatasetId?: string;
   outputDatasetName?: string;
+  previewOnly?: boolean;
 }
 
 export function SmartProcess() {
@@ -119,7 +121,7 @@ export function SmartProcess() {
     setConfig(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleProcess = async () => {
+  const handleProcess = async (previewOnly = true) => {
     if (!selectedDataset) {
       toast.error('请先选择数据集');
       return;
@@ -129,15 +131,16 @@ export function SmartProcess() {
     setShowResult(false);
     setProcessResult(null);
 
+
     try {
       const res = await analysisApi.create({
         dataset_id: selectedDataset,
         analysis_type: 'smart_process',
-        params: config
+        params: { ...config, preview_only: previewOnly }
       }) as any;
 
       if ((res.code === 202 || res.code === 200) && res.data?.id) {
-        await pollResult(res.data.id);
+        await pollResult(res.data.id, previewOnly);
       } else {
         throw new Error(res.message || '处理启动失败');
       }
@@ -147,7 +150,7 @@ export function SmartProcess() {
     }
   };
 
-  const pollResult = async (analysisId: string) => {
+  const pollResult = async (analysisId: string, previewOnly: boolean) => {
     const maxAttempts = 60;
     let attempts = 0;
 
@@ -169,11 +172,16 @@ export function SmartProcess() {
             outliersRemoved: res.data.result_data?.outliers_removed || 0,
             outputDatasetId: res.data.result_data?.output_dataset_id,
             outputDatasetName: res.data.result_data?.output_dataset_name,
+            previewOnly: res.data.result_data?.preview_only ?? previewOnly,
           };
           setProcessResult(result);
           setShowResult(true);
           setIsProcessing(false);
-          toast.success('数据处理完成！已生成新的数据集');
+          if (previewOnly) {
+            toast.success('预览处理完成，请检查效果后决定是否保存');
+          } else {
+            toast.success('数据处理完成！已生成新的数据集');
+          }
           return;
         } else if (res.data?.status === 'failed') {
           throw new Error(res.data.error_msg || '处理失败');
@@ -255,7 +263,7 @@ export function SmartProcess() {
               <Button
                 variant="default"
                 className="w-full"
-                onClick={handleProcess}
+                onClick={() => handleProcess(true)}
                 disabled={isProcessing || !selectedDataset}
               >
                 {isProcessing ? (
@@ -266,7 +274,7 @@ export function SmartProcess() {
                 ) : (
                   <>
                     <Wand2 className="w-4 h-4 mr-2" />
-                    开始处理
+                    预览处理
                   </>
                 )}
               </Button>
@@ -456,6 +464,8 @@ export function SmartProcess() {
           emptyDescription="处理后将生成新的数据集"
           actions={showResult && processResult?.outputDatasetId ? (
             <AnalysisActionBar onDownload={handleDownload} />
+          ) : showResult && processResult?.previewOnly ? (
+            <div className="text-xs text-[var(--text-muted)]">预览模式 — 尚未保存</div>
           ) : undefined}
         >
           {showResult && (
@@ -465,7 +475,7 @@ export function SmartProcess() {
                 <CardHeader>
                   <CardTitle className="text-lg text-[var(--text-primary)] flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-[var(--neon-green)]" />
-                    处理完成
+                    {processResult?.previewOnly ? '预览完成' : '处理完成'}
                     {processResult?.outputDatasetName && (
                       <span className="text-sm font-normal text-[var(--text-muted)]">
                         - {processResult.outputDatasetName}
@@ -475,7 +485,9 @@ export function SmartProcess() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-[var(--text-secondary)] mb-4">
-                    已生成新的处理后的数据集。您可以在数据集列表中查看，或下载处理后的文件。
+                    {processResult?.previewOnly
+                      ? '预览处理完成，当前结果尚未保存。确认效果后点击"保存结果"以持久化。'
+                      : '已生成新的处理后的数据集。您可以在数据集列表中查看，或下载处理后的文件。'}
                   </p>
                   
                   {/* 数据对比 */}
@@ -549,13 +561,29 @@ export function SmartProcess() {
 
               {/* 操作按钮 */}
               <div className="flex gap-3">
-                <Button
-                  variant="default"
-                  className="flex-1"
-                  onClick={handleDownload}
-                >
-                  下载处理后数据
-                </Button>
+                {processResult?.previewOnly ? (
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={() => handleProcess(false)}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    保存结果
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={handleDownload}
+                  >
+                    下载处理后数据
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="flex-1"
