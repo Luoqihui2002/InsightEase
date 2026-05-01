@@ -620,3 +620,44 @@
 - `Dashboard.tsx` / `History.tsx`：11 个 icon-only 按钮从自定义 `<button>` → `<Button variant="ghost" size="icon">` + `aria-label`
 - `GoalPlanner.tsx`：补全缺失的 `import { Button } from "@/components/ui/button"`
 - 零业务逻辑变更，零 API 变更
+
+## Phase 4B-1: AI Data Assistant Design Document
+
+- 产出 `docs/design/AI_DATA_ASSISTANT_DESIGN.md`
+- 定义 6 个能力模块：Dataset Profiler、Table Classifier、Column Role Detector、Relationship Inference Engine、Analysis Planner、Result Explainer
+- 定义核心契约：`DatasetProfile`、`TableClassification`、`TableRelationship`、`AssistantAnalysisPlan`
+- 设计 5 个核心用户场景：数据集理解、多表关系推断、分析推荐、引导分析配置、结果解释
+- 安全原则：元数据优先、样本行显式 opt-in、推断关系需用户确认、禁止自动修改数据集
+- 实施路线图：4B-2 → 4B-3 → 4B-4 → 4B-5 → 4B-6 → 4B-7
+- 零代码变更
+
+## Phase 4B-2: Dataset Profile Contract + Metadata Service
+
+- 新增 `app/src/types/assistant.ts` — 前端 TypeScript 契约（snake_case）
+- 新增 `app/src/api/assistant.ts` — API 客户端 `assistantApi.profileDataset()`
+- 新增 `insightease-backend/app/services/assistant_profile_service.py` — 确定性启发式画像服务
+- 新增 `insightease-backend/app/api/v1/endpoints/assistant.py` — `POST /assistant/profile-dataset`
+- 字段角色检测：17 种角色，基于列名模式 + dtype + 唯一值率 + 空值率
+- 表分类：11 种业务实体类型
+- 只读保证：不修改源数据集、不创建新数据集、不触发预处理
+
+## Phase 4B-2B: API Contract Casing Fix
+
+- 将 `app/src/types/assistant.ts` 从 camelCase 统一改为 snake_case
+- 与后端输出和现有项目约定（Dataset、Analysis、FieldSchema 均 snake_case）保持一致
+- 无需映射层，前端直接消费后端返回的 snake_case 数据
+
+## Phase 4B-3: Static Dataset Understanding UI
+
+- 新增 `app/src/components/assistant/DatasetUnderstandingCard.tsx`
+- 集成到 `app/src/pages/Datasets.tsx` 数据集详情对话框
+- 功能：表类型推断、质量警告、字段角色/语义分布、关键字段分组、字段详情表格
+- 后端：纯确定性启发式，零 LLM 调用
+
+## Phase 4B-3C: AI Assistant Workbench UX Audit
+
+- 审计 15 个文件，产出 `docs/PHASE4B3C_AI_ASSISTANT_UX_AUDIT.md`
+- 发现 7 个关键问题、6 个高优先级问题、5 个中优先级问题
+- 关键发现：`AIAssistant.tsx` 死代码；`SmartAnalysis` 大量模拟数据；3 个不共享状态的助手入口；4/5 后端 `/ai` 端点未被调用
+- 推荐方向：统一助手入口、删除死代码、实现预填充导航、优化意图识别
+- 零代码变更

@@ -901,6 +901,29 @@ Upload CSV/Excel
 - **辅助函数**: ROLE_LABELS / SEMANTIC_LABELS / TABLE_TYPE_LABELS / getConfidenceLabel / getRoleIcon / getRoleBadgeColor / getSemanticBadgeColor / KeyColumnGroup
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.41s
 
+## Phase 4B-3C: AI Assistant Workbench UX Audit
+
+- **目标**: 审计当前 AI 助手/工作台交互设计，识别 UX 问题，产出审计报告、状态模型和推荐方向。
+- **范围**: 15 个文件（前端组件/服务/页面 + 后端端点/服务）
+- **方法**: 静态代码审查 + 交互流追踪 + 设计文档差距分析
+- **关键发现**:
+  - `AIAssistant.tsx` 是完全死代码（251 行，0 处引用）
+  - `SmartAnalysis.tsx` 的诊断、预处理、大部分分析均为 `setTimeout` 模拟数据
+  - 3 个互不共享状态的助手入口（AIWorkspace、SmartAnalysis、AICompanion）
+  - 后端 5 个 `/ai/*` 端点中 4 个完全未被前端调用
+  - 伙伴助手使用 `window.location.href` 导致整页刷新
+  - AIWorkspace 的普通对话功能被完全注释掉
+  - 设计文档要求的「预填充导航」零实现
+  - 意图识别对每个用户消息都发送大提示词到 LLM（即使关键词匹配已高置信度命中）
+- **产出**:
+  - `docs/PHASE4B3C_AI_ASSISTANT_UX_AUDIT.md` — 完整审计报告
+  - `docs/phase-logs/phase-4B-3C.md` — 阶段日志
+- **推荐方向**:
+  - 立即：删除死代码、修复伙伴导航、AIWorkspace 背景点击保护
+  - 短期：统一助手入口、实现预填充导航、优化意图识别
+  - 中期：构建 AssistantPanel、实现 Result Explainer、添加关系推断
+- **零代码变更**: 纯审计阶段
+
 ## 下一步建议
 
 ### 立即执行
@@ -909,7 +932,7 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **Phase 4B-3: Static Dataset Understanding UI** — 基于 `DatasetProfile` 的数据集概览卡片
+1. **Phase 4B-3D: 执行审计建议** — 删除死代码、修复导航、优化意图识别
 2. **或继续 ResultChartRenderer 打磨** — tooltip 格式化、ResizeObserver、confidence band
 
 ### 远期规划（不变）
