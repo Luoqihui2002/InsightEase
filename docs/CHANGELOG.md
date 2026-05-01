@@ -339,13 +339,21 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-13: Chart Placeholder Policy & Attribution Cleanup
+
+- 从 `attributionResultAdapter.ts` 移除 chart placeholder block
+- 避免 Attribution 页面同时显示图表占位卡片和真实 ECharts 图表
+- 定义保守策略：页面已在 ResultView 外渲染真实图表时，适配器不再 emit chart placeholder
+- ResultView 通用 chart placeholder fallback 仍保留供未来页面使用
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-12: ResultView Rollout to Attribution Page
 
 - 新增 `app/src/lib/adapters/attributionResultAdapter.ts` — Attribution 结果 → `AnalysisResult`
 - `Attribution.tsx` 接入 `ResultView`：
   - 替换 metric cards + model cards + comparison table
   - 保留 ECharts 对比图表（页面级渲染，未来迁移至 ResultView）
-- 适配器产出：summary + metric + 2 个 table + chart placeholder + warning blocks
+- 适配器产出：summary + metric + 2 个 table + ~~chart placeholder~~ + warning blocks
 - 嵌套 `models` 对象扁平化为表格行（模型 × 触点 × 占比）
 - `summary.model_comparison` 转换为 Top3 对比表
 - 防御性处理：typeof 守卫、Object.keys 校验、稳定 ID

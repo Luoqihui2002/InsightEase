@@ -241,35 +241,11 @@ export function toAttributionAnalysisResult(
     });
   }
 
-  // === Chart placeholder block ===
-  // Prepare chart data for future rendering
-  const chartData: Record<string, unknown>[] = [];
-  for (const [modelKey, modelData] of Object.entries(models)) {
-    if (!modelData || typeof modelData !== "object") continue;
-    for (const [touchpoint, tpData] of Object.entries(modelData)) {
-      const pct =
-        tpData && typeof tpData === "object" && typeof tpData.percentage === "number"
-          ? tpData.percentage
-          : 0;
-      chartData.push({
-        model: modelKey,
-        touchpoint,
-        percentage: pct,
-      });
-    }
-  }
-
-  if (chartData.length > 0) {
-    blocks.push({
-      type: "chart",
-      title: "模型对比分析",
-      chartType: "bar",
-      data: chartData,
-      xKey: "touchpoint",
-      yKeys: ["percentage"],
-      groupKey: "model",
-    });
-  }
+  // === Chart block intentionally omitted ===
+  // The real ECharts comparison chart is rendered in Attribution.tsx
+  // outside ResultView. Emitting a chart placeholder here would create
+  // duplicate UI. Chart blocks will be enabled once ResultChartRenderer
+  // is implemented and the page-level chart is migrated into ResultView.
 
   // === Warning blocks ===
   if (conversionRate < 1) {

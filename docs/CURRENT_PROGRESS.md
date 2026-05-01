@@ -641,6 +641,17 @@ Upload CSV/Excel
   - 货币符号硬编码为 ¥
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 21.64s，无空 `SelectItem value=""`。
 
+## Phase 4A-6-13: Chart Placeholder Policy & Attribution Cleanup
+
+- **目标**: 消除 Attribution 页面中图表占位卡片与真实 ECharts 图表的重复 UI。
+- **问题**: Phase 4A-6-12 的适配器同时 emit 了 chart placeholder block，而 `Attribution.tsx` 页面级别仍保留了真实的 ECharts 对比图表。
+- **策略**:
+  - 保守策略：当页面已在 `ResultView` 外部渲染真实图表时，适配器不再 emit chart placeholder block
+  - `ResultView` 的通用 chart placeholder fallback 仍然保留，供未来页面使用
+- **修改文件**:
+  - `app/src/lib/adapters/attributionResultAdapter.ts` — 移除 chart placeholder block，添加说明注释
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.10s。
+
 ## Phase 4A-6-12: ResultView Rollout to Attribution Page
 
 - **目标**: 将 `ResultView` 推广到 Attribution 页面，验证 schema 对复杂分析结果（嵌套模型数据、对比表、图表元数据）的支持能力。
@@ -653,13 +664,10 @@ Upload CSV/Excel
   - Metric block: 4 KPIs
   - Table block 1: "各模型触点归因" — 将嵌套 `models` 对象扁平化为行（模型 × 触点 × 占比）
   - Table block 2: "各模型 Top3 触点对比" — 来自 `summary.model_comparison`
-  - Chart placeholder: "模型对比分析" bar chart 元数据（未来渲染）
+  - ~~Chart placeholder~~ — 已在 4A-6-13 移除
   - Warning block: 转化率 < 1% 或平均触点数 > 10 时自动触发
 - **保留的 UI**:
-  - ECharts 对比图表 — ResultView 图表块目前仅渲染占位卡片，真实图表保留在页面级别
-- **已知限制**:
-  - 图表占位卡片与真实图表并存（临时状态）
-  - 原 model card 中的进度条被表格替代
+  - ECharts 对比图表 — 保留在页面级别，未来迁移至 ResultView
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.85s。
 
 ## 下一步建议
@@ -671,7 +679,8 @@ Upload CSV/Excel
 ### 随后进入
 
 1. **ResultView 推广到 Forecast / PathAnalysis 页面** — 验证时间序列和漏斗/图结果结构
-2. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
+2. **或实现 ResultChartRenderer** — 在 ResultView 内支持真实图表渲染
+3. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
 
 ### 远期规划（不变）
 

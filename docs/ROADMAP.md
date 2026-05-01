@@ -131,9 +131,18 @@
 - ECharts 图表保留在页面级别（未来迁移）
 - Statistics + Semantic + Attribution 三页面已验证
 
-#### 4A-6-13: ResultView 推广到 Forecast / PathAnalysis（可选后续）
+#### 4A-6-13: Chart Placeholder Policy & Attribution Cleanup ✅
+- 移除 Attribution adapter 中的 chart placeholder block
+- 定义保守策略：避免与页面级真实图表重复
+- ResultView 通用 chart fallback 仍保留
+
+#### 4A-6-14: ResultView 推广到 Forecast / PathAnalysis（可选后续）
 - 验证时间序列和漏斗/图结果结构
 - 每个页面需要独立适配器
+
+#### 4A-6-15: ResultChartRenderer 实现（可选后续）
+- 在 ResultView 内支持真实 ECharts 图表渲染
+- 迁移页面级图表到 ResultView 内部
 
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
 - 纯研究文档，不实现
