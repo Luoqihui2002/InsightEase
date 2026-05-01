@@ -185,7 +185,41 @@
 - 修复缺失值检测：字符串 token（`null`, `N/A`, `-`, `unknown` 等）统一替换为 NaN
 - 修复路径聚类超时：增加 `max_sessions=1000` 采样上限，修复 `combined_entropy` 计算 bug
 
-#### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
+### Phase 4B: AI Data Assistant（当前阶段）
+
+#### 4B-1: Product & Architecture Design ✅
+- 产出 `docs/design/AI_DATA_ASSISTANT_DESIGN.md`
+- 定义 6 个能力模块、核心契约、集成策略、安全原则、实施路线图
+- 纯文档阶段，零代码变更
+
+#### 4B-2: Dataset Profile Contract & Metadata Service
+- 定义 `DatasetProfile` / `ColumnProfile` 类型
+- 添加静态 profiling 后端端点
+- 无 AI 调用
+
+#### 4B-3: Static Dataset Understanding UI
+- 基于启发式规则的数据集概览卡片
+- 字段角色检测（非 LLM）
+
+#### 4B-4: Assistant Panel Mock UI
+- 助手面板 UI 框架
+- Mock 响应验证交互流程
+
+#### 4B-5: Analysis Plan Generator Mock
+- 模板/关键词匹配的分析计划生成
+- 链接推荐模块
+
+#### 4B-6: Real AI Integration
+- 元数据优先的 LLM 调用
+- 结构化 JSON 输出
+
+#### 4B-7: Result Explainer
+- 解释 `AnalysisResult` 块
+- 建议下一步分析
+
+---
+
+#### Phase 4C: DataWorkshop 组件拆分（后续）
 - 纯研究文档，不实现
 - 分析 PathAnalysis、Forecast、Attribution 结果表共性
 - 规划 ResultTableShell / ResultTable / MetricComparisonTable API

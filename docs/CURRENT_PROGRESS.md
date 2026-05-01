@@ -834,6 +834,22 @@ Upload CSV/Excel
   3. **聚类超时**: 无用户数量上限；`combined_entropy` 嵌套生成器表达式存在变量遮蔽和重复 Counter 构造
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 20.22s。
 
+## Phase 4B-1: AI Data Assistant Product & Architecture Design
+
+- **目标**: 设计 InsightEase AI Data Assistant 的产品形态和架构。
+- **新增文件**:
+  - `docs/design/AI_DATA_ASSISTANT_DESIGN.md` — 主设计文档
+- **设计要点**:
+  - 定义产品目标：数据集理解、表分类、字段角色检测、关系推断、分析推荐、结果解释
+  - 定义 6 个能力模块：Dataset Profiler、Table Classifier、Column Role Detector、Relationship Inference Engine、Analysis Planner、Result Explainer
+  - 定义核心契约：`DatasetProfile`、`ColumnProfile`、`TableClassification`、`TableRelationship`、`AssistantAnalysisPlan`
+  - 集成策略：助手推荐映射到现有分析页面（Statistics / Semantic / PathAnalysis / Forecast / Attribution / SmartProcess），支持配置预填充
+  - ResultView 集成：助手消费 `AnalysisResult` 块进行解释，未来助手响应本身可渲染为兼容块
+  - 安全与隐私：元数据优先、样本行显式 opt-in、推断关系需用户确认、禁止自动修改数据集
+  - Hermes Agent 定位：仅作为未来可能的执行层，核心契约独立于任何 Agent 运行时
+  - 实施路线图：4B-2 元数据服务 → 4B-3 静态理解 UI → 4B-4 面板 Mock → 4B-5 计划 Mock → 4B-6 真实 AI 集成 → 4B-7 结果解释器
+- **零代码变更**: 纯文档阶段，未修改任何应用源代码或 package 文件
+
 ## 下一步建议
 
 ### 立即执行
@@ -842,12 +858,13 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **Phase 4B: AI Assistant Upgrade / Hermes Agent** — 结果渲染架构已基本统一，可开始设计 AI 助手
-2. **或继续 ResultChartRenderer 打磨** — tooltip 格式化、ResizeObserver、confidence band
+1. **Phase 4B-2: Dataset Profile Contract & Metadata Service** — 定义共享类型，添加静态 profiling 端点
+2. **Phase 4B-3: Static Dataset Understanding UI** — 基于启发式规则的数据集概览卡片
+3. **或继续 ResultChartRenderer 打磨** — tooltip 格式化、ResizeObserver、confidence band
 
 ### 远期规划（不变）
 
-- Phase 4B: AI Assistant Upgrade / Hermes Agent
+- Phase 4B: AI Data Assistant
 - Phase 4C: DataWorkshop 组件拆分
 - Phase 5: Dashboard & ECharts Upgrade
 

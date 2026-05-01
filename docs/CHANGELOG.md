@@ -71,6 +71,19 @@
 - 更新 `ARCHITECTURE_DECISIONS.md` 至 v2.0
 - 浏览器端到端回归测试待人工验证
 
+## Phase 4B-1: AI Data Assistant Design
+
+- **目标**: 设计 InsightEase AI Data Assistant 的产品形态和架构。
+- **新增文件**:
+  - `docs/design/AI_DATA_ASSISTANT_DESIGN.md` — 产品问题定义、目标、用户场景、6 个能力模块、元数据契约、表分类/关系/分析计划契约、集成策略、安全隐私、Hermes Agent 定位、6 阶段实施路线图
+- **设计要点**:
+  - 6 个能力模块：Dataset Profiler、Table Classifier、Column Role Detector、Relationship Inference Engine、Analysis Planner、Result Explainer
+  - 核心契约：`DatasetProfile`、`ColumnProfile`、`TableClassification`、`TableRelationship`、`AssistantAnalysisPlan`
+  - 集成现有模块：推荐映射到 Statistics / Semantic / PathAnalysis / Forecast / Attribution / SmartProcess，支持预填充配置
+  - 安全：元数据优先、样本行显式 opt-in、推断关系需确认、禁止自动修改数据
+  - 路线图：4B-2 元数据服务 → 4B-3 静态 UI → 4B-4 Mock 面板 → 4B-5 Mock 计划 → 4B-6 AI 集成 → 4B-7 结果解释器
+- **零代码变更**: 纯文档阶段
+
 ## Phase 4A-6-22: Critical QA Bug Triage
 
 - **目标**: 修复手动 QA 发现的预处理自动保存缺陷和路径聚类超时问题。
