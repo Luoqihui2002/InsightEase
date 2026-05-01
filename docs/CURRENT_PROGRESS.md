@@ -968,6 +968,46 @@ Upload CSV/Excel
   - 更新上传完成文案：「查看数据理解 / 进入数据工坊 / 稍后再说」
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.34s
 
+## Phase 4B-3G: AI Workbench Layout Polish + Companion Drag Restore + Avatar Color Harmony
+
+- **目标**: 恢复拖拽和双击打开工作台；替换 `KimiAvatar`；打磨 AIWorkspace 布局；校准头像颜色。
+- **内容**:
+  - `AICompanion.tsx`: 恢复 `onPointerDown/Move/Up` 拖拽、`onDoubleClick` 打开工作台、localStorage 持久化
+  - `AssistantAvatar.tsx`: 从 Tailwind 线性渐变改为 inline 径向渐变，尝试统一 cyan-aqua 调色板
+  - `AIWorkspace.tsx`: `KimiAvatar` → `AssistantAvatar`；新增快速提问芯片；改善无数据集空状态
+- **已知问题（后续发现）**:
+  - 悬停时 `onPointerMove` 误触发拖拽（`dragStartRef` 默认 `{0,0}`，未校验 pointer down）
+  - 头像颜色仍不协调，像「独立玩具球」
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.13s
+
+## Phase 4B-3H: AI Companion Hover Bug Fix + Avatar Color Recalibration
+
+- **目标**: 修复 4B-3G 引入的悬停消失 bug 和头像颜色不协调问题。
+- **Hover Bug 修复**:
+  - 定位从 `right/bottom` 偏移数学改为显式 `left/top` 像素坐标
+  - 新增 `isValidPosition()` + 加载时 clamp，非法 localStorage 自动回退默认位置
+  - tooltip / 脉冲环加上 `pointer-events-none`，防止偷走指针事件
+  - `onMouseEnter/Leave` 移到 orb 外层独立 wrapper，与 pointer drag 隔离
+- **颜色重新校准**:
+  - 所有 9 个 variant 统一共享 `CORE` 品牌调色板（cyan-aqua-blue）
+  - variant 只做极 subtle 的中色调偏移，不再整球换色
+  - 降低饱和度、统一光晕、柔化高光
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.29s
+
+## Phase 4B-3I: Companion Drag Intent Fix & Workbench Split Layout Correction
+
+- **目标**: 修复悬停误触发拖拽的问题，校正 AI Workbench 分栏布局方向。
+- **Drag Intent 修复**:
+  - 新增 `pointerDownRef`：只有 pointer down 后移动超过阈值才算拖拽
+  - `onPointerMove` 无 pointer down 时直接返回，彻底杜绝悬停即拖拽
+  - 新增 `suppressDoubleClickRef`：拖拽结束后 250ms 内抑制双击，避免释放即打开
+  - 拖拽状态全部用 ref，避免 drag 过程中不必要的 re-render
+- **Workbench 布局校正**:
+  - 关闭按钮：增大对比度，添加 `aria-label`，使用显式边框 + hover 背景
+  - 左右分栏：AI 工作台在左(62%)，数据预览在右(38%)（原先是反的）
+  - 布局切换按钮 tooltip 同步更新描述
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.99s
+
 ## 下一步建议
 
 ### 立即执行

@@ -2,9 +2,10 @@
  * AI Companion — 可拖拽启动器 + 紧凑通知
  *
  * 交互：
- *   拖动   →  reposition orb (left/top px)
- *   双击   →  open AIWorkspace
- *   通知   →  compact card above launcher, never morphs into input
+ *   悬停    →  tooltip 提示
+ *   拖动    →  按下 + 移动超过阈值后 reposition orb
+ *   双击    →  open AIWorkspace
+ *   通知    →  compact card above launcher, never morphs into input
  *
  * 禁止：input / chat / typing / capsule / freeform
  */
@@ -19,6 +20,7 @@ import { AssistantAvatar } from '@/components/assistant/AssistantAvatar';
 const POSITION_KEY = 'insightease_ai_companion_position';
 const ORB_SIZE = 64; // w-16 = 64px
 const MARGIN = 20;
+const DRAG_THRESHOLD = 5;
 
 function getDefaultPosition() {
   return {
@@ -48,8 +50,17 @@ export function AICompanion() {
 
   // ===== 拖拽位置（left/top 像素坐标） =====
   const [position, setPosition] = useState(getDefaultPosition);
-  const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
-  const isDraggingRef = useRef(false);
+
+  // 拖拽意图状态（全部用 ref 避免 hover/ drag 过程中的不必要的 re-render）
+  const pointerDownRef = useRef(false);
+  const dragStartedRef = useRef(false);
+  const suppressDoubleClickRef = useRef(false);
+  const dragOriginRef = useRef<{
+    pointerX: number;
+    pointerY: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
 
   // 从 localStorage 恢复位置（带校验 + clamp）
   useEffect(() => {
@@ -68,11 +79,10 @@ export function AICompanion() {
         // ignore corrupt data
       }
     }
-    // 无保存数据或数据损坏：使用默认位置
     setPosition(getDefaultPosition());
   }, []);
 
-  // 持久化位置
+  // 持久化位置（仅在拖拽结束后由 pointer up 触发一次即可，但 useEffect 兜底）
   useEffect(() => {
     localStorage.setItem(POSITION_KEY, JSON.stringify(position));
   }, [position]);
@@ -90,54 +100,66 @@ export function AICompanion() {
   }, []);
 
   // ===== 拖拽事件 =====
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    isDraggingRef.current = false;
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      posX: position.x,
-      posY: position.y,
-    };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  }, [position.x, position.y]);
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      pointerDownRef.current = true;
+      dragStartedRef.current = false;
+      dragOriginRef.current = {
+        pointerX: e.clientX,
+        pointerY: e.clientY,
+        startX: position.x,
+        startY: position.y,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [position.x, position.y]
+  );
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    const dx = e.clientX - dragStartRef.current.x;
-    const dy = e.clientY - dragStartRef.current.y;
+    if (!pointerDownRef.current || !dragOriginRef.current) return;
 
-    // 超过阈值才开始算作拖拽
-    if (!isDraggingRef.current && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-      isDraggingRef.current = true;
+    const dx = e.clientX - dragOriginRef.current.pointerX;
+    const dy = e.clientY - dragOriginRef.current.pointerY;
+
+    // 未超过阈值 = 不算拖拽，不更新位置
+    if (!dragStartedRef.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) {
+      return;
     }
 
-    if (isDraggingRef.current) {
-      setPosition({
-        x: clamp(
-          dragStartRef.current.posX + dx,
-          MARGIN,
-          window.innerWidth - ORB_SIZE - MARGIN
-        ),
-        y: clamp(
-          dragStartRef.current.posY + dy,
-          MARGIN,
-          window.innerHeight - ORB_SIZE - MARGIN
-        ),
-      });
-    }
+    dragStartedRef.current = true;
+    setPosition({
+      x: clamp(
+        dragOriginRef.current.startX + dx,
+        MARGIN,
+        window.innerWidth - ORB_SIZE - MARGIN
+      ),
+      y: clamp(
+        dragOriginRef.current.startY + dy,
+        MARGIN,
+        window.innerHeight - ORB_SIZE - MARGIN
+      ),
+    });
   }, []);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    // 短暂延迟后清除拖拽标记，避免双击检测误判
-    window.setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 50);
+
+    if (dragStartedRef.current) {
+      // 拖拽结束后短暂抑制双击，避免释放即双击
+      suppressDoubleClickRef.current = true;
+      window.setTimeout(() => {
+        suppressDoubleClickRef.current = false;
+      }, 250);
+    }
+
+    pointerDownRef.current = false;
+    dragStartedRef.current = false;
+    dragOriginRef.current = null;
   }, []);
 
   const handleDoubleClick = useCallback(() => {
-    if (!isDraggingRef.current) {
-      executeAction('open-chat');
-    }
+    if (suppressDoubleClickRef.current) return;
+    executeAction('open-chat');
   }, [executeAction]);
 
   const handleAction = useCallback(
@@ -244,7 +266,8 @@ export function AICompanion() {
                 transition={{ duration: 1.2 }}
                 className="absolute inset-0 rounded-full pointer-events-none"
                 style={{
-                  background: 'radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)',
+                  background:
+                    'radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)',
                 }}
               />
             )}

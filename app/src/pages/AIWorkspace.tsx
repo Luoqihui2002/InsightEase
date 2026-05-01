@@ -2,8 +2,8 @@
  * AI 工作台 - Phase 3.0 智能分析版本
  * 
  * 布局说明：
- * - 上下布局(vertical)：数据预览在上，AI对话在下
- * - 左右布局(horizontal)：数据预览在左(35%)，AI对话在右(65%)
+ * - 上下布局(vertical)：数据预览在上，AI工作台在下
+ * - 左右布局(horizontal)：AI工作台在左(62%)，数据预览在右(38%)
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -521,108 +521,66 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ========== 关闭按钮（移到左上角避免重叠）========== */}
+        {/* ========== 关闭按钮 ========== */}
         <button
           onClick={onClose}
-          className="absolute top-3 left-3 z-50 p-2 rounded-full bg-[var(--bg-tertiary)]/50 hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+          aria-label="关闭 AI 工作台"
+          className={cn(
+            "absolute top-3 left-3 z-50",
+            "h-9 w-9 flex items-center justify-center",
+            "rounded-xl border border-white/10",
+            "bg-white/5 text-[var(--text-secondary)]",
+            "hover:bg-white/10 hover:text-white hover:border-white/20",
+            "transition-colors"
+          )}
         >
           <X className="w-4 h-4" />
         </button>
 
-        {/* ========== 数据预览区域 ========== */}
-        {mainLayout === 'vertical' ? (
-          // 上下布局：数据预览在上方
-          <>
-            {showPreview && datasetPreview && (
-              <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex-shrink-0">
-                {/* 数据预览头部 */}
-                <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
-                  <h3 className="text-sm font-medium text-[var(--text-primary)]">
-                    数据预览（前5行 / 共{datasetPreview.totalRows}行）
-                  </h3>
-                  <button 
-                    onClick={() => setShowPreview(false)}
-                    className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                  >
-                    收起
-                  </button>
-                </div>
-                {/* 数据表格 */}
-                <div className="p-3 overflow-x-auto" style={{ maxHeight: '200px' }}>
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-[var(--border-subtle)]">
-                        {datasetPreview.columns.map(col => (
-                          <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
-                            {col}
-                            <span className="ml-1 text-[10px] opacity-60">
-                              ({datasetPreview?.columnTypes[col] || 'unknown'})
-                            </span>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {datasetPreview.rows.map((row, idx) => (
-                        <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
-                          {datasetPreview.columns.map(col => (
-                            <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
-                              {row[col] ?? '-'}
-                            </td>
-                          ))}
-                        </tr>
+        {/* ========== 上下布局：数据预览在上方 ========== */}
+        {mainLayout === 'vertical' && showPreview && datasetPreview && (
+          <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex-shrink-0">
+            {/* 数据预览头部 */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
+              <h3 className="text-sm font-medium text-[var(--text-primary)]">
+                数据预览（前5行 / 共{datasetPreview.totalRows}行）
+              </h3>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              >
+                收起
+              </button>
+            </div>
+            {/* 数据表格 */}
+            <div className="p-3 overflow-x-auto" style={{ maxHeight: '200px' }}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-[var(--border-subtle)]">
+                    {datasetPreview.columns.map(col => (
+                      <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
+                        {col}
+                        <span className="ml-1 text-[10px] opacity-60">
+                          ({datasetPreview?.columnTypes[col] || 'unknown'})
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {datasetPreview.rows.map((row, idx) => (
+                    <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
+                      {datasetPreview.columns.map(col => (
+                        <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
+                          {row[col] ?? '-'}
+                        </td>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          // 左右布局：数据预览在左侧
-          <>
-            {showPreview && datasetPreview && (
-              <div className="w-[38%] border-r border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex flex-col">
-                {/* 数据预览头部 */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
-                  <h3 className="text-sm font-medium text-[var(--text-primary)]">
-                    数据预览
-                  </h3>
-                  <span className="text-xs text-[var(--text-muted)]">
-                    共{datasetPreview.totalRows}行
-                  </span>
-                </div>
-                {/* 数据表格 */}
-                <div className="flex-1 overflow-auto p-3">
-                  <table className="w-full text-xs">
-                    <thead className="sticky top-0 bg-[var(--bg-tertiary)]">
-                      <tr className="border-b border-[var(--border-subtle)]">
-                        {datasetPreview.columns.map(col => (
-                          <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
-                            {col}
-                            <span className="ml-1 text-[10px] opacity-60">
-                              ({datasetPreview?.columnTypes[col] || 'unknown'})
-                            </span>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {datasetPreview.rows.map((row, idx) => (
-                        <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
-                          {datasetPreview.columns.map(col => (
-                            <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
-                              {row[col] ?? '-'}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
 
         {/* ========== AI 对话区域 ========== */}
@@ -666,7 +624,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                   "p-1.5 rounded transition-colors",
                   mainLayout === 'horizontal' ? "bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
-                title="左右排版（数据预览在左侧）"
+                title="左右排版（AI工作台在左，数据预览在右）"
               >
                 <Columns2 className="w-4 h-4" />
               </button>
@@ -678,7 +636,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                   "p-1.5 rounded transition-colors",
                   mainLayout === 'vertical' ? "bg-[var(--neon-cyan)]/20 text-[var(--neon-cyan)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
-                title="上下排版（数据预览在上方）"
+                title="上下排版（数据预览在上，AI工作台在下）"
               >
                 <Rows2 className="w-4 h-4" />
               </button>
@@ -980,6 +938,49 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             </motion.div>
           )}
         </div>
+
+        {/* ========== 左右布局：数据预览在右侧 ========== */}
+        {mainLayout === 'horizontal' && showPreview && datasetPreview && (
+          <div className="w-[38%] border-l border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex flex-col">
+            {/* 数据预览头部 */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
+              <h3 className="text-sm font-medium text-[var(--text-primary)]">
+                数据预览
+              </h3>
+              <span className="text-xs text-[var(--text-muted)]">
+                共{datasetPreview.totalRows}行
+              </span>
+            </div>
+            {/* 数据表格 */}
+            <div className="flex-1 overflow-auto p-3">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-[var(--bg-tertiary)]">
+                  <tr className="border-b border-[var(--border-subtle)]">
+                    {datasetPreview.columns.map(col => (
+                      <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
+                        {col}
+                        <span className="ml-1 text-[10px] opacity-60">
+                          ({datasetPreview?.columnTypes[col] || 'unknown'})
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {datasetPreview.rows.map((row, idx) => (
+                    <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
+                      {datasetPreview.columns.map(col => (
+                        <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
+                          {row[col] ?? '-'}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </motion.div>
     </div>
   );

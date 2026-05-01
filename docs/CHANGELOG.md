@@ -685,3 +685,31 @@
   - 保留 `companion-navigate` 事件导航（4B-3D 修复不回归）
   - 上传完成通知文案改为「查看数据理解 / 进入数据工坊 / 稍后再说」
 - 验证: `tsc --noEmit` 0 errors, `npm run build` built in 19.34s
+
+## Phase 4B-3G: AI Workbench Layout Polish + Companion Drag Restore + Avatar Color Harmony
+
+- `AICompanion.tsx`: 恢复拖拽 + 双击打开工作台 + localStorage 持久化
+- `AssistantAvatar.tsx`: Tailwind 线性渐变 → inline 径向渐变，尝试统一 cyan-aqua 调色板
+- `AIWorkspace.tsx`: `KimiAvatar` → `AssistantAvatar`；新增快速提问芯片；改善无数据集空状态
+- 验证: `tsc --noEmit` 0 errors, `npm run build` built in 19.13s
+
+## Phase 4B-3H: AI Companion Hover Bug Fix + Avatar Color Recalibration
+
+- `AICompanion.tsx`:
+  - 定位改为显式 `left/top` 像素坐标，新增 `isValidPosition()` + 加载时 clamp
+  - tooltip / 脉冲环添加 `pointer-events-none`
+  - `onMouseEnter/Leave` 与 pointer drag 事件隔离
+- `AssistantAvatar.tsx`: 所有 variant 统一共享 `CORE` 品牌调色板，降低饱和度，统一光晕
+- 验证: `tsc --noEmit` 0 errors, `npm run build` built in 19.29s
+
+## Phase 4B-3I: Companion Drag Intent Fix & Workbench Split Layout Correction
+
+- `AICompanion.tsx`:
+  - 新增 `pointerDownRef`：只有 pointer down 后移动超过阈值才算拖拽，彻底杜绝悬停即拖拽
+  - 新增 `suppressDoubleClickRef`：拖拽结束后 250ms 内抑制双击
+  - 拖拽状态全部改用 ref，避免 drag 过程中不必要的 re-render
+- `AIWorkspace.tsx`:
+  - 关闭按钮增大对比度，添加 `aria-label`，显式边框 + hover 背景
+  - 左右分栏方向校正：AI 工作台在左(62%)，数据预览在右(38%)
+  - 布局切换按钮 tooltip 同步更新
+- 验证: `tsc --noEmit` 0 errors, `npm run build` built in 18.99s
