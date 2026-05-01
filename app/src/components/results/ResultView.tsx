@@ -4,6 +4,7 @@ import { ResultMetricBlock } from "./ResultMetricBlock";
 import { ResultTableRenderer } from "./ResultTableRenderer";
 import { ResultWarningBlock } from "./ResultWarningBlock";
 import { ResultTextBlock } from "./ResultTextBlock";
+import { ResultChartRenderer } from "./ResultChartRenderer";
 import { Database, Clock } from "lucide-react";
 
 interface ResultViewProps {
@@ -173,16 +174,7 @@ function BlockDispatcher({
     case "text":
       return <ResultTextBlock block={block} />;
     case "chart":
-      return (
-        <div className="rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-tertiary)] p-6 text-center">
-          <p className="text-sm text-[var(--text-muted)]">
-            图表块占位符：{block.title ?? "未命名图表"}
-          </p>
-          <p className="text-xs text-[var(--text-muted)] mt-1">
-            类型: {block.chartType} — 图表渲染将在未来阶段实现
-          </p>
-        </div>
-      );
+      return <ResultChartRenderer block={block} />;
     default: {
       // Safe fallback for unknown block types
       const unknownType = (block as Record<string, unknown>).type;

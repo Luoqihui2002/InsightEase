@@ -754,6 +754,28 @@ Upload CSV/Excel
   - 明确非目标：本阶段不实现、不迁移、不修改 adapter、不添加依赖
 - **验证**: `git status` 确认仅 docs/ 文件变动，无源代码修改
 
+## Phase 4A-6-18: Basic ResultChartRenderer Implementation
+
+- **目标**: 实现 `ResultChartRenderer`，支持 P0 图表类型（line、bar、area）。
+- **新增文件**:
+  - `app/src/components/results/ResultChartRenderer.tsx` — 主图表渲染器
+  - `app/src/components/results/charts/BaseEChart.tsx` — ECharts 生命周期包装器
+  - `app/src/components/results/charts/buildChartOption.ts` — line/bar/area option 构建器
+  - `app/src/components/results/charts/chartTypes.ts` — 图表类型注册表
+- **修改文件**:
+  - `app/src/types/result.ts` — `ResultChartBlock.chartType`  union 增加 `"area"`
+  - `app/src/components/results/ResultView.tsx` — 图表块由 inline placeholder 改为 `<ResultChartRenderer />`
+  - `app/src/components/results/index.ts` — 导出 `ResultChartRenderer`
+- **实现要点**:
+  - `BaseEChart`: lazy init（容器有非零尺寸才初始化）、setOption 更新、unmount dispose、window resize 监听
+  - `buildChartOption`: 从 `xKey`/`yKeys` 提取数据，应用 `getChartColors()` 主题色
+  - Line: 标准折线；Bar: 标准柱状；Area: 折线 + 垂直渐变 `areaStyle`
+  - 多 series 时自动显示 legend；category > 12 时 x 轴标签自动旋转
+  - 支持 adapter 传入 `echartsOptions` 覆盖（浅合并）
+  - 不支持的类型渲染安全 placeholder："图表类型暂未支持：{type}"
+- **未迁移页面**: Forecast/Attribution/PathAnalysis 页面图表保持原样
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 19.52s。index chunk +~4 kB，vendor-echarts 不变。
+
 ## 下一步建议
 
 ### 立即执行

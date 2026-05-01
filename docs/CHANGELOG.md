@@ -339,6 +339,18 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-18: Basic ResultChartRenderer Implementation
+
+- 新增 `ResultChartRenderer.tsx` — 主图表渲染器，支持 line/bar/area
+- 新增 `charts/BaseEChart.tsx` — ECharts 生命周期包装器（init/setOption/dispose/resize）
+- 新增 `charts/buildChartOption.ts` — line/bar/area option 构建器，应用主题色
+- 新增 `charts/chartTypes.ts` — 支持的图表类型注册表
+- `ResultView.tsx` 图表块由 placeholder 改为 `ResultChartRenderer`
+- `types/result.ts` 增加 `"area"` 到 `chartType` union
+- 不支持的类型（funnel/sankey/graph/scatter 等）渲染安全 placeholder
+- 未迁移任何页面图表
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-17: ResultChartRenderer Design Document
 
 - 创建 `docs/design/RESULT_CHART_RENDERER_DESIGN.md`

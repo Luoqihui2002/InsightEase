@@ -163,6 +163,7 @@ export interface ResultChartBlock {
   chartType:
     | "bar"
     | "line"
+    | "area"
     | "scatter"
     | "pie"
     | "histogram"
