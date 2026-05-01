@@ -103,9 +103,15 @@
 - 3 个示例 payload + 8 阶段实施路线图
 - 零代码变更
 
-#### 4A-6-7 Implementation（可选后续）
-- `app/src/types/result.ts` + `ResultView` + `ResultTableRenderer`
-- 从 Statistics 页面开始试点集成
+#### 4A-6-8: Result Schema + Mock ResultView Skeleton ✅
+- `app/src/types/result.ts` + `app/src/lib/resultFormatters.ts`
+- `ResultView` + `ResultTableRenderer` + `ResultMetricBlock` + `ResultSummaryBlock` + `ResultWarningBlock` + `ResultTextBlock`
+- 3 个 mock payload
+- 图表块占位、未知块安全降级
+
+#### 4A-6-9: ResultView 单页集成试点（可选后续）
+- 从 Statistics 页面开始接入 `ResultView`
+- 逐步替换各分析页面的 ad-hoc 结果渲染
 
 #### Phase 4B: AI Assistant Upgrade / Hermes Agent（下一主要 Phase）
 - 纯研究文档，不实现

@@ -579,15 +579,41 @@ Upload CSV/Excel
 - **未实现**: 零代码变更、零组件实现、零 API 修改
 - **状态**: 设计文档已完成，待未来开发阶段实施
 
+## Phase 4A-6-8: Result Schema + Mock ResultView Skeleton
+
+- **目标**: 实现 Phase 4A-6-7 设计文档的第一个代码层。
+- **新增文件**:
+  - `app/src/types/result.ts` — `AnalysisResult` 共享 schema + 6 种 `ResultBlock` + Column Contract
+  - `app/src/lib/resultFormatters.ts` — 格式化工具（数值/百分比/p-value/货币/日期/布尔/null）
+  - `app/src/mocks/mockAnalysisResults.ts` — 3 个 mock payload（描述统计、A/B 测试、回归分析）
+  - `app/src/components/results/` — 7 个组件
+    - `ResultView.tsx` — 主编排器（header + status banner + block dispatcher + diagnostics footer）
+    - `ResultTableRenderer.tsx` — 表格渲染（含 p-value 高亮、空状态）
+    - `ResultMetricBlock.tsx` — 指标卡片网格
+    - `ResultSummaryBlock.tsx` — 摘要文本 + bullet points
+    - `ResultWarningBlock.tsx` — 警告横幅（info/caution/critical）
+    - `ResultTextBlock.tsx` — 文本块（支持 collapsible）
+    - `index.ts` — barrel export
+- **设计要点**:
+  - `ResultView` 通过 `block.type` switch 分发到各子渲染器
+  - 图表块仅渲染占位卡片（"未来阶段实现"）
+  - 未知块类型安全降级，不 crash
+  - 所有样式使用项目 CSS 变量，零新增 Tailwind 类
+- **已知限制**:
+  - 未接入真实分析页面（独立组件）
+  - 表格未实现分页/排序（schema 已支持，渲染器未实现）
+  - 货币符号硬编码为 ¥
+- **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 21.64s，无空 `SelectItem value=""`。
+
 ## 下一步建议
 
 ### 立即执行
 
 1. **补做 Phase 3G 浏览器端到端回归测试** — 在可连接 RDS 的环境中跑通全部 checklist
 
-### 随后进入 Phase 4A-6 实施
+### 随后进入
 
-1. **ResultTable 实施**（如需继续视觉/工程优化）— `app/src/types/result.ts` + `ResultView` 组件 + `ResultTableRenderer`
+1. **ResultView 单页集成试点** — 从 Statistics 页面开始，将 `ResultView` 接入真实结果渲染
 2. **或转入 Phase 4B**（AI Assistant / Hermes Agent）— 根据产品优先级调整
 
 ### 远期规划（不变）

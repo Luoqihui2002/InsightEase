@@ -339,6 +339,21 @@
 - `ToggleGroupItem` 改为 `w-full justify-start h-14`，移除 `flex-col items-center` 收缩行为
 - 零业务逻辑变更
 
+## Phase 4A-6-8: Result Schema + Mock ResultView Skeleton
+
+- 新增 `app/src/types/result.ts` — `AnalysisResult` 共享 schema + 6 种 `ResultBlock` + Column Contract + `ResultDiagnostics`
+- 新增 `app/src/lib/resultFormatters.ts` — 格式化工具：数值、百分比、p-value、货币、日期、布尔、null 值
+- 新增 `app/src/mocks/mockAnalysisResults.ts` — 3 个 mock payload（描述统计、A/B 测试、回归分析）
+- 新增 `app/src/components/results/` 组件套件：
+  - `ResultView` — 主编排器（header + status + block dispatcher + diagnostics）
+  - `ResultTableRenderer` — 表格渲染（含 p-value 高亮、空状态、footnotes）
+  - `ResultMetricBlock` — 指标卡片网格
+  - `ResultSummaryBlock` — 摘要文本
+  - `ResultWarningBlock` — 警告横幅
+  - `ResultTextBlock` — 文本块（支持 collapsible）
+- 图表块仅渲染占位卡片，未知块类型安全降级
+- 零后端/API 修改、零 package 修改
+
 ## Phase 4A-6-7: ResultTable Design Document
 
 - 产出 `docs/design/RESULT_TABLE_DESIGN.md` — 分析结果统一渲染设计文档
