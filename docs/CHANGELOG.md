@@ -713,3 +713,18 @@
   - 左右分栏方向校正：AI 工作台在左(62%)，数据预览在右(38%)
   - 布局切换按钮 tooltip 同步更新
 - 验证: `tsc --noEmit` 0 errors, `npm run build` built in 18.99s
+
+## Phase 4B-4: Multi-table Relationship Inference Design
+
+- 产出 `docs/design/TABLE_RELATIONSHIP_INFERENCE_DESIGN.md`
+- 定义 `TableRelationship` / `RelationshipEvidence` 输出契约（TypeScript-style，snake_case）
+- 设计 6 信号启发式评分框架：列名相似度(0.35)、角色兼容性(0.25)、类型兼容(0.15)、唯一性信号(0.15)、表类型语义(0.15)、值重叠(0.20)
+- 定义置信度四级：高(>=0.85)/中(0.65-0.85)/低(0.45-0.65)/极低(<0.45)
+- 设计基数推断逻辑：基于 unique_rate 推断 one_to_one / one_to_many / many_to_one / many_to_many
+- 设计用户确认模型：suggested → confirmed / rejected，仅 confirmed 可用于分析规划
+- UI 提案：数据集详情页「相关表」、AI Workbench「理清表关系」、关系列表视图
+- API 提案：`POST /assistant/infer-relationships`
+- 安全约束：默认元数据-only、零 LLM 调用、不自动 join、不确定性显性化
+- 手动 QA 数据集预期关系：8 条高置信度 + 弱关系 + 非关系场景
+- 实施路线图：4B-5 后端服务 → 4B-6 Review UI → 4B-7 Analysis Planner Mock
+- 零代码变更

@@ -210,19 +210,61 @@
 - 在 Datasets 页面详情对话框集成 `DatasetUnderstandingCard`
 - 表类型推断、质量警告、字段分布、关键字段、详情表格
 
-#### 4B-4: Assistant Panel Mock UI
-- 助手面板 UI 框架
-- Mock 响应验证交互流程
+#### 4B-3C: AI Assistant Workbench UX Audit ✅
+- 审计 15 个文件，产出审计报告
+- 识别 7 个关键问题、6 个高优先级问题
+- 零代码变更
 
-#### 4B-5: Analysis Plan Generator Mock
-- 模板/关键词匹配的分析计划生成
-- 链接推荐模块
+#### 4B-3D: AI Assistant Surface Stabilization ✅
+- 删除死代码 `AIAssistant.tsx`
+- `window.location.href` → `companion-navigate` 自定义事件
+- AIWorkspace 移除背景点击关闭、澄清非 LLM 边界
 
-#### 4B-6: Real AI Integration
+#### 4B-3F: AI Companion Hard Reset ✅
+- 严格三态模型：collapsed / notification / workspace_open
+- 删除旧版 320px 气泡卡片、拖拽、第二个头像
+- 新增 `AssistantAvatar.tsx` 球形头像组件
+
+#### 4B-3G: AI Workbench Layout Polish + Companion Drag Restore + Avatar Color Harmony ✅
+- 恢复拖拽 + 双击打开工作台 + localStorage 持久化
+- `KimiAvatar` → `AssistantAvatar`
+- AIWorkspace 快速提问芯片、无数据集空状态改善
+
+#### 4B-3H: AI Companion Hover Bug Fix + Avatar Color Recalibration ✅
+- 定位改为显式 `left/top`，修复悬停消失 bug
+- tooltip / 脉冲环添加 `pointer-events-none`
+- 头像颜色统一为 cyan-aqua-blue 核心调色板
+
+#### 4B-3I: Companion Drag Intent Fix & Workbench Split Layout Correction ✅
+- 新增 `pointerDownRef` 彻底杜绝悬停即拖拽
+- 左右分栏方向校正：AI 工作台在左，数据预览在右
+- 关闭按钮增大对比度
+
+#### 4B-4: Multi-table Relationship Inference Design ✅
+- 产出 `docs/design/TABLE_RELATIONSHIP_INFERENCE_DESIGN.md`
+- 定义关系推断输出契约、评分框架、置信度分级、基数推断
+- 设计用户确认模型、UI 提案、API 提案
+- 定义 QA 数据集预期关系
+- 纯文档阶段，零代码变更
+
+#### 4B-5: Relationship Inference Backend Service（下一Phase）
+- 实现元数据-only 候选生成和评分
+- `POST /assistant/infer-relationships` endpoint
+- 使用手动 QA 数据集验证准确性
+
+#### 4B-6: Relationship Review UI
+- AI Workbench 新增「理清表关系」能力
+- 关系列表/表格视图，支持确认/忽略
+
+#### 4B-7: Relationship-aware Analysis Planner Mock
+- 使用 confirmed 关系建议分析数据需求
+- 模板/关键词匹配，无真实 LLM
+
+#### 4B-8: Real AI Integration（远期）
 - 元数据优先的 LLM 调用
 - 结构化 JSON 输出
 
-#### 4B-7: Result Explainer
+#### 4B-9: Result Explainer（远期）
 - 解释 `AnalysisResult` 块
 - 建议下一步分析
 

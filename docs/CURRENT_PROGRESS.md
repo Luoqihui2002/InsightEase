@@ -1008,6 +1008,23 @@ Upload CSV/Excel
   - 布局切换按钮 tooltip 同步更新描述
 - **验证**: `npx tsc --noEmit` 0 errors，`npm run build` built in 18.99s
 
+## Phase 4B-4: Multi-table Relationship Inference Design
+
+- **目标**: 设计多表关系推断系统（纯文档阶段）。
+- **产出**: `docs/design/TABLE_RELATIONSHIP_INFERENCE_DESIGN.md`
+- **核心设计**:
+  - 输出契约：`TableRelationship` / `RelationshipEvidence`（TypeScript-style）
+  - 评分框架：6 个信号（名称/角色/类型/唯一性/表类型/值重叠），总分上限 1.0
+  - 置信度分级：高(>=0.85)/中(0.65-0.85)/低(0.45-0.65)/极低(<0.45)，对应不同 UI 行为
+  - 基数推断：基于 unique_rate 推断 one_to_one / one_to_many / many_to_one / many_to_many
+  - 用户确认模型：suggested → confirmed / rejected，仅 confirmed 可用于分析规划
+  - UI 提案：数据集详情页「相关表」、AI Workbench「理清表关系」、关系列表视图
+  - API 提案：`POST /assistant/infer-relationships`
+  - 安全约束：默认元数据-only、零 LLM、不自动 join
+  - QA 数据集预期：8 条高置信度关系 + 弱关系 + 非关系场景
+  - 实施路线图：4B-5 后端服务 → 4B-6 Review UI → 4B-7 Analysis Planner Mock
+- **零代码变更**: 纯文档阶段
+
 ## 下一步建议
 
 ### 立即执行
@@ -1016,8 +1033,8 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **Phase 4B-3E: 预填充导航骨架** — 为分析页面添加 query param 解析，使助手推荐可生成预填充链接
-2. **或继续 ResultChartRenderer 打磨** — tooltip 格式化、ResizeObserver、confidence band
+1. **Phase 4B-5: Relationship Inference Backend Service** — 实现元数据-only 候选生成和评分 API
+2. **Phase 4B-6: Relationship Review UI** — 在 AI Workbench 添加关系列表和确认/忽略功能
 
 ### 远期规划（不变）
 
