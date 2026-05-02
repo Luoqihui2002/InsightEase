@@ -247,12 +247,12 @@
 - 定义 QA 数据集预期关系
 - 纯文档阶段，零代码变更
 
-#### 4B-5: Relationship Inference Backend Service（下一Phase）
+#### 4B-5: Relationship Inference Backend Service ✅
 - 实现元数据-only 候选生成和评分
 - `POST /assistant/infer-relationships` endpoint
 - 使用手动 QA 数据集验证准确性
 
-#### 4B-6: Relationship Review UI
+#### 4B-6: Relationship Review UI（下一Phase）
 - AI Workbench 新增「理清表关系」能力
 - 关系列表/表格视图，支持确认/忽略
 

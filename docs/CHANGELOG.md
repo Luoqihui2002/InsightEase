@@ -728,3 +728,20 @@
 - 手动 QA 数据集预期关系：8 条高置信度 + 弱关系 + 非关系场景
 - 实施路线图：4B-5 后端服务 → 4B-6 Review UI → 4B-7 Analysis Planner Mock
 - 零代码变更
+
+## Phase 4B-5: Relationship Inference Backend Service
+
+- 新增 `insightease-backend/app/services/relationship_inference_service.py`
+  - 候选生成：跨数据集比较 key-like 列，排除 metric/text/高 null/类型不兼容列
+  - 评分框架：5 个信号（名称 0.35 / 角色 0.25 / 类型 0.15 / 唯一性 0.15 / 表类型 0.15）
+  - 基数推断：基于 unique_rate 阈值推断 one_to_one / one_to_many / many_to_one / many_to_many / unknown
+  - 方向选择：优先事实表→维度表
+  - 去重：避免同向和反向重复
+  - 中文证据与警告消息
+- 新增 endpoint `POST /assistant/infer-relationships`
+  - 请求：`InferRelationshipsRequest`（dataset_ids, include_value_overlap, max_candidates）
+  - 响应：`ResponseModel[InferRelationshipsResponse]`（relationships, generated_at, warnings）
+- 更新 Pydantic schemas: `RelationshipEvidence`, `TableRelationship`, `InferRelationshipsRequest`, `InferRelationshipsResponse`
+- 前端类型更新: `app/src/types/assistant.ts` 新增关系推断类型
+- 前端 API 更新: `app/src/api/assistant.ts` 新增 `assistantApi.inferRelationships()`
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 21.06s, backend compileall ✅

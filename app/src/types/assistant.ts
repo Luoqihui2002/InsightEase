@@ -89,3 +89,61 @@ export interface ProfileDatasetRequest {
   dataset_id: string;
   include_examples?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Relationship Inference Types
+// ---------------------------------------------------------------------------
+
+export type RelationshipType =
+  | "one_to_one"
+  | "one_to_many"
+  | "many_to_one"
+  | "many_to_many"
+  | "unknown";
+
+export type RelationshipStatus = "suggested" | "confirmed" | "rejected";
+
+export type RelationshipEvidenceType =
+  | "column_name_match"
+  | "role_match"
+  | "type_compatibility"
+  | "uniqueness_signal"
+  | "table_type_signal"
+  | "value_overlap"
+  | "null_rate_check"
+  | "manual_confirmation";
+
+export interface RelationshipEvidence {
+  type: RelationshipEvidenceType;
+  score: number;
+  message: string;
+}
+
+export interface TableRelationship {
+  id: string;
+  source_dataset_id: string;
+  target_dataset_id: string;
+  source_dataset_name: string;
+  target_dataset_name: string;
+  source_column: string;
+  target_column: string;
+  relationship_type: RelationshipType;
+  confidence: number;
+  status: RelationshipStatus;
+  evidence: RelationshipEvidence[];
+  warnings: string[];
+  created_at?: string;
+  confirmed_at?: string;
+}
+
+export interface InferRelationshipsRequest {
+  dataset_ids: string[];
+  include_value_overlap?: boolean;
+  max_candidates?: number;
+}
+
+export interface InferRelationshipsResponse {
+  relationships: TableRelationship[];
+  generated_at: string;
+  warnings: string[];
+}

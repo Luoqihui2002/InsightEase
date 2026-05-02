@@ -74,3 +74,46 @@ class AIInsight(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Relationship Inference Schemas
+# ---------------------------------------------------------------------------
+
+class RelationshipEvidence(BaseModel):
+    """单条关系推断证据"""
+    type: str  # column_name_match, role_match, type_compatibility, uniqueness_signal, table_type_signal, value_overlap, null_rate_check, manual_confirmation
+    score: float
+    message: str
+
+
+class TableRelationship(BaseModel):
+    """表间关系推断结果"""
+    id: str
+    source_dataset_id: str
+    target_dataset_id: str
+    source_dataset_name: str
+    target_dataset_name: str
+    source_column: str
+    target_column: str
+    relationship_type: str  # one_to_one, one_to_many, many_to_one, many_to_many, unknown
+    confidence: float
+    status: str  # suggested, confirmed, rejected
+    evidence: List[RelationshipEvidence]
+    warnings: List[str]
+    created_at: Optional[str] = None
+    confirmed_at: Optional[str] = None
+
+
+class InferRelationshipsRequest(BaseModel):
+    """关系推断请求"""
+    dataset_ids: List[str]
+    include_value_overlap: bool = False
+    max_candidates: int = 200
+
+
+class InferRelationshipsResponse(BaseModel):
+    """关系推断响应"""
+    relationships: List[TableRelationship]
+    generated_at: str
+    warnings: List[str]

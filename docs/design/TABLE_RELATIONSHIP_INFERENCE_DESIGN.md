@@ -517,7 +517,7 @@ value_overlap (optional):
 ## 附录 B: 同义词映射
 
 ```
-user_id:     ["user_id", "userid", "uid", "customer_id", "buyer_id", "member_id"]
+user_id:     ["user_id", "userid", "uid", "customer_id", "buyer_id", "member_id","buyer_user_id"]
 product_id:  ["product_id", "productid", "pid", "sku", "item_id", "goods_id"]
 order_id:    ["order_id", "orderid", "oid", "transaction_id", "purchase_id"]
 session_id:  ["session_id", "sessionid", "sid", "visit_id"]

@@ -1025,6 +1025,32 @@ Upload CSV/Excel
   - 实施路线图：4B-5 后端服务 → 4B-6 Review UI → 4B-7 Analysis Planner Mock
 - **零代码变更**: 纯文档阶段
 
+## Phase 4B-5: Relationship Inference Backend Service
+
+- **目标**: 实现元数据-only 关系推断后端服务。
+- **后端服务** `relationship_inference_service.py`:
+  - 候选生成：跨数据集比较 key-like 列，排除 metric/text/高 null/类型不兼容列
+  - 评分框架：5 个已实现信号（名称 0.35 / 角色 0.25 / 类型 0.15 / 唯一性 0.15 / 表类型 0.15）
+  - 值重叠信号：未实现，请求时返回警告
+  - 基数推断：基于 unique_rate 阈值推断 one_to_one / one_to_many / many_to_one / many_to_many / unknown
+  - 方向选择：优先事实表→维度表（order→user, event_log→user 等）
+  - 去重：避免同向和反向重复
+  - 证据与警告：中文可读证据 + null 率警告 + many-to-many 警告 + 元数据-only 免责声明
+- **新增 endpoint**: `POST /assistant/infer-relationships`
+  - 请求：`InferRelationshipsRequest`（dataset_ids, include_value_overlap, max_candidates）
+  - 响应：`ResponseModel[InferRelationshipsResponse]`（relationships, generated_at, warnings）
+  - 校验：>=2 数据集，<=20 数据集，跳过不可读数据集并附带警告
+- **前端更新**:
+  - `app/src/types/assistant.ts`: 新增 `RelationshipType`, `RelationshipStatus`, `RelationshipEvidence`, `TableRelationship`, `InferRelationshipsRequest`, `InferRelationshipsResponse`
+  - `app/src/api/assistant.ts`: 新增 `assistantApi.inferRelationships()`
+- **手动 QA 结果**（5 个 mock profile）:
+  - `orders.user_id` → `users.user_id`: ✅ confidence=1.00, many_to_one
+  - `orders.product_id` → `products.product_id`: ✅ confidence=1.00, many_to_one
+  - `reviews.user_id` → `users.user_id`: ✅ confidence=1.00, many_to_one
+  - `reviews.product_id` → `products.product_id`: ✅ confidence=1.00
+  - `forecast` 无强关系: ✅
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 21.06s, backend compileall ✅
+
 ## 下一步建议
 
 ### 立即执行
