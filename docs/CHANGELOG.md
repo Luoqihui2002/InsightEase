@@ -745,3 +745,15 @@
 - 前端类型更新: `app/src/types/assistant.ts` 新增关系推断类型
 - 前端 API 更新: `app/src/api/assistant.ts` 新增 `assistantApi.inferRelationships()`
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 21.06s, backend compileall ✅
+
+## Phase 4B-6: Relationship Review UI
+
+- 新增 `app/src/components/assistant/RelationshipReviewPanel.tsx`
+  - 数据集多选 tag 按钮
+  - 调用 `assistantApi.inferRelationships()` 获取关系建议
+  - 卡片列表展示：源表.列 → 目标表.列、置信度标签、关系类型、状态徽章
+  - 展开详情：完整证据列表和警告列表
+  - 本地确认/忽略状态（组件级 state）
+  - 安全文案：明确说明元数据-only、不自动 join、不修改数据
+- AI Workbench 「能力」标签页新增「理清表关系」入口卡片
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 19.44s ✅

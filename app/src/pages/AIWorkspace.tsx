@@ -13,12 +13,13 @@ import {
   Users, Target, Lightbulb, GitBranch,
   ChevronDown, ChevronUp, Database, MessageSquare,
   Loader2, Columns2, Rows2,
-  History, Trash2
+  History, Trash2, Table2, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AssistantAvatar } from '@/components/assistant/AssistantAvatar';
 import { AnalysisResultRenderer } from '@/components/AnalysisResultRenderer';
+import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { datasetApi } from '@/api';
 import type { DatasetPreview } from '@/types/api';
 import { intentRecognitionService, type AnalysisType } from '@/services/intent-recognition.service';
@@ -101,6 +102,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     columnTypes: Record<string, string>;
   } | null>(null);
   const [showPreview, setShowPreview] = useState(true);
+  const [showRelationshipPanel, setShowRelationshipPanel] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -825,26 +827,63 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             )}
 
             {activeTab === 'capabilities' && (
-              <div className="p-6 grid grid-cols-2 gap-4 overflow-y-auto">
-                {capabilities.map((cap) => (
-                  <button
-                    key={cap.id}
-                    onClick={() => useCapability(cap)}
-                    disabled={!selectedDataset || isLoading}
-                    className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
-                        <cap.icon className="w-5 h-5 text-[var(--neon-cyan)]" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-[var(--text-primary)]">{cap.name}</h3>
-                        <p className="text-xs text-[var(--text-muted)] mt-1">{cap.description}</p>
-                      </div>
+              <>
+                {showRelationshipPanel ? (
+                  <div className="h-full flex flex-col">
+                    <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)]">
+                      <button
+                        onClick={() => setShowRelationshipPanel(false)}
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium text-[var(--text-primary)]">理清表关系</span>
                     </div>
-                  </button>
-                ))}
-              </div>
+                    <div className="flex-1 overflow-hidden">
+                      <RelationshipReviewPanel datasets={datasets} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 grid grid-cols-2 gap-4 overflow-y-auto">
+                    {/* 理清表关系 — 多表关系推断 */}
+                    <button
+                      onClick={() => setShowRelationshipPanel(true)}
+                      className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
+                          <Table2 className="w-5 h-5 text-[var(--neon-cyan)]" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-[var(--text-primary)]">理清表关系</h3>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">
+                            选择多张数据表，推断可能的 join key 和表关系
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+
+                    {capabilities.map((cap) => (
+                      <button
+                        key={cap.id}
+                        onClick={() => useCapability(cap)}
+                        disabled={!selectedDataset || isLoading}
+                        className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
+                            <cap.icon className="w-5 h-5 text-[var(--neon-cyan)]" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-[var(--text-primary)]">{cap.name}</h3>
+                            <p className="text-xs text-[var(--text-muted)] mt-1">{cap.description}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {activeTab === 'history' && (

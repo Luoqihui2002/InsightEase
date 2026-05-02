@@ -1051,6 +1051,23 @@ Upload CSV/Excel
   - `forecast` 无强关系: ✅
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 21.06s, backend compileall ✅
 
+## Phase 4B-6: Relationship Review UI
+
+- **目标**: 在 AI Workbench 添加多表关系推断审阅 UI。
+- **新增组件** `RelationshipReviewPanel.tsx`:
+  - 数据集选择：tag 按钮形式，多选，显示已选数量
+  - 推断触发：「推断表关系」按钮，<2 个数据集时禁用
+  - 加载状态：spinner + "正在分析表结构..."
+  - 结果展示：卡片列表，每张卡片显示源表.列 → 目标表.列、置信度标签、关系类型、状态徽章
+  - 展开详情：显示完整证据列表（类型/消息/分数）和警告列表
+  - 本地确认/忽略：组件级 state，confirmed 变绿边框，rejected 变灰降低透明度
+  - 安全文案：顶部信息栏明确说明元数据-only、不自动 join、不修改数据
+- **AI Workbench 集成**:
+  - 「能力」标签页新增首个卡片：理清表关系（Table2 图标）
+  - 点击进入 RelationshipReviewPanel，顶部返回箭头可回到能力网格
+  - 不改动「对话」标签页
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 19.44s ✅
+
 ## 下一步建议
 
 ### 立即执行
