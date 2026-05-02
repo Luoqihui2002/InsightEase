@@ -2,7 +2,6 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Upload, 
   Sparkles, 
-  Brain,
   Wand2,
   BarChart3, 
   PieChart,
@@ -25,10 +24,12 @@ const sidebarItems = [
       { path: '/app/upload', label: '上传数据', icon: Upload },
     ]
   },
-  { 
+  {
     category: '智能分析',
     items: [
-      { path: '/app/smart-analysis', label: '智能分析向导', icon: Brain },
+      // Deprecated: SmartAnalysis hidden from navigation after Phase 4B-8C.
+      // Guided analysis will migrate into AI Workbench.
+      // { path: '/app/smart-analysis', label: '智能分析向导', icon: Brain },
       { path: '/app/smart-process', label: '数据预处理', icon: Wand2 },
       { path: '/app/semantic', label: '语义分析', icon: Sparkles },
     ]

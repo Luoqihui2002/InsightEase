@@ -1161,6 +1161,16 @@ Upload CSV/Excel
 - **产出**: `docs/reviews/SMART_ANALYSIS_LEGACY_PAGE_AUDIT.md`
 - **无源码修改**
 
+## Phase 4B-8C: Hide Legacy SmartAnalysis Entry
+
+- **目标**: 基于 4B-8B 审计建议，隐藏 SmartAnalysis 公共导航入口。
+- **修改**:
+  - `AppSidebar.tsx`: 移除 `智能分析向导` 侧边栏入口
+  - `Dashboard.tsx`: 移除 SmartAnalysis 快捷按钮
+  - `SmartAnalysis.tsx`: 添加 `@deprecated` 注释和页面弃用提示
+- **保留**: `/app/smart-analysis` 路由和源码文件（直接访问兼容 + 迁移参考）
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 16.41s ✅
+
 ## 下一步建议
 
 ### 立即执行

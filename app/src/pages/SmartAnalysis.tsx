@@ -1,3 +1,11 @@
+/**
+ * @deprecated Phase 4B-8C:
+ * SmartAnalysis is a legacy wizard page hidden from public navigation.
+ * It contains mock diagnosis/preprocessing and does not follow the 4A ResultView architecture.
+ * Useful guided-flow concepts should migrate into AI Workbench.
+ * Keep this file temporarily for direct-route compatibility and migration reference.
+ */
+
 import { useState, useEffect } from 'react';
 import { companionService } from '@/services';
 import { 
@@ -356,6 +364,11 @@ export function SmartAnalysis() {
         </p>
       </div>
       
+      {/* 弃用提示 */}
+      <div className="p-3 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 text-sm">
+        该智能分析向导为旧版实验页面，后续将迁移到 AI 工作台。建议使用 AI 工作台生成分析计划。
+      </div>
+
       {/* 步骤指示器 */}
       <div className="flex items-center gap-2">
         {[

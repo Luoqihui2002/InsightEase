@@ -23,7 +23,6 @@ import {
   Zap,
   Upload,
   History,
-  Sparkles,
   BarChart2,
   CheckCircle2,
   XCircle
@@ -979,19 +978,6 @@ function OverviewDashboard({ datasets, analyses }: { datasets: Dataset[]; analys
               <div>
                 <p className="font-medium text-[var(--text-primary)]">上传数据</p>
                 <p className="text-xs text-[var(--text-muted)]">导入 CSV / Excel 文件</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/app/smart-analysis')}
-              className="w-full flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-subtle)] hover:border-[var(--neon-purple)]/50 transition-all text-left group"
-            >
-              <div className="w-10 h-10 rounded-lg bg-[var(--neon-purple)]/20 flex items-center justify-center group-hover:bg-[var(--neon-purple)]/30 transition-colors">
-                <Sparkles className="w-5 h-5 text-[var(--neon-purple)]" />
-              </div>
-              <div>
-                <p className="font-medium text-[var(--text-primary)]">智能分析</p>
-                <p className="text-xs text-[var(--text-muted)]">AI 驱动的数据分析</p>
               </div>
             </button>
 

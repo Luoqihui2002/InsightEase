@@ -857,3 +857,19 @@
 - 产出 `docs/reviews/SMART_ANALYSIS_LEGACY_PAGE_AUDIT.md`（11 节完整审计）
 - 推荐：短期隐藏侧边栏入口 → 中期迁移到 AI Workbench → 长期删除
 - 无源码修改
+
+## Phase 4B-8C: Hide Legacy SmartAnalysis Entry
+
+- 修改 `AppSidebar.tsx`
+  - 移除 `智能分析向导` 侧边栏入口，保留注释说明弃用原因
+  - 移除未使用的 `Brain` icon import
+- 修改 `Dashboard.tsx`
+  - 移除 SmartAnalysis 快捷按钮
+  - 移除未使用的 `Sparkles` icon import
+- 修改 `SmartAnalysis.tsx`
+  - 添加文件级 `@deprecated` JSDoc 注释
+  - 添加页面顶部 amber 弃用提示横幅
+- 保留 `/app/smart-analysis` 路由和源码文件
+  - 直接 URL 访问不中断
+  - 作为未来迁移参考保留
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 16.41s ✅

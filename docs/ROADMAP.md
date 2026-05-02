@@ -284,10 +284,20 @@
 - 审计 `SmartAnalysis` 模拟数据、4A 合规性、导航问题
 - 推荐：隐藏 → 迁移 → 删除
 
-#### 4B-8C: Hide Legacy SmartAnalysis Entry（下一Phase）
+#### 4B-8C: Hide Legacy SmartAnalysis Entry ✅
 - 移除侧边栏入口和 Dashboard 快捷方式
+- 添加弃用注释和页面提示
 
-#### 4B-8D: Hermes Backend Adapter（远期）
+#### 4B-8D: Guided Quick Analysis in AI Workbench（下一Phase）
+- 将快速分析向导迁移到 AI Workbench
+
+#### 4B-8E: Hermes Backend Adapter（远期）
+- 后端 Hermes API 适配层
+- 前端切换 runtime 模式
+
+#### 4B-9: Result Explainer（远期）
+- 解释 `AnalysisResult` 块
+- 建议下一步分析
 - 后端 Hermes API 适配层
 - 前端切换 runtime 模式
 
