@@ -1108,6 +1108,22 @@ Upload CSV/Excel
   - 有计划中的已确认关系时不发多数据集缺少关系警告
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 22.76s ✅
 
+## Phase 4B-7C-A: AI Workbench Agent-compatible Shell Stabilization
+
+- **目标**: 修复 AI Workbench 运行时 bug，稳定为 Agent-compatible shell。
+- **修复**:
+  - `RelationshipReviewPanel.tsx`: 修正响应解析（拦截器已解包 `response.data`）
+  - `AnalysisPlanCard.tsx`: 新增 `onNavigate` prop，导航后关闭 workbench
+  - `AIWorkspace.tsx`:
+    - 对话输入路由到规则型规划器，不再直接调用后端分析
+    - 移除 `handleAnalysisRequest` 及关联后端调用链
+    - 输入框始终可见，placeholder 根据数据集状态切换
+    - 能力标签页分「通用能力」和「分析工具」两区
+    - 历史标签页「新对话」自动切回对话标签页
+    - 上下布局预览区域添加 `max-h-[240px]`
+    - 清理死代码：分析进度、结果面板、未使用图标
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 16.50s ✅
+
 ## 下一步建议
 
 ### 立即执行

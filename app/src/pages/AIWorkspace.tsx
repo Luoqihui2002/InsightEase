@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import { 
   X, Send, Sparkles, BarChart3, TrendingUp, 
   Users, Target, Lightbulb, GitBranch,
-  ChevronDown, ChevronUp, Database, MessageSquare,
+  Database, MessageSquare,
   Loader2, Columns2, Rows2,
   History, Trash2, Table2, ArrowLeft,
   ClipboardList, Wand2
@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AssistantAvatar } from '@/components/assistant/AssistantAvatar';
-import { AnalysisResultRenderer } from '@/components/AnalysisResultRenderer';
+
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import { generateMockAnalysisPlan } from '@/lib/assistant/analysisPlannerMock';
@@ -27,8 +27,7 @@ import { useAssistantContext } from '@/hooks/useAssistantContext';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
 import type { DatasetPreview } from '@/types/api';
-import { intentRecognitionService, type AnalysisType } from '@/services/intent-recognition.service';
-import { analysisExecutionService, type AnalysisResult as ExecutionResult } from '@/services/analysis-execution.service';
+import type { AnalysisType } from '@/services/intent-recognition.service';
 
 import type { Dataset } from '@/types/api';
 import { cn } from '@/lib/utils';
@@ -56,7 +55,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   type?: 'text' | 'analysis' | 'error';
-  analysisResult?: ExecutionResult;
+  plan?: AssistantAnalysisPlan;
   timestamp: Date;
   isStreaming?: boolean;
 }
@@ -83,7 +82,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     {
       id: 'welcome',
       role: 'assistant',
-      content: '你好！我是 InsightEase AI 数据助手。\n\n当前支持规则型分析导航：选择数据集后，描述你想做的分析，比如：\n• "帮我统计一下销售额的平均值"\n• "预测下个月的业绩趋势"\n• "看一下各渠道的相关性"\n\n自然语言智能规划将在后续阶段开放。',
+      content: '你好！我是 InsightEase AI 数据助手。\n\n你可以直接描述想分析的问题；选择数据集后，我可以结合字段结构给出更具体的计划。\n\n例如：\n• "帮我统计一下销售额的平均值"\n• "预测下个月的业绩趋势"\n• "看一下各渠道的相关性"',
       type: 'text',
       timestamp: new Date(),
     }
@@ -94,12 +93,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [activeTab, setActiveTab] = useState<'chat' | 'capabilities' | 'history'>('chat');
-  const [showResult, setShowResult] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<ExecutionResult | null>(null);
   const [mainLayout, setMainLayout] = useState<'vertical' | 'horizontal'>('vertical');
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
-  const [analysisProgress, setAnalysisProgress] = useState<{status: string, progress: number} | null>(null);
   const [datasetPreview, setDatasetPreview] = useState<{
     columns: string[];
     rows: Record<string, any>[];
@@ -196,7 +192,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       messages: [{
         id: 'welcome',
         role: 'assistant',
-        content: '你好！我是你的 AI 数据分析助手。\n\n告诉我你想分析什么...',
+        content: '你好！我是 InsightEase AI 数据助手。\n\n你可以直接描述想分析的问题；选择数据集后，我可以结合字段结构给出更具体的计划。',
         type: 'text',
         timestamp: new Date(),
       }],
@@ -205,8 +201,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     };
     setCurrentSessionId(newSession.id);
     setMessages(newSession.messages);
-    setShowResult(false);
-    setAnalysisResult(null);
   };
 
   // 切换到历史会话
@@ -262,109 +256,49 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     saveChatHistory(updatedHistory);
   };
 
-  // AI 意图识别 + 执行分析
-  const handleAnalysisRequest = async (userMessage: string) => {
-    if (!selectedDataset) {
-      addMessage({
-        role: 'assistant',
-        content: '请先选择一份数据集，我才能帮你分析哦~',
-        type: 'text'
-      });
-      return;
-    }
-    
-    // 防止重复提交
-    if (isLoading) {
-      console.log('分析进行中，忽略重复请求');
-      return;
-    }
-
+  // Generate plan for a user question (replaces backend analysis from chat)
+  const generatePlanForQuestion = (question: string, baseMessages?: Message[]) => {
     setIsLoading(true);
-    setAnalysisProgress({ status: '正在理解你的需求...', progress: 10 });
-    setShowResult(false);
+    const currentMessages = baseMessages || messages;
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: question,
+      timestamp: new Date(),
+    };
 
-    try {
-      // 1. AI 意图识别
-      const datasetSchemas = datasets
-        .filter(d => d && d.id)
-        .map(d => ({
-          id: d.id,
-          name: d.filename || '未命名数据集',
-          row_count: d.row_count || 0,
-          columns: (d.schema || []).map((col: any) => ({
-            name: col?.name || '',
-            type: col?.type || 'other',
-            dtype: col?.dtype || col?.type || 'other',
-            unique_count: col?.unique_count || 0,
-            sample_values: col?.sample_values || [],
-          }))
-        }));
+    const selectedDatasetIds = selectedDataset ? [selectedDataset] : datasets.map((d) => d.id);
+    const relevantConfirmed = assistantContext.getConfirmedForDatasets(selectedDatasetIds);
 
-      const intent = await intentRecognitionService.recognizeIntent(
-        userMessage,
-        datasetSchemas
-      );
+    const plan = generateMockAnalysisPlan({
+      question,
+      datasets: datasets.map((d) => ({
+        id: d.id,
+        filename: d.filename,
+        name: d.filename,
+        schema: (d.schema || []).map((col: any) => ({
+          name: col?.name || '',
+          semantic_type: col?.semantic_type || col?.type || '',
+        })),
+      })),
+      confirmedRelationships: relevantConfirmed.length > 0 ? relevantConfirmed : undefined,
+    });
 
-      // 2. 数据验证
-      if ((intent.type as string) === 'unknown') {
-        addMessage({
-          role: 'assistant',
-          content: `抱歉，我没太理解你的需求。\n\n你可以这样描述：\n• "统计销售额的平均值和标准差"\n• "预测下个月的业绩"\n• "看一下相关性热力图"`,
-          type: 'text'
-        });
-        setIsLoading(false);
-        setAnalysisProgress(null);
-        return;
-      }
+    const planMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: `基于你的问题，我生成了以下分析计划：`,
+      type: 'text',
+      timestamp: new Date(),
+      plan,
+    };
 
-      // 3. 执行分析
-      addMessage({
-        role: 'assistant',
-        content: '',
-        isStreaming: true,
-        type: 'analysis'
-      });
-
-      await analysisExecutionService.executeByIntent(
-        intent,
-        {
-          datasetId: selectedDataset,
-          onProgress: (status, progress) => {
-            setAnalysisProgress({ status, progress: progress ?? 0 });
-          },
-          onSuccess: (analysisResult) => {
-            setAnalysisResult(analysisResult);
-            setShowResult(true);
-
-            updateLastMessage({
-              content: `${intent.description}完成！\n\n${analysisResult.summary || ''}`,
-              isStreaming: false,
-              type: 'analysis',
-              analysisResult
-            });
-          },
-          onError: (error) => {
-            updateLastMessage({
-              content: `分析失败：${error}`,
-              isStreaming: false,
-              type: 'error'
-            });
-          }
-        }
-      );
-
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : '分析失败';
-      addMessage({
-        role: 'assistant',
-        content: `抱歉，分析过程中出现错误：${errorMsg}`,
-        type: 'error'
-      });
-    } finally {
-      setIsLoading(false);
-      setAnalysisProgress(null);
-    }
+    const newMessages: Message[] = [...currentMessages, userMessage, planMessage];
+    updateCurrentSession(newMessages);
+    setIsLoading(false);
   };
+
+
 
   // 普通对话（不走分析流程）
   // const handleGeneralChat = async (prompt: string) => {
@@ -402,35 +336,13 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     updateCurrentSession(newMessages);
   };
 
-  // 更新最后一条消息
-  const updateLastMessage = (updates: Partial<Message>) => {
-    setMessages(prev => {
-      const last = prev[prev.length - 1];
-      if (last?.role === 'assistant') {
-        const newMessages = [...prev.slice(0, -1), { ...last, ...updates }];
-        setTimeout(() => updateCurrentSession(newMessages), 100);
-        return newMessages;
-      }
-      return prev;
-    });
-  };
-
-  // 发送消息
-  const handleSend = async () => {
+  // 发送消息 — 路由到规则型规划器，不直接调用后端分析
+  const handleSend = () => {
     if (!inputValue.trim() || isLoading) return;
 
     const userMsg = inputValue.trim();
     setInputValue('');
-
-    const newMessages: Message[] = [...messages, {
-      id: Date.now().toString(),
-      role: 'user',
-      content: userMsg,
-      timestamp: new Date(),
-    }];
-    updateCurrentSession(newMessages);
-
-    await handleAnalysisRequest(userMsg);
+    generatePlanForQuestion(userMsg);
   };
 
   // 键盘事件
@@ -441,21 +353,24 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     }
   };
 
-  // 使用能力卡片
+  // 使用能力卡片 — 数据集依赖型能力需先选数据集
   const useCapability = (cap: AnalysisCapability) => {
+    if (!selectedDataset) {
+      addMessage({
+        role: 'assistant',
+        content: `「${cap.name}」需要选择数据集后才能使用。请在上方选择一份数据集，或先在「生成分析计划」中描述你的问题。`,
+        type: 'text'
+      });
+      setActiveTab('chat');
+      return;
+    }
+
     const prompt = `帮我做${cap.name}分析`;
     setInputValue(prompt);
     setActiveTab('chat');
-    
+
     setTimeout(() => {
-      const newMessages: Message[] = [...messages, {
-        id: Date.now().toString(),
-        role: 'user',
-        content: prompt,
-        timestamp: new Date(),
-      }];
-      updateCurrentSession(newMessages);
-      handleAnalysisRequest(prompt);
+      generatePlanForQuestion(prompt);
     }, 100);
   };
 
@@ -581,7 +496,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
         {/* ========== 上下布局：数据预览在上方 ========== */}
         {mainLayout === 'vertical' && showPreview && datasetPreview && (
-          <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex-shrink-0">
+          <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex-shrink-0 max-h-[240px] overflow-hidden flex flex-col">
             {/* 数据预览头部 */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
               <h3 className="text-sm font-medium text-[var(--text-primary)]">
@@ -595,7 +510,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
               </button>
             </div>
             {/* 数据表格 */}
-            <div className="p-3 overflow-x-auto" style={{ maxHeight: '200px' }}>
+            <div className="p-3 overflow-auto flex-1">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-[var(--border-subtle)]">
@@ -635,7 +550,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             <AssistantAvatar variant="default" size="sm" />
             <div className="flex-shrink-0">
               <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
-              <p className="text-[10px] text-[var(--text-muted)]">规则型数据助手 · 自然语言能力即将开放</p>
+              <p className="text-[10px] text-[var(--text-muted)]">规则型分析规划 · 选择数据集可获得更具体的建议</p>
             </div>
             
             <div className="flex-1"></div>
@@ -779,38 +694,33 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                             <span className="inline-block w-2 h-4 ml-1 bg-[var(--neon-cyan)] animate-pulse" />
                           )}
                         </div>
+                        {message.plan && (
+                          <div className="mt-3">
+                            <AnalysisPlanCard
+                              plan={message.plan}
+                              onNavigate={(target) => {
+                                window.dispatchEvent(new CustomEvent('companion-navigate', { detail: target }));
+                                onClose();
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
-                  
-                  {/* 分析进度 */}
-                  {analysisProgress && (
-                    <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--neon-cyan)]/5 border border-[var(--neon-cyan)]/20">
-                      <Loader2 className="w-5 h-5 text-[var(--neon-cyan)] animate-spin" />
-                      <div className="flex-1">
-                        <div className="text-sm text-[var(--text-primary)]">{analysisProgress.status}</div>
-                        <div className="mt-2 h-1 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-[var(--neon-cyan)] transition-all duration-300"
-                            style={{ width: `${analysisProgress.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                      <span className="text-xs text-[var(--text-muted)]">{analysisProgress.progress}%</span>
-                    </div>
-                  )}
+
                 </div>
 
-                {/* 快速提示芯片（仅数据集已选时显示） */}
-                {selectedDataset && !isLoading && (
+                {/* 快速提示芯片 */}
+                {!isLoading && (
                   <div className="px-4 pt-3 pb-0">
                     <div className="flex flex-wrap gap-2">
                       {[
-                        '统计各列描述',
-                        '预测未来趋势',
-                        '分析相关性',
-                        '找出异常值',
-                        '做分类汇总',
+                        '预测未来销售额趋势',
+                        '分析各渠道转化率',
+                        '找出数据中的异常值',
+                        '统计各列描述性指标',
+                        '分析用户行为路径',
                       ].map((prompt) => (
                         <button
                           key={prompt}
@@ -835,33 +745,26 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
                 {/* 输入框 */}
                 <div className="p-4 border-t border-[var(--border-subtle)]">
-                  {!selectedDataset ? (
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
-                      <Database className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
-                      <span className="text-sm text-[var(--text-muted)]">
-                        请先在上方的下拉菜单中选择一份数据集，再开始分析
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Input
-                        ref={inputRef}
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder='描述你想做的分析，比如"预测下月销售额"...'
-                        disabled={isLoading}
-                        className="flex-1 bg-[var(--bg-tertiary)]"
-                      />
-                      <Button
-                        onClick={handleSend}
-                        disabled={!inputValue.trim() || isLoading}
-                        className="bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
-                      >
-                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex gap-2">
+                    <Input
+                      ref={inputRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={selectedDataset
+                        ? '描述你想做的分析，比如"预测下月销售额"...'
+                        : '描述你想分析的问题，选择数据集后我可以给出更具体的计划...'}
+                      disabled={isLoading}
+                      className="flex-1 bg-[var(--bg-tertiary)]"
+                    />
+                    <Button
+                      onClick={handleSend}
+                      disabled={!inputValue.trim() || isLoading}
+                      className="bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80"
+                    >
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -948,56 +851,83 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       </div>
 
                       {generatedPlan && (
-                        <AnalysisPlanCard plan={generatedPlan} />
+                        <AnalysisPlanCard
+                          plan={generatedPlan}
+                          onNavigate={(target) => {
+                            window.dispatchEvent(new CustomEvent('companion-navigate', { detail: target }));
+                            onClose();
+                          }}
+                        />
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div className="p-6 grid grid-cols-2 gap-4 overflow-y-auto">
-                    {/* 生成分析计划 — 规则型分析规划 */}
-                    <button
-                      onClick={() => setShowAnalysisPlanPanel(true)}
-                      className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
-                          <ClipboardList className="w-5 h-5 text-[var(--neon-cyan)]" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-[var(--text-primary)]">生成分析计划</h3>
-                          <p className="text-xs text-[var(--text-muted)] mt-1">
-                            输入业务问题，生成结构化分析路径建议
-                          </p>
-                        </div>
-                      </div>
-                    </button>
+                  <div className="p-6 overflow-y-auto space-y-6">
+                    {/* 上下文无关能力 */}
+                    <div>
+                      <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+                        通用能力
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* 生成分析计划 — 规则型分析规划 */}
+                        <button
+                          onClick={() => setShowAnalysisPlanPanel(true)}
+                          className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
+                              <ClipboardList className="w-5 h-5 text-[var(--neon-cyan)]" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-[var(--text-primary)]">生成分析计划</h3>
+                              <p className="text-xs text-[var(--text-muted)] mt-1">
+                                输入业务问题，生成结构化分析路径建议
+                              </p>
+                            </div>
+                          </div>
+                        </button>
 
-                    {/* 理清表关系 — 多表关系推断 */}
-                    <button
-                      onClick={() => setShowRelationshipPanel(true)}
-                      className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
-                          <Table2 className="w-5 h-5 text-[var(--neon-cyan)]" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-[var(--text-primary)]">理清表关系</h3>
-                          <p className="text-xs text-[var(--text-muted)] mt-1">
-                            选择多张数据表，推断可能的 join key 和表关系
-                          </p>
-                        </div>
+                        {/* 理清表关系 — 多表关系推断 */}
+                        <button
+                          onClick={() => setShowRelationshipPanel(true)}
+                          className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
+                              <Table2 className="w-5 h-5 text-[var(--neon-cyan)]" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-[var(--text-primary)]">理清表关系</h3>
+                              <p className="text-xs text-[var(--text-muted)] mt-1">
+                                选择多张数据表，推断可能的 join key 和表关系
+                              </p>
+                            </div>
+                          </div>
+                        </button>
                       </div>
-                    </button>
+                    </div>
 
-                    {capabilities.map((cap) => (
-                      <button
-                        key={cap.id}
-                        onClick={() => useCapability(cap)}
-                        disabled={!selectedDataset || isLoading}
-                        className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <div className="flex items-start gap-3">
+                    {/* 数据集依赖能力 */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                          分析工具
+                        </p>
+                        {!selectedDataset && (
+                          <span className="text-[10px] text-[var(--text-muted)]">
+                            请选择数据集后使用
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {capabilities.map((cap) => (
+                          <button
+                            key={cap.id}
+                            onClick={() => useCapability(cap)}
+                            disabled={!selectedDataset || isLoading}
+                            className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <div className="flex items-start gap-3">
                           <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
                             <cap.icon className="w-5 h-5 text-[var(--neon-cyan)]" />
                           </div>
@@ -1009,7 +939,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       </button>
                     ))}
                   </div>
-                )}
+                  </div>
+                </div>
+            )}
               </>
             )}
 
@@ -1020,7 +952,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={createNewSession}
+                    onClick={() => { createNewSession(); setActiveTab('chat'); }}
                     className="text-[var(--neon-cyan)]"
                   >
                     新对话
@@ -1061,48 +993,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             )}
           </div>
 
-          {/* 分析结果面板 - 显示在对话区域下方 */}
-          {showResult && analysisResult && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: '45%', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 overflow-hidden flex flex-col"
-            >
-              <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
-                <h3 className="font-medium text-[var(--text-primary)]">分析结果</h3>
-                <button 
-                  onClick={() => setShowResult(false)}
-                  className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)]"
-                  title="收起结果"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <AnalysisResultRenderer result={analysisResult} />
-              </div>
-            </motion.div>
-          )}
-          
-          {/* 分析结果折叠状态 */}
-          {!showResult && analysisResult && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="border-t border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/50 cursor-pointer hover:bg-[var(--bg-tertiary)] flex-shrink-0"
-              onClick={() => setShowResult(true)}
-            >
-              <div className="flex items-center justify-between px-4 py-2">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-[var(--neon-cyan)]" />
-                  <span className="text-sm text-[var(--text-primary)]">分析结果</span>
-                  <span className="text-xs text-[var(--text-muted)]">（点击展开）</span>
-                </div>
-                <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
-              </div>
-            </motion.div>
-          )}
         </div>
 
         {/* ========== 左右布局：数据预览在右侧 ========== */}

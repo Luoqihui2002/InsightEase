@@ -123,10 +123,16 @@ export function RelationshipReviewPanel({
         include_value_overlap: false,
         max_candidates: 200,
       });
-      if (res.data?.code === 200 && res.data.data) {
-        setResult(res.data.data);
+      // Interceptor returns response.data = { code, message, data }
+      const response = res as unknown as {
+        code?: number;
+        data?: InferRelationshipsResponse;
+        message?: string;
+      };
+      if (response?.code === 200 && response.data) {
+        setResult(response.data);
       } else {
-        setError(res.data?.message || '推断失败');
+        setError(response?.message || '推断失败');
       }
     } catch (e: any) {
       setError(e?.message || '网络错误，请稍后重试');

@@ -21,6 +21,7 @@ import type { AssistantAnalysisPlan, RecommendedAnalysisType } from '@/types/ass
 
 interface AnalysisPlanCardProps {
   plan: AssistantAnalysisPlan;
+  onNavigate?: (target: string) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -67,11 +68,12 @@ const FIELD_ROLE_LABELS: Record<string, string> = {
 /*  component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function AnalysisPlanCard({ plan }: AnalysisPlanCardProps) {
+export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
   const navigate = useNavigate();
 
   const handleNavigate = (target?: string) => {
     if (target) {
+      onNavigate?.(target);
       navigate(target);
     }
   };

@@ -793,3 +793,20 @@
   - 展示已确认关系列表（关系类型、方向、关键字段）
   - 无已确认关系时显示提示文案
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 22.76s ✅
+
+## Phase 4B-7C-A: AI Workbench Agent-compatible Shell Stabilization
+
+- 修复 `RelationshipReviewPanel.tsx` 响应解析
+  - 拦截器返回 `response.data` 直接为 `{ code, message, data }`，修正嵌套访问
+- 修复 `AnalysisPlanCard.tsx` 导航行为
+  - 新增 `onNavigate` prop，支持导航后关闭 AI Workbench
+- 重构 `AIWorkspace.tsx`
+  - 对话输入路由到规则型规划器（`generateMockAnalysisPlan`），不再直接调用后端分析
+  - 移除 `handleAnalysisRequest` 及关联的意图识别/分析执行服务调用
+  - 输入框始终可见，无数据集时显示上下文提示
+  - 快速 chips 始终可见
+  - 能力标签页分为「通用能力」（始终可用）和「分析工具」（需数据集）
+  - 历史标签页「新对话」自动切回对话标签页
+  - 修复上下布局预览区域无限高度问题，添加 `max-h-[240px]`
+  - 清理死代码：分析进度、结果面板、`AnalysisResultRenderer`、未使用图标
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 16.50s ✅
