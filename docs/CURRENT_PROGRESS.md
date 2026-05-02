@@ -1134,6 +1134,20 @@ Upload CSV/Excel
   - 能力网格、历史标签页、数据预览面板
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 22.38s ✅
 
+## Phase 4B-8A: Assistant Runtime Adapter + Safe Tool Registry Scaffold
+
+- **目标**: 引入 Assistant Runtime 抽象层，使未来 Hermes/LLM 集成无需 redesign UI。
+- **新增**:
+  - `assistantRuntime.ts`: 核心接口与类型
+  - `ruleBasedAssistantRuntime.ts`: 包装现有规则型规划器
+  - `getAssistantRuntime.ts`: 工厂函数
+  - `toolRegistry.ts`: 安全工具注册表（8 个工具，确认规则，副作用等级）
+  - `hermesAssistantRuntime.ts`: 占位符
+  - `docs/design/ASSISTANT_RUNTIME_ADAPTER_DESIGN.md`: 架构设计文档
+- **修改**:
+  - `AIWorkspace.tsx`: 替换直接调用为 runtime 调用，添加错误处理
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 19.34s ✅
+
 ## 下一步建议
 
 ### 立即执行

@@ -824,3 +824,24 @@
   - 数据预览（左右布局）: 添加 `min-h-0 overflow-hidden`
 - 根因: flex 滚动链缺少 `min-h-0`，导致 `overflow-y-auto` 子元素无法正确收缩和滚动
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 22.38s ✅
+
+## Phase 4B-8A: Assistant Runtime Adapter + Safe Tool Registry Scaffold
+
+- 新增 `app/src/lib/assistant/assistantRuntime.ts`
+  - `AssistantRuntime` 接口、`AssistantContext`、`AssistantPlanRequest/Response`
+  - `AssistantMessage`、错误/结果解释请求/响应类型
+- 新增 `app/src/lib/assistant/ruleBasedAssistantRuntime.ts`
+  - 包装现有 `generateMockAnalysisPlan()`，实现 `AssistantRuntime` 接口
+- 新增 `app/src/lib/assistant/getAssistantRuntime.ts`
+  - 工厂函数，当前返回 `ruleBasedAssistantRuntime`
+- 新增 `app/src/lib/assistant/toolRegistry.ts`
+  - 8 个工具定义、确认规则、副作用等级
+  - `getSafeTools()` / `getImplementedTools()` 辅助函数
+- 新增 `app/src/lib/assistant/hermesAssistantRuntime.ts`
+  - 占位符，未来 Hermes 集成时使用
+- 修改 `app/src/pages/AIWorkspace.tsx`
+  - 替换直接调用 `generateMockAnalysisPlan` 为 `getAssistantRuntime().generateAnalysisPlan()`
+  - 添加 try/catch 错误处理
+- 新增 `docs/design/ASSISTANT_RUNTIME_ADAPTER_DESIGN.md`
+  - 运行时架构设计文档
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 19.34s ✅

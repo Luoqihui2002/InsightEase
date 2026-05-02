@@ -22,7 +22,7 @@ import { AssistantAvatar } from '@/components/assistant/AssistantAvatar';
 
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
-import { generateMockAnalysisPlan } from '@/lib/assistant/analysisPlannerMock';
+import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
 import { useAssistantContext } from '@/hooks/useAssistantContext';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
@@ -257,7 +257,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   };
 
   // Generate plan for a user question (replaces backend analysis from chat)
-  const generatePlanForQuestion = (question: string, baseMessages?: Message[]) => {
+  const generatePlanForQuestion = async (question: string, baseMessages?: Message[]) => {
     setIsLoading(true);
     const currentMessages = baseMessages || messages;
     const userMessage: Message = {
@@ -267,35 +267,53 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       timestamp: new Date(),
     };
 
-    const selectedDatasetIds = selectedDataset ? [selectedDataset] : datasets.map((d) => d.id);
-    const relevantConfirmed = assistantContext.getConfirmedForDatasets(selectedDatasetIds);
+    try {
+      const selectedDatasetIds = selectedDataset ? [selectedDataset] : datasets.map((d) => d.id);
+      const relevantConfirmed = assistantContext.getConfirmedForDatasets(selectedDatasetIds);
 
-    const plan = generateMockAnalysisPlan({
-      question,
-      datasets: datasets.map((d) => ({
-        id: d.id,
-        filename: d.filename,
-        name: d.filename,
-        schema: (d.schema || []).map((col: any) => ({
-          name: col?.name || '',
-          semantic_type: col?.semantic_type || col?.type || '',
-        })),
-      })),
-      confirmedRelationships: relevantConfirmed.length > 0 ? relevantConfirmed : undefined,
-    });
+      const runtime = getAssistantRuntime();
+      const response = await runtime.generateAnalysisPlan({
+        question,
+        context: {
+          selected_dataset_ids: datasets.map((d) => d.id),
+          selected_dataset_id: selectedDataset ?? undefined,
+          confirmed_relationships: relevantConfirmed,
+          datasets: datasets.map((d) => ({
+            id: d.id,
+            filename: d.filename,
+            name: d.filename,
+            schema: (d.schema || []).map((col: any) => ({
+              name: col?.name || '',
+              semantic_type: col?.semantic_type || col?.type || '',
+            })),
+          })),
+        },
+      });
 
-    const planMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: `基于你的问题，我生成了以下分析计划：`,
-      type: 'text',
-      timestamp: new Date(),
-      plan,
-    };
+      const planMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `基于你的问题，我生成了以下分析计划：`,
+        type: 'text',
+        timestamp: new Date(),
+        plan: response.plan,
+      };
 
-    const newMessages: Message[] = [...currentMessages, userMessage, planMessage];
-    updateCurrentSession(newMessages);
-    setIsLoading(false);
+      const newMessages: Message[] = [...currentMessages, userMessage, planMessage];
+      updateCurrentSession(newMessages);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '生成计划失败';
+      const newMessages: Message[] = [...currentMessages, userMessage, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `生成计划时出错：${errorMsg}`,
+        type: 'error',
+        timestamp: new Date(),
+      }];
+      updateCurrentSession(newMessages);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
 
@@ -375,32 +393,40 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   };
 
   // 生成分析计划
-  const handleGeneratePlan = () => {
+  const handleGeneratePlan = async () => {
     if (!planQuestion.trim()) return;
     setIsPlanning(true);
     setGeneratedPlan(null);
 
-    // Small delay to show loading state
-    setTimeout(() => {
+    try {
       const selectedDatasetIds = datasets.map((d) => d.id);
       const relevantConfirmed = assistantContext.getConfirmedForDatasets(selectedDatasetIds);
 
-      const plan = generateMockAnalysisPlan({
+      const runtime = getAssistantRuntime();
+      const response = await runtime.generateAnalysisPlan({
         question: planQuestion.trim(),
-        datasets: datasets.map((d) => ({
-          id: d.id,
-          filename: d.filename,
-          name: d.filename,
-          schema: (d.schema || []).map((col: any) => ({
-            name: col?.name || '',
-            semantic_type: col?.semantic_type || col?.type || '',
+        context: {
+          selected_dataset_ids: datasets.map((d) => d.id),
+          selected_dataset_id: selectedDataset ?? undefined,
+          confirmed_relationships: relevantConfirmed,
+          datasets: datasets.map((d) => ({
+            id: d.id,
+            filename: d.filename,
+            name: d.filename,
+            schema: (d.schema || []).map((col: any) => ({
+              name: col?.name || '',
+              semantic_type: col?.semantic_type || col?.type || '',
+            })),
           })),
-        })),
-        confirmedRelationships: relevantConfirmed.length > 0 ? relevantConfirmed : undefined,
+        },
       });
-      setGeneratedPlan(plan);
+
+      setGeneratedPlan(response.plan);
+    } catch (error) {
+      console.error('生成计划失败:', error);
+    } finally {
       setIsPlanning(false);
-    }, 400);
+    }
   };
 
   // 加载数据集预览

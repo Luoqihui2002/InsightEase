@@ -274,7 +274,19 @@
 - 修复 flex 滚动链：`min-h-0` + `overflow-hidden` + `flex-shrink-0`
 - 生成的 AnalysisPlanCard 可完整滚动
 
-#### 4B-8: Real AI Integration（远期）
+#### 4B-8A: Assistant Runtime Adapter + Safe Tool Registry Scaffold ✅
+- `AssistantRuntime` 接口抽象
+- `ruleBasedAssistantRuntime` 包装现有规划器
+- 安全工具注册表（8 工具，确认规则，副作用等级）
+- `hermesAssistantRuntime` 占位符
+
+#### 4B-8B: Hermes Backend Adapter（远期）
+- 后端 Hermes API 适配层
+- 前端切换 runtime 模式
+
+#### 4B-9: Result Explainer（远期）
+- 解释 `AnalysisResult` 块
+- 建议下一步分析
 - 元数据优先的 LLM 调用
 - 结构化 JSON 输出
 
