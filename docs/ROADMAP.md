@@ -260,6 +260,11 @@
 - 使用 confirmed 关系建议分析数据需求
 - 模板/关键词匹配，无真实 LLM
 
+#### 4B-7B: Assistant Context Store + Relationship-aware Planner Bridge ✅
+- 前端 `useAssistantContext` hook + localStorage 持久化
+- `RelationshipReviewPanel` 受控模式
+- `AnalysisPlannerMock` 消费 confirmed relationships
+
 #### 4B-8: Real AI Integration（远期）
 - 元数据优先的 LLM 调用
 - 结构化 JSON 输出

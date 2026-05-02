@@ -23,6 +23,7 @@ import { AnalysisResultRenderer } from '@/components/AnalysisResultRenderer';
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import { generateMockAnalysisPlan } from '@/lib/assistant/analysisPlannerMock';
+import { useAssistantContext } from '@/hooks/useAssistantContext';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
 import type { DatasetPreview } from '@/types/api';
@@ -111,6 +112,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const [planQuestion, setPlanQuestion] = useState('');
   const [generatedPlan, setGeneratedPlan] = useState<AssistantAnalysisPlan | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
+
+  const assistantContext = useAssistantContext();
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -464,6 +467,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
     // Small delay to show loading state
     setTimeout(() => {
+      const selectedDatasetIds = datasets.map((d) => d.id);
+      const relevantConfirmed = assistantContext.getConfirmedForDatasets(selectedDatasetIds);
+
       const plan = generateMockAnalysisPlan({
         question: planQuestion.trim(),
         datasets: datasets.map((d) => ({
@@ -475,7 +481,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             semantic_type: col?.semantic_type || col?.type || '',
           })),
         })),
-        confirmedRelationships: undefined, // TODO: pass from RelationshipReviewPanel when persistence is added
+        confirmedRelationships: relevantConfirmed.length > 0 ? relevantConfirmed : undefined,
       });
       setGeneratedPlan(plan);
       setIsPlanning(false);
@@ -874,7 +880,14 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       <span className="text-sm font-medium text-[var(--text-primary)]">理清表关系</span>
                     </div>
                     <div className="flex-1 overflow-hidden">
-                      <RelationshipReviewPanel datasets={datasets} />
+                      <RelationshipReviewPanel
+                        datasets={datasets}
+                        confirmedRelationshipIds={assistantContext.confirmedRelationships.map((r) => r.id)}
+                        rejectedRelationshipIds={assistantContext.rejectedRelationshipIds}
+                        onConfirmRelationship={assistantContext.confirmRelationship}
+                        onRejectRelationship={assistantContext.rejectRelationship}
+                        onResetRelationship={assistantContext.resetRelationship}
+                      />
                     </div>
                   </div>
                 ) : showAnalysisPlanPanel ? (

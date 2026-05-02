@@ -771,3 +771,25 @@
   - 输入框 + 6 个示例问题 chip + 生成按钮
   - 展示结构化分析计划卡片，支持导航到对应分析页面
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 19.28s ✅
+
+## Phase 4B-7B: Assistant Context Store + Relationship-aware Planner Bridge
+
+- 新增 `app/src/hooks/useAssistantContext.ts`
+  - React hook 管理 confirmed/rejected relationships 状态
+  - localStorage 持久化（仅关系元数据，不存储原始数据值）
+  - 方法：`confirmRelationship`, `rejectRelationship`, `resetRelationship`, `getConfirmedForDatasets`, `isConfirmed`, `isRejected`
+- 修改 `RelationshipReviewPanel.tsx`
+  - 新增 controlled props: `confirmedRelationshipIds`, `rejectedRelationshipIds`, `onConfirmRelationship`, `onRejectRelationship`, `onResetRelationship`
+  - 优先使用外部状态，无回调时 fallback 到本地 `localStatus`
+- 修改 `AIWorkspace.tsx`
+  - 引入 `useAssistantContext()` 在 workbench 层级管理关系状态
+  - 关系状态传递给 RelationshipReviewPanel（受控模式）
+  - 调用 `generateMockAnalysisPlan` 时传入 `confirmedRelationships`
+- 修改 `analysisPlannerMock.ts`
+  - 接收 `confirmedRelationships` 参数
+  - 填充 `required_relationships` 和 assumptions
+  - 有 confirmed relationships 时抑制多数据集缺少关系警告
+- 修改 `AnalysisPlanCard.tsx`
+  - 展示已确认关系列表（关系类型、方向、关键字段）
+  - 无已确认关系时显示提示文案
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 22.76s ✅

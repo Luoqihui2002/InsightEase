@@ -1092,6 +1092,22 @@ Upload CSV/Excel
   - 生成后展示 AnalysisPlanCard（类型标签、所需字段、假设、警告、导航按钮）
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 19.28s ✅
 
+## Phase 4B-7B: Assistant Context Store + Relationship-aware Planner Bridge
+
+- **目标**: 建立前端 assistant context store，打通关系确认与分析计划。
+- **新增文件**:
+  - `app/src/hooks/useAssistantContext.ts`: React hook + localStorage 持久化
+- **修改文件**:
+  - `RelationshipReviewPanel.tsx`: controlled props 支持
+  - `AIWorkspace.tsx`: 引入 context store，传递给 panel 和 planner
+  - `analysisPlannerMock.ts`: 消费 confirmed relationships
+  - `AnalysisPlanCard.tsx`: 展示 confirmed relationships
+- **行为**:
+  - 确认/忽略/重置关系通过 context store 持久化到 localStorage
+  - 分析计划生成时自动带入相关数据集的已确认关系
+  - 有计划中的已确认关系时不发多数据集缺少关系警告
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 22.76s ✅
+
 ## 下一步建议
 
 ### 立即执行
@@ -1100,8 +1116,7 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **Phase 4B-5: Relationship Inference Backend Service** — 实现元数据-only 候选生成和评分 API
-2. **Phase 4B-6: Relationship Review UI** — 在 AI Workbench 添加关系列表和确认/忽略功能
+1. **Phase 4B-8: Real AI Integration** — 替换规则型 planner 为 LLM 或 Hermes Agent 调用
 
 ### 远期规划（不变）
 

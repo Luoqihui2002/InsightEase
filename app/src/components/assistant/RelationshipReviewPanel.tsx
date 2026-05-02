@@ -35,6 +35,11 @@ import type {
 
 interface RelationshipReviewPanelProps {
   datasets: Array<{ id: string; filename?: string; name?: string }>;
+  confirmedRelationshipIds?: string[];
+  rejectedRelationshipIds?: string[];
+  onConfirmRelationship?: (relationship: TableRelationship) => void;
+  onRejectRelationship?: (relationship: TableRelationship) => void;
+  onResetRelationship?: (relationship: TableRelationship) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -70,13 +75,30 @@ function relationshipTypeLabel(type: string): string {
 /*  component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function RelationshipReviewPanel({ datasets }: RelationshipReviewPanelProps) {
+export function RelationshipReviewPanel({
+  datasets,
+  confirmedRelationshipIds = [],
+  rejectedRelationshipIds = [],
+  onConfirmRelationship,
+  onRejectRelationship,
+  onResetRelationship,
+}: RelationshipReviewPanelProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InferRelationshipsResponse | null>(null);
   const [localStatus, setLocalStatus] = useState<Record<string, RelationshipStatus>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Determine effective status: controlled props take precedence, then local state
+  const getStatus = useCallback(
+    (relId: string): RelationshipStatus => {
+      if (confirmedRelationshipIds.includes(relId)) return 'confirmed';
+      if (rejectedRelationshipIds.includes(relId)) return 'rejected';
+      return localStatus[relId] || 'suggested';
+    },
+    [confirmedRelationshipIds, rejectedRelationshipIds, localStatus]
+  );
 
   const toggleDataset = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -113,21 +135,42 @@ export function RelationshipReviewPanel({ datasets }: RelationshipReviewPanelPro
     }
   }, [selectedIds]);
 
-  const handleConfirm = useCallback((id: string) => {
-    setLocalStatus((prev) => ({ ...prev, [id]: 'confirmed' }));
-  }, []);
+  const handleConfirm = useCallback(
+    (rel: TableRelationship) => {
+      if (onConfirmRelationship) {
+        onConfirmRelationship(rel);
+      } else {
+        setLocalStatus((prev) => ({ ...prev, [rel.id]: 'confirmed' }));
+      }
+    },
+    [onConfirmRelationship]
+  );
 
-  const handleReject = useCallback((id: string) => {
-    setLocalStatus((prev) => ({ ...prev, [id]: 'rejected' }));
-  }, []);
+  const handleReject = useCallback(
+    (rel: TableRelationship) => {
+      if (onRejectRelationship) {
+        onRejectRelationship(rel);
+      } else {
+        setLocalStatus((prev) => ({ ...prev, [rel.id]: 'rejected' }));
+      }
+    },
+    [onRejectRelationship]
+  );
 
-  const handleReset = useCallback((id: string) => {
-    setLocalStatus((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  }, []);
+  const handleReset = useCallback(
+    (rel: TableRelationship) => {
+      if (onResetRelationship) {
+        onResetRelationship(rel);
+      } else {
+        setLocalStatus((prev) => {
+          const next = { ...prev };
+          delete next[rel.id];
+          return next;
+        });
+      }
+    },
+    [onResetRelationship]
+  );
 
   const toggleExpand = useCallback((id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -254,17 +297,17 @@ export function RelationshipReviewPanel({ datasets }: RelationshipReviewPanelPro
                   <RelationshipCard
                     key={rel.id}
                     rel={rel}
-                    status={localStatus[rel.id] || rel.status}
+                    status={getStatus(rel.id)}
                     isExpanded={expandedId === rel.id}
                     onToggleExpand={() => toggleExpand(rel.id)}
-                    onConfirm={() => handleConfirm(rel.id)}
-                    onReject={() => handleReject(rel.id)}
-                    onReset={() => handleReset(rel.id)}
+                    onConfirm={() => handleConfirm(rel)}
+                    onReject={() => handleReject(rel)}
+                    onReset={() => handleReset(rel)}
                   />
                 ))}
 
                 <p className="text-xs text-[var(--text-muted)] pt-2">
-                  当前确认状态仅保存在本次页面会话中，后续版本将支持持久化。
+                  确认状态已保存在本地浏览器中，刷新页面后仍然保留。
                 </p>
               </div>
             )}
