@@ -1068,6 +1068,30 @@ Upload CSV/Excel
   - 不改动「对话」标签页
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 19.44s ✅
 
+## Phase 4B-7: Relationship-aware Analysis Planner Mock
+
+- **目标**: 添加规则型 mock 分析规划器，将用户问题转化为结构化分析计划。
+- **新增文件**:
+  - `app/src/lib/assistant/analysisPlannerMock.ts`: 关键词规则匹配、字段检测、计划生成
+  - `app/src/components/assistant/AnalysisPlanCard.tsx`: 结构化计划展示卡片
+- **类型扩展** `app/src/types/assistant.ts`:
+  - `RecommendedAnalysisType`, `AnalysisFieldRequirement`, `AssistantNextAction`, `AssistantAnalysisPlan`
+- **关键词规则**:
+  - 预测/趋势/未来 → forecast → /app/forecast
+  - 路径/漏斗/流失 → path_analysis → /app/path
+  - 归因/渠道 → attribution → /app/attribution
+  - AB/实验 → ab_test → /app/statistics
+  - 文本/评论/情感 → semantic → /app/semantic
+  - 清洗/缺失/异常值 → smart_process → /app/data-workshop
+  - 其他 → descriptive → /app/statistics
+- **字段检测**: 基于列名模式匹配（time_column, user_id, event_name, target_metric 等）
+- **关系感知**: 多数据集无 confirmed relationships 时发出警告
+- **AI Workbench 集成**:
+  - 「能力」标签页新增「生成分析计划」卡片（ClipboardList 图标）
+  - 输入框 + 6 个示例问题 chip + 「生成计划」按钮
+  - 生成后展示 AnalysisPlanCard（类型标签、所需字段、假设、警告、导航按钮）
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 19.28s ✅
+
 ## 下一步建议
 
 ### 立即执行

@@ -757,3 +757,17 @@
   - 安全文案：明确说明元数据-only、不自动 join、不修改数据
 - AI Workbench 「能力」标签页新增「理清表关系」入口卡片
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 19.44s ✅
+
+## Phase 4B-7: Relationship-aware Analysis Planner Mock
+
+- 新增 `app/src/lib/assistant/analysisPlannerMock.ts`
+  - 关键词规则匹配：8 类分析类型（forecast/path/attribution/ab/semantic/process/regression/descriptive）
+  - 字段检测：基于列名模式匹配候选列
+  - 关系感知：多数据集无 confirmed relationships 时发出警告
+- 新增 `app/src/components/assistant/AnalysisPlanCard.tsx`
+  - 分析类型彩色徽章、所需字段卡片、假设/警告列表、导航操作按钮
+- 扩展 `app/src/types/assistant.ts`：RecommendedAnalysisType, AnalysisFieldRequirement, AssistantNextAction, AssistantAnalysisPlan
+- AI Workbench 「能力」标签页新增「生成分析计划」入口
+  - 输入框 + 6 个示例问题 chip + 生成按钮
+  - 展示结构化分析计划卡片，支持导航到对应分析页面
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 19.28s ✅

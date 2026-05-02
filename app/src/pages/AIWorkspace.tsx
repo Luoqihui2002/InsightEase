@@ -13,13 +13,17 @@ import {
   Users, Target, Lightbulb, GitBranch,
   ChevronDown, ChevronUp, Database, MessageSquare,
   Loader2, Columns2, Rows2,
-  History, Trash2, Table2, ArrowLeft
+  History, Trash2, Table2, ArrowLeft,
+  ClipboardList, Wand2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AssistantAvatar } from '@/components/assistant/AssistantAvatar';
 import { AnalysisResultRenderer } from '@/components/AnalysisResultRenderer';
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
+import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
+import { generateMockAnalysisPlan } from '@/lib/assistant/analysisPlannerMock';
+import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
 import type { DatasetPreview } from '@/types/api';
 import { intentRecognitionService, type AnalysisType } from '@/services/intent-recognition.service';
@@ -103,6 +107,10 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   } | null>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [showRelationshipPanel, setShowRelationshipPanel] = useState(false);
+  const [showAnalysisPlanPanel, setShowAnalysisPlanPanel] = useState(false);
+  const [planQuestion, setPlanQuestion] = useState('');
+  const [generatedPlan, setGeneratedPlan] = useState<AssistantAnalysisPlan | null>(null);
+  const [isPlanning, setIsPlanning] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -446,6 +454,32 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       updateCurrentSession(newMessages);
       handleAnalysisRequest(prompt);
     }, 100);
+  };
+
+  // 生成分析计划
+  const handleGeneratePlan = () => {
+    if (!planQuestion.trim()) return;
+    setIsPlanning(true);
+    setGeneratedPlan(null);
+
+    // Small delay to show loading state
+    setTimeout(() => {
+      const plan = generateMockAnalysisPlan({
+        question: planQuestion.trim(),
+        datasets: datasets.map((d) => ({
+          id: d.id,
+          filename: d.filename,
+          name: d.filename,
+          schema: (d.schema || []).map((col: any) => ({
+            name: col?.name || '',
+            semantic_type: col?.semantic_type || col?.type || '',
+          })),
+        })),
+        confirmedRelationships: undefined, // TODO: pass from RelationshipReviewPanel when persistence is added
+      });
+      setGeneratedPlan(plan);
+      setIsPlanning(false);
+    }, 400);
   };
 
   // 加载数据集预览
@@ -843,8 +877,88 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       <RelationshipReviewPanel datasets={datasets} />
                     </div>
                   </div>
+                ) : showAnalysisPlanPanel ? (
+                  <div className="h-full flex flex-col">
+                    <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)]">
+                      <button
+                        onClick={() => { setShowAnalysisPlanPanel(false); setGeneratedPlan(null); }}
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium text-[var(--text-primary)]">生成分析计划</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                      <div className="rounded-xl bg-[var(--bg-tertiary)]/50 border border-[var(--border-subtle)] p-4">
+                        <p className="text-sm text-[var(--text-primary)] mb-3">
+                          输入你的业务问题，我会基于规则匹配生成一个结构化分析路径建议。
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            value={planQuestion}
+                            onChange={(e) => setPlanQuestion(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && planQuestion.trim()) handleGeneratePlan(); }}
+                            placeholder="例如：未来销售额会怎么变化？"
+                            className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
+                          />
+                          <Button
+                            onClick={handleGeneratePlan}
+                            disabled={!planQuestion.trim() || isPlanning}
+                            className="bg-[var(--neon-cyan)] text-[var(--bg-primary)] hover:bg-[var(--neon-cyan)]/80 disabled:opacity-50"
+                          >
+                            {isPlanning ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Wand2 className="w-4 h-4" />
+                            )}
+                            生成计划
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {[
+                            '为什么最近转化率下降？',
+                            '哪些渠道贡献最高？',
+                            '未来销售额会怎么变化？',
+                            '哪些用户路径流失最多？',
+                            '评论里用户主要在抱怨什么？',
+                            '缺失值怎么处理？',
+                          ].map((sample) => (
+                            <button
+                              key={sample}
+                              onClick={() => { setPlanQuestion(sample); setGeneratedPlan(null); }}
+                              className="px-2.5 py-1 rounded-lg text-xs bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:border-[var(--neon-cyan)]/30 hover:text-[var(--neon-cyan)] transition-all"
+                            >
+                              {sample}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {generatedPlan && (
+                        <AnalysisPlanCard plan={generatedPlan} />
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <div className="p-6 grid grid-cols-2 gap-4 overflow-y-auto">
+                    {/* 生成分析计划 — 规则型分析规划 */}
+                    <button
+                      onClick={() => setShowAnalysisPlanPanel(true)}
+                      className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
+                          <ClipboardList className="w-5 h-5 text-[var(--neon-cyan)]" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-[var(--text-primary)]">生成分析计划</h3>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">
+                            输入业务问题，生成结构化分析路径建议
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+
                     {/* 理清表关系 — 多表关系推断 */}
                     <button
                       onClick={() => setShowRelationshipPanel(true)}

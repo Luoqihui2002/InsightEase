@@ -256,7 +256,7 @@
 - AI Workbench 新增「理清表关系」能力
 - 关系列表/表格视图，支持确认/忽略
 
-#### 4B-7: Relationship-aware Analysis Planner Mock（下一Phase）
+#### 4B-7: Relationship-aware Analysis Planner Mock ✅
 - 使用 confirmed 关系建议分析数据需求
 - 模板/关键词匹配，无真实 LLM
 

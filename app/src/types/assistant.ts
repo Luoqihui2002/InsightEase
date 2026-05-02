@@ -147,3 +147,54 @@ export interface InferRelationshipsResponse {
   generated_at: string;
   warnings: string[];
 }
+
+// ---------------------------------------------------------------------------
+// Analysis Plan Types
+// ---------------------------------------------------------------------------
+
+export type RecommendedAnalysisType =
+  | "descriptive"
+  | "semantic"
+  | "attribution"
+  | "forecast"
+  | "path_analysis"
+  | "ab_test"
+  | "regression"
+  | "smart_process"
+  | "custom_query";
+
+export interface AnalysisFieldRequirement {
+  role:
+    | "target_metric"
+    | "time_column"
+    | "user_id"
+    | "group_column"
+    | "event_name"
+    | "dimension"
+    | "feature"
+    | "text_column"
+    | "join_key";
+  required: boolean;
+  candidate_columns: string[];
+  reason: string;
+}
+
+export interface AssistantNextAction {
+  type: "navigate" | "confirm" | "explain" | "warning";
+  label: string;
+  target?: string;
+  payload?: Record<string, unknown>;
+}
+
+export interface AssistantAnalysisPlan {
+  id: string;
+  user_question: string;
+  interpreted_goal: string;
+  recommended_analysis_type: RecommendedAnalysisType;
+  required_datasets: string[];
+  required_fields: AnalysisFieldRequirement[];
+  required_relationships?: TableRelationship[];
+  assumptions: string[];
+  warnings: string[];
+  next_actions: AssistantNextAction[];
+}
