@@ -872,6 +872,17 @@
 - 安全边界：无模拟诊断/预处理数据、无自动分析执行、无 join/SQL/数据集创建、无 Hermes/LLM 调用
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 16.72s ✅
 
+## Hotfix 4B-8D-A: Guided Quick Analysis Runtime Crash
+
+- **问题**: 点击「下一步：理解数据」后白屏，`Cannot read properties of undefined (reading 'toLocaleString')`
+- **根因**: 后端 `assistant_profile_service.py` 返回 camelCase 键名，前端 `DatasetProfile` 类型为 snake_case，`profile.row_count` 实际为 `undefined`
+- **修复** `GuidedQuickAnalysisPanel.tsx`:
+  - 新增 `safeNumber()` / `safePercent()` 安全格式化辅助函数
+  - 新增 `normalizeProfile(raw)` 归一化函数，同时兼容 camelCase 和 snake_case 输入
+  - 所有数组字段 `Array.isArray` 守卫，所有嵌套字段安全访问 + 默认值
+  - 错误状态增加「重新理解」和「返回选择数据」恢复按钮
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 16.64s ✅
+
 ## Phase 4B-8C: Hide Legacy SmartAnalysis Entry
 
 - 修改 `AppSidebar.tsx`

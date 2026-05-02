@@ -109,6 +109,28 @@ npx tsc --noEmit        # 0 errors ✅
 npm run build           # built in 16.72s ✅
 ```
 
+## Hotfix 4B-8D-A: Runtime Crash on Profile Load
+
+**问题**: 点击「下一步：理解数据」后，整个 AI Workbench 白屏。控制台报错：`Cannot read properties of undefined (reading 'toLocaleString')`。
+
+**根因**: 后端 `assistant_profile_service.py` 返回 camelCase 键名（`rowCount`, `columnCount`, `qualityWarnings`, `tableType`, `recommendedAnalyses` 等），但前端 `DatasetProfile` 类型使用 snake_case（`row_count`, `column_count` 等）。`profile.row_count` 为 `undefined`，调用 `.toLocaleString()` 触发崩溃。
+
+**修复文件**: `app/src/components/assistant/GuidedQuickAnalysisPanel.tsx`
+
+**修复内容**:
+1. 新增 `safeNumber()` / `safePercent()` 安全格式化辅助函数 — 绝不直接对可能为 `undefined` 的值调用 `.toLocaleString()` 或 `.toFixed()`。
+2. 新增 `normalizeProfile(raw)` 响应归一化函数 — 同时识别 camelCase 和 snake_case 输入，将后端画像数据转换为符合前端 `DatasetProfile` 类型的结构。
+3. 所有数组字段使用 `Array.isArray` 守卫后再 `.map()`。
+4. 所有嵌套字段（`classification.confidence`, `classification.recommended_analyses`, `quality_warnings`）使用安全访问和默认值。
+5. 错误状态 UI 增加「重新理解」和「返回选择数据」按钮，避免错误后无法恢复。
+6. Step 1 数据集卡片也改用 `safeNumber()` 显示行列数。
+
+**验证**:
+```bash
+npx tsc --noEmit    # 0 errors ✅
+npm run build       # built in 16.64s ✅
+```
+
 ## Manual QA Checklist
 
 - [ ] SmartAnalysis remains hidden from sidebar.

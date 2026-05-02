@@ -28,6 +28,7 @@ import {
   Wand2,
   Info,
   ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import { assistantApi } from '@/api/assistant';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
@@ -36,6 +37,8 @@ import type {
   DatasetProfile,
   TableRelationship,
   AssistantAnalysisPlan,
+  ColumnProfile,
+  TableClassification,
 } from '@/types/assistant';
 import { cn } from '@/lib/utils';
 
@@ -76,6 +79,130 @@ const GOAL_CHIPS = [
 ];
 
 /* ------------------------------------------------------------------ */
+/*  Safe formatters                                                    */
+/* ------------------------------------------------------------------ */
+
+function safeNumber(value: unknown, fallback = '-'): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toLocaleString();
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed.toLocaleString();
+    }
+  }
+  return fallback;
+}
+
+function safePercent(value: unknown, fallback = '-'): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const normalized = value > 1 ? value : value * 100;
+    return `${Math.round(normalized)}%`;
+  }
+  return fallback;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Profile normalizer                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Normalize a raw profile response to snake_case DatasetProfile.
+ *
+ * The backend assistant_profile_service.py returns camelCase keys
+ * (rowCount, columnCount, qualityWarnings, etc.).
+ * The frontend DatasetProfile type uses snake_case.
+ * This normalizer handles both camelCase and snake_case inputs so
+ * it survives regardless of backend casing.
+ */
+function normalizeProfile(raw: unknown): DatasetProfile | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, any>;
+
+  const get = (k: string, alt?: string): any => {
+    if (k in r) return r[k];
+    if (alt && alt in r) return r[alt];
+    return undefined;
+  };
+
+  const rowCount = get('row_count', 'rowCount');
+  const colCount = get('column_count', 'columnCount');
+
+  const rawClassification = get('classification');
+  let classification: TableClassification = {
+    table_type: 'unknown',
+    confidence: 0,
+    evidence: [],
+    recommended_analyses: [],
+  };
+
+  if (rawClassification && typeof rawClassification === 'object') {
+    const rc = rawClassification as Record<string, any>;
+    const recAnalyses = rc.recommended_analyses ?? rc.recommendedAnalyses;
+    classification = {
+      table_type: rc.table_type ?? rc.tableType ?? 'unknown',
+      confidence:
+        typeof rc.confidence === 'number' && Number.isFinite(rc.confidence)
+          ? rc.confidence
+          : 0,
+      evidence: Array.isArray(rc.evidence) ? rc.evidence : [],
+      recommended_analyses: Array.isArray(recAnalyses) ? recAnalyses : [],
+      warnings: Array.isArray(rc.warnings) ? rc.warnings : undefined,
+    };
+  }
+
+  const rawColumns = get('columns');
+  const columns: ColumnProfile[] = [];
+  if (Array.isArray(rawColumns)) {
+    for (const c of rawColumns) {
+      if (!c || typeof c !== 'object') continue;
+      columns.push({
+        name: String(c.name ?? ''),
+        dtype: String(c.dtype ?? ''),
+        semantic_type: c.semantic_type ?? c.semanticType ?? 'unknown',
+        role: c.role ?? 'unknown',
+        null_count: typeof c.null_count === 'number' ? c.null_count : c.nullCount ?? 0,
+        null_rate:
+          typeof c.null_rate === 'number'
+            ? c.null_rate
+            : typeof c.nullRate === 'number'
+            ? c.nullRate
+            : 0,
+        unique_count: typeof c.unique_count === 'number' ? c.unique_count : c.uniqueCount ?? 0,
+        unique_rate:
+          typeof c.unique_rate === 'number'
+            ? c.unique_rate
+            : typeof c.uniqueRate === 'number'
+            ? c.uniqueRate
+            : 0,
+        examples: Array.isArray(c.examples) ? c.examples : [],
+        min: c.min ?? null,
+        max: c.max ?? null,
+        mean: typeof c.mean === 'number' ? c.mean : null,
+        std: typeof c.std === 'number' ? c.std : null,
+        warnings: Array.isArray(c.warnings) ? c.warnings : undefined,
+      });
+    }
+  }
+
+  const profile: DatasetProfile = {
+    dataset_id: String(get('dataset_id', 'datasetId') ?? ''),
+    name: String(get('name') ?? ''),
+    row_count: typeof rowCount === 'number' && Number.isFinite(rowCount) ? rowCount : 0,
+    column_count: typeof colCount === 'number' && Number.isFinite(colCount) ? colCount : 0,
+    columns,
+    classification,
+    quality_warnings: Array.isArray(get('quality_warnings', 'qualityWarnings'))
+      ? get('quality_warnings', 'qualityWarnings')
+      : [],
+    generated_at: String(get('generated_at', 'generatedAt') ?? ''),
+  };
+
+  return profile;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -108,11 +235,11 @@ const ROLE_PRIORITY = [
 ];
 
 function getKeyFields(profile: DatasetProfile): string[] {
-  const cols = profile.columns || [];
+  const cols = Array.isArray(profile?.columns) ? profile.columns : [];
   const picked = new Set<string>();
   for (const role of ROLE_PRIORITY) {
-    const found = cols.find((c) => c.role === role);
-    if (found && !picked.has(found.name)) {
+    const found = cols.find((c: ColumnProfile) => c.role === role);
+    if (found && found.name && !picked.has(found.name)) {
       picked.add(found.name);
       if (picked.size >= 5) break;
     }
@@ -152,13 +279,18 @@ export function GuidedQuickAnalysisPanel({
     setProfile(null);
     try {
       const res = (await assistantApi.profileDataset(selectedDatasetId)) as any;
-      if (res.code === 200 && res.data) {
-        setProfile(res.data as DatasetProfile);
+      if (res?.code === 200 && res.data) {
+        const normalized = normalizeProfile(res.data);
+        if (normalized) {
+          setProfile(normalized);
+        } else {
+          setProfileError('数据集画像格式异常，无法解析');
+        }
       } else {
-        setProfileError(res.message || '获取数据集画像失败');
+        setProfileError(res?.message || '获取数据集画像失败');
       }
     } catch (err: any) {
-      setProfileError(err.message || '请求失败');
+      setProfileError(err?.message || '请求失败');
     } finally {
       setProfileLoading(false);
     }
@@ -268,7 +400,7 @@ export function GuidedQuickAnalysisPanel({
                       {ds.filename || ds.name || ds.id}
                     </p>
                     <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                      {ds.row_count?.toLocaleString() ?? '-'} 行 · {ds.col_count ?? '-'} 列
+                      {safeNumber(ds.row_count)} 行 · {safeNumber(ds.col_count)} 列
                     </p>
                   </div>
                   {isSelected && (
@@ -331,13 +463,29 @@ export function GuidedQuickAnalysisPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="p-4 rounded-xl bg-red-500/5 border border-red-500/20"
+            className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 space-y-3"
           >
-            <div className="flex items-center gap-2 text-red-400 mb-2">
+            <div className="flex items-center gap-2 text-red-400">
               <AlertTriangle className="w-4 h-4" />
-              <span className="text-sm font-medium">分析失败</span>
+              <span className="text-sm font-medium">数据理解失败</span>
             </div>
             <p className="text-xs text-[var(--text-secondary)]">{profileError}</p>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={loadProfile}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-subtle)] transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                重新理解
+              </button>
+              <button
+                onClick={() => setStep(1)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-subtle)] transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                返回选择数据
+              </button>
+            </div>
           </motion.div>
         )}
 
@@ -368,15 +516,15 @@ export function GuidedQuickAnalysisPanel({
               <div className="flex flex-wrap gap-4 text-xs text-[var(--text-secondary)]">
                 <span>
                   <span className="text-[var(--text-muted)]">行数：</span>
-                  {profile.row_count.toLocaleString()}
+                  {safeNumber(profile.row_count)}
                 </span>
                 <span>
                   <span className="text-[var(--text-muted)]">列数：</span>
-                  {profile.column_count}
+                  {safeNumber(profile.column_count)}
                 </span>
                 <span>
                   <span className="text-[var(--text-muted)]">置信度：</span>
-                  {(profile.classification?.confidence * 100).toFixed(0)}%
+                  {safePercent(profile.classification?.confidence)}
                 </span>
               </div>
 
@@ -404,49 +552,60 @@ export function GuidedQuickAnalysisPanel({
               })()}
 
               {/* Recommended analyses */}
-              {profile.classification?.recommended_analyses?.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                    <BarChart3 className="w-3 h-3" />
-                    适合的分析
+              {(() => {
+                const rec = Array.isArray(profile.classification?.recommended_analyses)
+                  ? profile.classification.recommended_analyses
+                  : [];
+                return rec.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                      <BarChart3 className="w-3 h-3" />
+                      适合的分析
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {rec.map((a) => (
+                        <span
+                          key={a}
+                          className="px-2 py-0.5 rounded-full text-[11px] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)] border border-[var(--neon-cyan)]/20"
+                        >
+                          {a}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {profile.classification.recommended_analyses.map((a) => (
-                      <span
-                        key={a}
-                        className="px-2 py-0.5 rounded-full text-[11px] bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)] border border-[var(--neon-cyan)]/20"
-                      >
-                        {a}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+                ) : null;
+              })()}
 
               {/* Quality warnings */}
-              {profile.quality_warnings?.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-amber-400 uppercase tracking-wider">
-                    <AlertTriangle className="w-3 h-3" />
-                    注意事项
+              {(() => {
+                const warnings = Array.isArray(profile.quality_warnings)
+                  ? profile.quality_warnings
+                  : [];
+                if (warnings.length > 0) {
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-[10px] font-medium text-amber-400 uppercase tracking-wider">
+                        <AlertTriangle className="w-3 h-3" />
+                        注意事项
+                      </div>
+                      <div className="space-y-1">
+                        {warnings.map((w, i) => (
+                          <p key={i} className="text-xs text-amber-400/80 flex items-start gap-1.5">
+                            <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                            {w}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--neon-green)]">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    暂无明显数据质量风险
                   </div>
-                  <div className="space-y-1">
-                    {profile.quality_warnings.map((w, i) => (
-                      <p key={i} className="text-xs text-amber-400/80 flex items-start gap-1.5">
-                        <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-                        {w}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {profile.quality_warnings?.length === 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-[var(--neon-green)]">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  暂无明显数据质量风险
-                </div>
-              )}
+                );
+              })()}
             </div>
           </motion.div>
         )}
