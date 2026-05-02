@@ -845,3 +845,15 @@
 - 新增 `docs/design/ASSISTANT_RUNTIME_ADAPTER_DESIGN.md`
   - 运行时架构设计文档
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 19.34s ✅
+
+## Phase 4B-8B: SmartAnalysis Legacy Page Audit
+
+- 审计 `SmartAnalysis.tsx` (906 行) 及其导航链路
+- 发现诊断和预处理完全为模拟数据（`setTimeout` + 假数据 + `演示数据` badge）
+- 发现仅统计分析调用真实后端，其余类型均为模拟
+- 发现结果是自定义内联渲染，未使用 4A `ResultView`（唯一不使用的分析页面）
+- 发现导航使用 `window.location.href` 硬刷新
+- 发现聚类分析推荐独立页面，但不存在独立路由
+- 产出 `docs/reviews/SMART_ANALYSIS_LEGACY_PAGE_AUDIT.md`（11 节完整审计）
+- 推荐：短期隐藏侧边栏入口 → 中期迁移到 AI Workbench → 长期删除
+- 无源码修改

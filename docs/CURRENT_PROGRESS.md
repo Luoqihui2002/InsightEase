@@ -1148,6 +1148,19 @@ Upload CSV/Excel
   - `AIWorkspace.tsx`: 替换直接调用为 runtime 调用，添加错误处理
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 19.34s ✅
 
+## Phase 4B-8B: SmartAnalysis Legacy Page Audit
+
+- **目标**: 审计 `SmartAnalysis` 遗留页面并决定未来产品定位。
+- **发现**:
+  - 诊断和预处理完全为模拟数据
+  - 仅统计分析调用真实后端
+  - 未使用 4A `ResultView`（唯一不使用的分析页面）
+  - 导航使用 `window.location.href` 硬刷新
+  - 聚类分析推荐不存在的独立页面
+- **推荐**: 短期隐藏侧边栏 → 中期迁移到 AI Workbench → 长期删除
+- **产出**: `docs/reviews/SMART_ANALYSIS_LEGACY_PAGE_AUDIT.md`
+- **无源码修改**
+
 ## 下一步建议
 
 ### 立即执行

@@ -280,7 +280,20 @@
 - 安全工具注册表（8 工具，确认规则，副作用等级）
 - `hermesAssistantRuntime` 占位符
 
-#### 4B-8B: Hermes Backend Adapter（远期）
+#### 4B-8B: SmartAnalysis Legacy Page Audit ✅
+- 审计 `SmartAnalysis` 模拟数据、4A 合规性、导航问题
+- 推荐：隐藏 → 迁移 → 删除
+
+#### 4B-8C: Hide Legacy SmartAnalysis Entry（下一Phase）
+- 移除侧边栏入口和 Dashboard 快捷方式
+
+#### 4B-8D: Hermes Backend Adapter（远期）
+- 后端 Hermes API 适配层
+- 前端切换 runtime 模式
+
+#### 4B-9: Result Explainer（远期）
+- 解释 `AnalysisResult` 块
+- 建议下一步分析
 - 后端 Hermes API 适配层
 - 前端切换 runtime 模式
 
