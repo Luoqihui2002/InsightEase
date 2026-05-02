@@ -858,6 +858,20 @@
 - 推荐：短期隐藏侧边栏入口 → 中期迁移到 AI Workbench → 长期删除
 - 无源码修改
 
+## Phase 4B-8D: Guided Quick Analysis in AI Workbench
+
+- 新增 `app/src/components/assistant/GuidedQuickAnalysisPanel.tsx`
+  - 3 步引导流：选择数据集 → 理解数据结构 → 生成分析计划
+  - Step 1: 数据集卡片列表，支持预选中 `defaultDatasetId`
+  - Step 2: 调用真实 `assistantApi.profileDataset()`，渲染紧凑画像摘要（表类型、关键字段、推荐分析、质量警告）
+  - Step 3: 6 个目标 chip + 自定义问题，调用 `getAssistantRuntime().generateAnalysisPlan()`，渲染 `AnalysisPlanCard`
+- 修改 `app/src/pages/AIWorkspace.tsx`
+  - 「通用能力」区新增「快速分析向导」卡片（Zap 图标）
+  - 新增 `showQuickAnalysisPanel` 状态与面板渲染分支
+  - 导航行为复用现有 `companion-navigate` + `onClose()` 模式
+- 安全边界：无模拟诊断/预处理数据、无自动分析执行、无 join/SQL/数据集创建、无 Hermes/LLM 调用
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 16.72s ✅
+
 ## Phase 4B-8C: Hide Legacy SmartAnalysis Entry
 
 - 修改 `AppSidebar.tsx`

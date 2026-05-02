@@ -1171,6 +1171,24 @@ Upload CSV/Excel
 - **保留**: `/app/smart-analysis` 路由和源码文件（直接访问兼容 + 迁移参考）
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 16.41s ✅
 
+## Phase 4B-8D: Guided Quick Analysis in AI Workbench
+
+- **目标**: 将 SmartAnalysis 遗留页面中有用的"引导式快速分析"概念迁移到 AI Workbench。
+- **新增组件** `GuidedQuickAnalysisPanel.tsx`:
+  - 3 步引导流：选择数据集 → 理解数据结构 → 生成分析计划
+  - Step 1: 数据集卡片选择，支持 `defaultDatasetId` 预选中
+  - Step 2: 调用 `assistantApi.profileDataset()` 获取真实画像，渲染紧凑摘要（表类型、关键字段、推荐分析、质量警告）
+  - Step 3: 6 个目标 chip + 自定义问题输入，调用 `getAssistantRuntime().generateAnalysisPlan()` 生成计划，渲染 `AnalysisPlanCard`
+- **AI Workbench 集成**:
+  - 「能力」标签页「通用能力」区新增「快速分析向导」卡片（Zap 图标）
+  - 无需预先选择数据集，向导内部完成数据集选择
+  - 导航行为与现有 `AnalysisPlanCard` 一致：dispatch `companion-navigate` + 关闭 workbench
+- **安全边界**:
+  - 仅使用真实 `profileDataset` API，无模拟诊断数据
+  - 仅使用 `AssistantRuntime` 生成计划，不自动执行分析
+  - 无 join/SQL/数据集创建/Hermes/LLM 调用
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 16.72s ✅
+
 ## 下一步建议
 
 ### 立即执行
@@ -1179,7 +1197,9 @@ Upload CSV/Excel
 
 ### 随后进入
 
-1. **Phase 4B-8: Real AI Integration** — 替换规则型 planner 为 LLM 或 Hermes Agent 调用
+1. **预填充导航** — 将计划中的数据集 ID 和建议字段映射通过 URL query 或共享状态传递给目标分析页面
+2. **Hermes runtime 集成** — 实现 `hermesAssistantRuntime`，替换规则型 planner
+3. **SmartAnalysis 删除** — 确认引导流稳定后，删除遗留页面
 
 ### 远期规划（不变）
 

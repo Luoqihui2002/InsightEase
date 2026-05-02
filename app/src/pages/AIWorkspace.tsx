@@ -14,7 +14,7 @@ import {
   Database, MessageSquare,
   Loader2, Columns2, Rows2,
   History, Trash2, Table2, ArrowLeft,
-  ClipboardList, Wand2
+  ClipboardList, Wand2, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import { AssistantAvatar } from '@/components/assistant/AssistantAvatar';
 
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
+import { GuidedQuickAnalysisPanel } from '@/components/assistant/GuidedQuickAnalysisPanel';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
 import { useAssistantContext } from '@/hooks/useAssistantContext';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
@@ -105,6 +106,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const [showPreview, setShowPreview] = useState(true);
   const [showRelationshipPanel, setShowRelationshipPanel] = useState(false);
   const [showAnalysisPlanPanel, setShowAnalysisPlanPanel] = useState(false);
+  const [showQuickAnalysisPanel, setShowQuickAnalysisPanel] = useState(false);
   const [planQuestion, setPlanQuestion] = useState('');
   const [generatedPlan, setGeneratedPlan] = useState<AssistantAnalysisPlan | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
@@ -819,6 +821,17 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       />
                     </div>
                   </div>
+                ) : showQuickAnalysisPanel ? (
+                  <GuidedQuickAnalysisPanel
+                    datasets={datasets}
+                    defaultDatasetId={selectedDataset ?? undefined}
+                    confirmedRelationships={assistantContext.confirmedRelationships}
+                    onNavigate={(target) => {
+                      window.dispatchEvent(new CustomEvent('companion-navigate', { detail: target }));
+                      onClose();
+                    }}
+                    onBack={() => setShowQuickAnalysisPanel(false)}
+                  />
                 ) : showAnalysisPlanPanel ? (
                   <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                     <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)] flex-shrink-0">
@@ -908,6 +921,24 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                               <h3 className="font-medium text-[var(--text-primary)]">生成分析计划</h3>
                               <p className="text-xs text-[var(--text-muted)] mt-1">
                                 输入业务问题，生成结构化分析路径建议
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* 快速分析向导 — 引导式数据集选择 + 计划生成 */}
+                        <button
+                          onClick={() => setShowQuickAnalysisPanel(true)}
+                          className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-[var(--neon-cyan)]/10 flex items-center justify-center group-hover:bg-[var(--neon-cyan)]/20 transition-colors">
+                              <Zap className="w-5 h-5 text-[var(--neon-cyan)]" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-[var(--text-primary)]">快速分析向导</h3>
+                              <p className="text-xs text-[var(--text-muted)] mt-1">
+                                从选择数据集开始，逐步理解数据并生成分析路径
                               </p>
                             </div>
                           </div>
