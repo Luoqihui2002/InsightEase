@@ -810,3 +810,17 @@
   - 修复上下布局预览区域无限高度问题，添加 `max-h-[240px]`
   - 清理死代码：分析进度、结果面板、`AnalysisResultRenderer`、未使用图标
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 16.50s ✅
+
+## Phase 4B-7C-B: AI Workbench Vertical Layout Scroll Fix
+
+- 修复 `AIWorkspace.tsx` 上下布局滚动链
+  - AI 对话区域: 添加 `min-h-0 overflow-hidden`
+  - 内容区: `flex-1 min-h-0 overflow-hidden flex flex-col`
+  - 对话标签页: `flex-1 min-h-0 flex flex-col overflow-hidden`（替代不可靠的 `h-full`）
+  - 消息列表: `flex-1 min-h-0 overflow-y-auto`
+  - 快速 chips / 输入框: 添加 `flex-shrink-0`
+  - 能力标签页面板（理清表关系 / 生成分析计划）: 统一 `flex-1 min-h-0` 模式
+  - 能力网格 / 历史标签页: `flex-1 min-h-0 overflow-y-auto`
+  - 数据预览（左右布局）: 添加 `min-h-0 overflow-hidden`
+- 根因: flex 滚动链缺少 `min-h-0`，导致 `overflow-y-auto` 子元素无法正确收缩和滚动
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 22.38s ✅

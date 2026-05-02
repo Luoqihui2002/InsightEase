@@ -498,7 +498,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         {mainLayout === 'vertical' && showPreview && datasetPreview && (
           <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex-shrink-0 max-h-[240px] overflow-hidden flex flex-col">
             {/* 数据预览头部 */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)] flex-shrink-0">
               <h3 className="text-sm font-medium text-[var(--text-primary)]">
                 数据预览（前5行 / 共{datasetPreview.totalRows}行）
               </h3>
@@ -542,11 +542,11 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
         {/* ========== AI 对话区域 ========== */}
         <div className={cn(
-          "flex flex-col",
+          "flex flex-col min-h-0 overflow-hidden",
           mainLayout === 'horizontal' && showPreview && datasetPreview ? "w-[62%]" : "flex-1"
         )}>
           {/* 头部 */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] pl-12">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] pl-12 flex-shrink-0">
             <AssistantAvatar variant="default" size="sm" />
             <div className="flex-shrink-0">
               <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
@@ -656,11 +656,11 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           </div>
 
           {/* 内容区 */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {activeTab === 'chat' && (
-              <div className="h-full flex flex-col">
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {/* 消息列表 */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={scrollRef}>
+                <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4" ref={scrollRef}>
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -713,7 +713,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
                 {/* 快速提示芯片 */}
                 {!isLoading && (
-                  <div className="px-4 pt-3 pb-0">
+                  <div className="px-4 pt-3 pb-0 flex-shrink-0">
                     <div className="flex flex-wrap gap-2">
                       {[
                         '预测未来销售额趋势',
@@ -744,7 +744,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                 )}
 
                 {/* 输入框 */}
-                <div className="p-4 border-t border-[var(--border-subtle)]">
+                <div className="p-4 border-t border-[var(--border-subtle)] flex-shrink-0">
                   <div className="flex gap-2">
                     <Input
                       ref={inputRef}
@@ -772,8 +772,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             {activeTab === 'capabilities' && (
               <>
                 {showRelationshipPanel ? (
-                  <div className="h-full flex flex-col">
-                    <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)]">
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)] flex-shrink-0">
                       <button
                         onClick={() => setShowRelationshipPanel(false)}
                         className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
@@ -782,7 +782,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       </button>
                       <span className="text-sm font-medium text-[var(--text-primary)]">理清表关系</span>
                     </div>
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 min-h-0 overflow-hidden">
                       <RelationshipReviewPanel
                         datasets={datasets}
                         confirmedRelationshipIds={assistantContext.confirmedRelationships.map((r) => r.id)}
@@ -794,8 +794,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                     </div>
                   </div>
                 ) : showAnalysisPlanPanel ? (
-                  <div className="h-full flex flex-col">
-                    <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)]">
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)] flex-shrink-0">
                       <button
                         onClick={() => { setShowAnalysisPlanPanel(false); setGeneratedPlan(null); }}
                         className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
@@ -804,7 +804,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       </button>
                       <span className="text-sm font-medium text-[var(--text-primary)]">生成分析计划</span>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                       <div className="rounded-xl bg-[var(--bg-tertiary)]/50 border border-[var(--border-subtle)] p-4">
                         <p className="text-sm text-[var(--text-primary)] mb-3">
                           输入你的业务问题，我会基于规则匹配生成一个结构化分析路径建议。
@@ -862,7 +862,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-6 overflow-y-auto space-y-6">
+                  <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
                     {/* 上下文无关能力 */}
                     <div>
                       <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3">
@@ -946,7 +946,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             )}
 
             {activeTab === 'history' && (
-              <div className="p-4 overflow-y-auto h-full">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-[var(--text-primary)]">对话历史</h3>
                   <Button
@@ -997,7 +997,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
         {/* ========== 左右布局：数据预览在右侧 ========== */}
         {mainLayout === 'horizontal' && showPreview && datasetPreview && (
-          <div className="w-[38%] border-l border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex flex-col">
+          <div className="w-[38%] border-l border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex flex-col min-h-0 overflow-hidden">
             {/* 数据预览头部 */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
               <h3 className="text-sm font-medium text-[var(--text-primary)]">

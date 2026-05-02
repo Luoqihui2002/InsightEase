@@ -1124,6 +1124,16 @@ Upload CSV/Excel
     - 清理死代码：分析进度、结果面板、未使用图标
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 16.50s ✅
 
+## Phase 4B-7C-B: AI Workbench Vertical Layout Scroll Fix
+
+- **目标**: 修复上下布局中生成的分析计划卡片无法滚动的问题。
+- **根因**: flex 滚动链缺少 `min-h-0`，导致 `overflow-y-auto` 子元素无法收缩和滚动。
+- **修复**: 在 `AIWorkspace.tsx` 全布局链添加 `min-h-0 overflow-hidden flex-shrink-0`：
+  - AI 对话区域、内容区、对话标签页、消息列表
+  - 快速 chips、输入框、能力面板头部
+  - 能力网格、历史标签页、数据预览面板
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 22.38s ✅
+
 ## 下一步建议
 
 ### 立即执行

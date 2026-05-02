@@ -270,6 +270,10 @@
 - 对话输入路由到规划器，不直接调用后端分析
 - 能力标签页分「通用能力」和「分析工具」
 
+#### 4B-7C-B: AI Workbench Vertical Layout Scroll Fix ✅
+- 修复 flex 滚动链：`min-h-0` + `overflow-hidden` + `flex-shrink-0`
+- 生成的 AnalysisPlanCard 可完整滚动
+
 #### 4B-8: Real AI Integration（远期）
 - 元数据优先的 LLM 调用
 - 结构化 JSON 输出
