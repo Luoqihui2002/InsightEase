@@ -19,7 +19,6 @@ import {
   Save,
   ShieldAlert,
   Layers3,
-  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -72,6 +71,7 @@ interface RelationshipReviewPanelProps {
   ) => void;
   onDeleteRelationshipSet: (id: string) => void;
   onSetActiveRelationshipSet: (id?: string) => void;
+  onClearActiveRelationshipSet: () => void;
 }
 
 const NO_ACTIVE_SET_VALUE = '__none__';
@@ -171,6 +171,7 @@ export function RelationshipReviewPanel({
   onUpdateRelationshipSet,
   onDeleteRelationshipSet,
   onSetActiveRelationshipSet,
+  onClearActiveRelationshipSet,
 }: RelationshipReviewPanelProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -322,128 +323,15 @@ export function RelationshipReviewPanel({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Layers3 className="w-4 h-4 text-[var(--neon-cyan)]" />
-            <h3 className="text-sm font-medium text-[var(--text-primary)]">关系组管理</h3>
-          </div>
-
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/45 p-4 space-y-3">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0 space-y-1">
-                {activeSet ? (
-                  <>
-                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                      当前关系组：{activeSet.name}
-                    </p>
-                    <p className="text-xs text-[var(--text-muted)]">
-                      包含 {activeSet.dataset_ids.length} 张表，{activeSet.relationships.length} 条关系
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium text-[var(--text-primary)]">
-                      暂无当前关系组
-                    </p>
-                    <p className="text-xs text-[var(--text-muted)]">
-                      你可以先在理清表关系中保存一个关系组。
-                    </p>
-                  </>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Select
-                  value={activeRelationshipSetId ?? NO_ACTIVE_SET_VALUE}
-                  onValueChange={(value) =>
-                    onSetActiveRelationshipSet(value === NO_ACTIVE_SET_VALUE ? undefined : value)
-                  }
-                >
-                  <SelectTrigger className="w-[220px] bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
-                    <SelectValue placeholder="选择关系组" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_ACTIVE_SET_VALUE}>不使用关系组</SelectItem>
-                    {relationshipSets.map((set) => (
-                      <SelectItem key={set.id} value={set.id}>
-                        {set.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!activeSet}
-                  onClick={handleOpenRename}
-                  className="border-[var(--border-subtle)]"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  重命名
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!activeSet}
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="border-red-400/25 text-red-400 hover:bg-red-400/10"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  删除
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!activeSet}
-                  onClick={() => onSetActiveRelationshipSet(undefined)}
-                  className="border-[var(--border-subtle)]"
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                  清除当前
-                </Button>
-              </div>
-            </div>
-
-            {relationshipSets.length === 0 ? (
-              <p className="text-xs text-[var(--text-muted)] rounded-lg border border-dashed border-[var(--border-subtle)] px-3 py-3">
-                暂无已保存关系组。你可以选择 2 个以上数据集并推断关系，然后保存为关系组。
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {relationshipSets.map((set) => (
-                  <button
-                    key={set.id}
-                    onClick={() => onSetActiveRelationshipSet(set.id)}
-                    className={cn(
-                      'text-left rounded-lg border px-3 py-2 transition-colors',
-                      set.id === activeRelationshipSetId
-                        ? 'border-[var(--neon-cyan)]/40 bg-[var(--neon-cyan)]/8'
-                        : 'border-[var(--border-subtle)] bg-[var(--bg-secondary)]/50 hover:border-[var(--neon-cyan)]/25'
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-[var(--text-primary)] truncate">
-                        {set.name}
-                      </span>
-                      {set.id === activeRelationshipSetId && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[var(--neon-cyan)] shrink-0" />
-                      )}
-                    </div>
-                    <p className="mt-1 text-[10px] text-[var(--text-muted)]">
-                      {set.dataset_ids.length} 张表 · {set.relationships.length} 条关系
-                    </p>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-start gap-2 text-xs text-[var(--text-muted)]">
-              <Info className="w-3.5 h-3.5 mt-0.5 text-[var(--neon-cyan)] shrink-0" />
-              <p>关系组用于告诉助手哪些表关系可以作为分析上下文；不会自动 join。</p>
-            </div>
-          </div>
-        </section>
+        <RelationshipSetManagement
+          relationshipSets={relationshipSets}
+          activeRelationshipSetId={activeRelationshipSetId}
+          activeSet={activeSet}
+          onSetActiveRelationshipSet={onSetActiveRelationshipSet}
+          onOpenRename={handleOpenRename}
+          onOpenDelete={() => setDeleteDialogOpen(true)}
+          onClearActiveRelationshipSet={onClearActiveRelationshipSet}
+        />
 
         <section className="space-y-3">
           <div className="flex items-center gap-2">
@@ -807,6 +695,152 @@ function CandidateRelationshipRow({
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function RelationshipSetManagement({
+  relationshipSets,
+  activeRelationshipSetId,
+  activeSet,
+  onSetActiveRelationshipSet,
+  onOpenRename,
+  onOpenDelete,
+  onClearActiveRelationshipSet,
+}: {
+  relationshipSets: RelationshipSet[];
+  activeRelationshipSetId?: string;
+  activeSet?: RelationshipSet;
+  onSetActiveRelationshipSet: (id?: string) => void;
+  onOpenRename: () => void;
+  onOpenDelete: () => void;
+  onClearActiveRelationshipSet: () => void;
+}) {
+  return (
+    <section
+      className="space-y-3"
+      aria-label="关系组管理"
+      data-testid="relationship-set-management"
+    >
+      <div className="flex items-center gap-2">
+        <Layers3 className="w-4 h-4 text-[var(--neon-cyan)]" />
+        <h3 className="text-sm font-medium text-[var(--text-primary)]">关系组管理</h3>
+      </div>
+
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/45 p-4 space-y-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 space-y-1">
+            {activeSet ? (
+              <>
+                <p className="text-sm font-medium text-[var(--text-primary)] truncate">
+                  当前关系组：{activeSet.name}
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  包含 {activeSet.dataset_ids.length} 张表，{activeSet.relationships.length} 条关系
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-[var(--text-primary)]">
+                  暂无当前关系组
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  你可以先在理清表关系中保存一个关系组。
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={activeRelationshipSetId ?? NO_ACTIVE_SET_VALUE}
+              onValueChange={(value) =>
+                onSetActiveRelationshipSet(value === NO_ACTIVE_SET_VALUE ? undefined : value)
+              }
+            >
+              <SelectTrigger className="w-[220px] bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+                <SelectValue placeholder="切换关系组" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_ACTIVE_SET_VALUE}>不使用关系组</SelectItem>
+                {relationshipSets.map((set) => (
+                  <SelectItem key={set.id} value={set.id}>
+                    {set.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!activeSet}
+              onClick={onOpenRename}
+              className="border-[var(--border-subtle)]"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              重命名
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!activeSet}
+              onClick={onOpenDelete}
+              className="border-red-400/25 text-red-400 hover:bg-red-400/10"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              删除
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!activeSet}
+              onClick={onClearActiveRelationshipSet}
+              className="border-[var(--border-subtle)]"
+            >
+              清空当前关系组
+            </Button>
+          </div>
+        </div>
+
+        {relationshipSets.length === 0 ? (
+          <p className="text-xs text-[var(--text-muted)] rounded-lg border border-dashed border-[var(--border-subtle)] px-3 py-3">
+            暂无已保存关系组。你可以选择 2 个以上数据集并推断关系，然后保存为关系组。
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {relationshipSets.map((set) => (
+              <button
+                key={set.id}
+                onClick={() => onSetActiveRelationshipSet(set.id)}
+                className={cn(
+                  'text-left rounded-lg border px-3 py-2 transition-colors',
+                  set.id === activeRelationshipSetId
+                    ? 'border-[var(--neon-cyan)]/40 bg-[var(--neon-cyan)]/8'
+                    : 'border-[var(--border-subtle)] bg-[var(--bg-secondary)]/50 hover:border-[var(--neon-cyan)]/25'
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-[var(--text-primary)] truncate">
+                    {set.name}
+                  </span>
+                  {set.id === activeRelationshipSetId && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[var(--neon-cyan)] shrink-0" />
+                  )}
+                </div>
+                <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                  {set.dataset_ids.length} 张表 · {set.relationships.length} 条关系
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-start gap-2 text-xs text-[var(--text-muted)]">
+          <Info className="w-3.5 h-3.5 mt-0.5 text-[var(--neon-cyan)] shrink-0" />
+          <p>关系组用于告诉助手哪些表关系可以作为分析上下文；不会自动 join。</p>
+        </div>
+      </div>
+    </section>
   );
 }
 

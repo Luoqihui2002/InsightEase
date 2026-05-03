@@ -835,6 +835,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                         onUpdateRelationshipSet={assistantContext.updateRelationshipSet}
                         onDeleteRelationshipSet={assistantContext.deleteRelationshipSet}
                         onSetActiveRelationshipSet={assistantContext.setActiveRelationshipSet}
+                        onClearActiveRelationshipSet={assistantContext.clearConfirmedRelationships}
                       />
                     </div>
                   </div>
