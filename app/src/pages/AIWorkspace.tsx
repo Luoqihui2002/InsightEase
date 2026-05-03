@@ -271,7 +271,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     };
 
     try {
-      const selectedDatasetIds = selectedDataset ? [selectedDataset] : datasets.map((d) => d.id);
+      const selectedDatasetIds = selectedDataset ? [selectedDataset] : [];
       const activeSetRelationships = activeRelationshipSet?.relationships ?? [];
 
       const runtime = getAssistantRuntime();
@@ -281,6 +281,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           selected_dataset_ids: selectedDatasetIds,
           selected_dataset_id: selectedDataset ?? undefined,
           confirmed_relationships: activeSetRelationships,
+          relationship_set: activeRelationshipSet,
+          available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
           datasets: datasets.map((d) => ({
             id: d.id,
             filename: d.filename,
@@ -402,7 +404,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     setGeneratedPlan(null);
 
     try {
-      const selectedDatasetIds = selectedDataset ? [selectedDataset] : datasets.map((d) => d.id);
+      const selectedDatasetIds = selectedDataset ? [selectedDataset] : [];
       const activeSetRelationships = activeRelationshipSet?.relationships ?? [];
 
       const runtime = getAssistantRuntime();
@@ -412,6 +414,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           selected_dataset_ids: selectedDatasetIds,
           selected_dataset_id: selectedDataset ?? undefined,
           confirmed_relationships: activeSetRelationships,
+          relationship_set: activeRelationshipSet,
+          available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
           datasets: datasets.map((d) => ({
             id: d.id,
             filename: d.filename,
@@ -835,7 +839,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                         onUpdateRelationshipSet={assistantContext.updateRelationshipSet}
                         onDeleteRelationshipSet={assistantContext.deleteRelationshipSet}
                         onSetActiveRelationshipSet={assistantContext.setActiveRelationshipSet}
-                        onClearActiveRelationshipSet={assistantContext.clearConfirmedRelationships}
+                        onClearActiveRelationshipSet={() =>
+                          assistantContext.setActiveRelationshipSet(undefined)
+                        }
                       />
                     </div>
                   </div>

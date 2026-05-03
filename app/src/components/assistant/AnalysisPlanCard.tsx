@@ -127,6 +127,47 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
         )}
 
         {/* 所需字段 */}
+        {plan.relationship_set_name && (
+          <div>
+            <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">
+              <Info className="w-3 h-3" />
+              当前使用的关系组
+            </div>
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)]/50 px-3 py-2">
+              <p className="text-xs font-medium text-[var(--text-primary)]">
+                {plan.relationship_set_name}
+              </p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                关系组提供可参考的数据集图谱；本次计划只使用上方列出的所需数据集，不会自动 join。
+              </p>
+            </div>
+          </div>
+        )}
+
+        {plan.reference_dataset_nodes && plan.reference_dataset_nodes.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">
+              <Info className="w-3 h-3" />
+              关系组中的参考表 / 孤立表
+            </div>
+            <div className="space-y-1.5">
+              {plan.reference_dataset_nodes.map((node) => (
+                <div
+                  key={node.dataset_id}
+                  className="rounded-lg border border-amber-400/15 bg-amber-400/5 px-3 py-2"
+                >
+                  <p className="text-xs font-medium text-[var(--text-secondary)]">
+                    {node.filename || node.dataset_name || node.dataset_id}
+                  </p>
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                    该表保留在当前关系组中，但未发现可确认关系，不会自动参与 join。
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {plan.required_fields.length > 0 && (
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">

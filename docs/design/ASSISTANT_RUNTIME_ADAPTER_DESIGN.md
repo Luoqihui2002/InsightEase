@@ -51,6 +51,8 @@ interface AssistantContext {
   selected_dataset_ids: string[];
   selected_dataset_id?: string;
   confirmed_relationships: TableRelationship[]; // active relationship set only
+  relationship_set?: RelationshipSet; // active topic graph only
+  available_dataset_nodes?: RelationshipSetDatasetNode[];
   dataset_profiles?: DatasetProfile[];
   datasets?: Array<{ id; filename; name; schema? }>;
 }
@@ -67,6 +69,14 @@ Relationship context contract after Phase 4B-8D-C:
 - Saved relationship sets that are not active are never passed to the runtime.
 - If no active set exists, `confirmed_relationships` is `[]`.
 - Relationship sets are local assistant metadata and do not trigger joins or SQL generation.
+
+Relationship context contract after Phase 4B-8D-D:
+
+- `relationship_set` is the active topic-scoped dataset graph.
+- `available_dataset_nodes` includes connected and isolated/reference nodes from that active graph.
+- `confirmed_relationships` remains a compatibility edge list derived from the active graph only.
+- The planner treats the graph as allowed context; it must infer a question-specific subset for `required_datasets`.
+- Isolated/reference nodes are not joinable and must not trigger automatic joins.
 
 ### Factory
 
@@ -95,6 +105,9 @@ const ruleBasedAssistantRuntime: AssistantRuntime = {
     const plan = generateMockAnalysisPlan({
       question: request.question,
       datasets: request.context.datasets ?? [],
+      selectedDatasetId: request.context.selected_dataset_id,
+      relationshipSet: request.context.relationship_set,
+      availableDatasetNodes: request.context.available_dataset_nodes,
       confirmedRelationships: request.context.confirmed_relationships, // active set only
     });
     return { plan, runtime_mode: "rule_based", warnings: [] };

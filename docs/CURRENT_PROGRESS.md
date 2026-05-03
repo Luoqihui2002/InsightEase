@@ -1280,3 +1280,10 @@ cd app && npm run build        # built in 20.50s ✅
 > 最近构建: built in 19.94s，JS chunk 3,397 KB。
 
 > 警告: JS chunk 3,395 KB，待 Phase 4A-6-6 拆分优化。
+## Phase 4B-8D-D: Relationship Set Topic Graph
+
+- Relationship Sets now model a topic-scoped dataset graph: connected dataset nodes, confirmed relationship edges, and optional isolated/reference nodes.
+- AI Workbench relationship review can keep unmatched selected tables as isolated context instead of silently dropping them.
+- Planner/runtime context now receives the active relationship set as an allowed graph, while `required_datasets` remains a question-specific subset.
+- Guided Quick Analysis scopes active relationship context to the selected dataset only.
+- Validation: `cd app && npx tsc --noEmit` passed; `cd app && npm run build` passed.

@@ -137,15 +137,45 @@ export interface TableRelationship {
   created_at?: string;
   confirmed_at?: string;
   risk_level?: RelationshipRiskLevel;
+  risk_reasons?: string[];
   is_custom?: boolean;
+  source?: "inferred" | "manual" | "mixed";
+}
+
+export type RelationshipSetNodeRole =
+  | "connected"
+  | "isolated"
+  | "excluded"
+  | "reference_only";
+
+export interface RelationshipSetDatasetNode {
+  dataset_id: string;
+  dataset_name?: string;
+  filename?: string;
+  role: RelationshipSetNodeRole;
+  reason?: string;
+  selected_by_user: boolean;
+  joinable: boolean;
+  included_in_context: boolean;
 }
 
 export interface RelationshipSet {
   id: string;
   name: string;
   description?: string;
-  relationships: TableRelationship[];
+  /**
+   * Dataset nodes selected or retained for this analysis topic.
+   * This includes connected nodes and isolated/reference-only nodes.
+   */
+  dataset_nodes: RelationshipSetDatasetNode[];
+  /**
+   * Backward-compatible dataset IDs derived from dataset_nodes.
+   */
   dataset_ids: string[];
+  /**
+   * User-confirmed relationship edges.
+   */
+  relationships: TableRelationship[];
   created_at: string;
   updated_at: string;
   is_default?: boolean;
@@ -219,6 +249,9 @@ export interface AssistantAnalysisPlan {
   required_datasets: string[];
   required_fields: AnalysisFieldRequirement[];
   required_relationships?: TableRelationship[];
+  relationship_set_id?: string;
+  relationship_set_name?: string;
+  reference_dataset_nodes?: RelationshipSetDatasetNode[];
   assumptions: string[];
   warnings: string[];
   next_actions: AssistantNextAction[];

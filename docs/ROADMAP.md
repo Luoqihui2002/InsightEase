@@ -404,3 +404,11 @@
 5. **预测分析** — 时间序列、Prophet、简单机器学习模型
 6. **运筹规划 / 优化** — 线性规划、资源调度
 7. **报告生成** — 自动输出 Markdown / PDF 分析报告
+## Phase 4B-8D-D: Relationship Set Topic Graph
+
+Status: implemented.
+
+- Relationship Sets are now topic-scoped dataset graphs rather than flat confirmed-edge lists.
+- Isolated selected datasets can be retained as reference context.
+- Planner integration distinguishes relationship-set context from query-specific required datasets.
+- Remaining future work: backend persistence, richer graph relevance, and optional join preview remain out of scope.

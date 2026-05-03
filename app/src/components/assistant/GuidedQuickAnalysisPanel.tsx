@@ -317,13 +317,27 @@ export function GuidedQuickAnalysisPanel({
 
     // Scope confirmed relationships to the selected dataset
     const activeSetRelationships = activeRelationshipSet?.relationships ?? [];
-    const scopedRelationships = activeSetRelationships.filter(
+    const activeSetNodes = activeRelationshipSet?.dataset_nodes ?? [];
+    const relationshipsTouchingSelected = activeSetRelationships.filter(
       (rel) =>
         rel.source_dataset_id === selectedDataset.id ||
         rel.target_dataset_id === selectedDataset.id
     );
+    const activeSetContainsSelected =
+      activeSetNodes.some(
+        (node) => node.included_in_context && node.dataset_id === selectedDataset.id
+      ) || relationshipsTouchingSelected.length > 0;
+    const scopedRelationships = activeSetContainsSelected ? relationshipsTouchingSelected : [];
+    const scopedNodeIds = new Set<string>([selectedDataset.id]);
+    scopedRelationships.forEach((rel) => {
+      scopedNodeIds.add(rel.source_dataset_id);
+      scopedNodeIds.add(rel.target_dataset_id);
+    });
+    const scopedNodes = activeSetContainsSelected
+      ? activeSetNodes.filter((node) => scopedNodeIds.has(node.dataset_id))
+      : [];
     setRelationshipScopeHint(
-      activeRelationshipSet && scopedRelationships.length === 0
+      activeRelationshipSet && !activeSetContainsSelected
         ? '当前关系组不包含该数据集，已按单表分析生成计划。'
         : ''
     );
@@ -336,6 +350,8 @@ export function GuidedQuickAnalysisPanel({
           selected_dataset_ids: [selectedDataset.id],
           selected_dataset_id: selectedDataset.id,
           confirmed_relationships: scopedRelationships,
+          relationship_set: activeSetContainsSelected ? activeRelationshipSet : undefined,
+          available_dataset_nodes: scopedNodes,
           datasets: [
             {
               id: selectedDataset.id,

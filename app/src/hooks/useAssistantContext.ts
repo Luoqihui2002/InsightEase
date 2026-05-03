@@ -6,7 +6,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { RelationshipSet, TableRelationship } from '@/types/assistant';
+import type {
+  RelationshipSet,
+  RelationshipSetDatasetNode,
+  TableRelationship,
+} from '@/types/assistant';
 
 const LEGACY_CONFIRMED_KEY = 'insightease_assistant_confirmed_relationships';
 const LEGACY_REJECTED_KEY = 'insightease_assistant_rejected_relationship_ids';
@@ -33,6 +37,146 @@ function getDatasetIds(relationships: TableRelationship[]): string[] {
   );
 }
 
+function getIncludedNodeDatasetIds(nodes: RelationshipSetDatasetNode[]): string[] {
+  return nodes
+    .filter((node) => node.included_in_context)
+    .map((node) => node.dataset_id);
+}
+
+function uniqueDatasetIds(
+  relationships: TableRelationship[],
+  nodes: RelationshipSetDatasetNode[] = [],
+  datasetIds: string[] = []
+): string[] {
+  return Array.from(
+    new Set([
+      ...getDatasetIds(relationships),
+      ...getIncludedNodeDatasetIds(nodes),
+      ...datasetIds,
+    ].filter(Boolean))
+  );
+}
+
+function relationshipEndpointNames(
+  relationships: TableRelationship[]
+): Map<string, { dataset_name?: string; filename?: string }> {
+  const names = new Map<string, { dataset_name?: string; filename?: string }>();
+  for (const rel of relationships) {
+    if (!names.has(rel.source_dataset_id)) {
+      names.set(rel.source_dataset_id, {
+        dataset_name: rel.source_dataset_name,
+        filename: rel.source_dataset_name,
+      });
+    }
+    if (!names.has(rel.target_dataset_id)) {
+      names.set(rel.target_dataset_id, {
+        dataset_name: rel.target_dataset_name,
+        filename: rel.target_dataset_name,
+      });
+    }
+  }
+  return names;
+}
+
+function deriveDatasetNodes(
+  relationships: TableRelationship[],
+  datasetIds: string[] = [],
+  reason = '从旧版已确认关系迁移'
+): RelationshipSetDatasetNode[] {
+  const endpointNames = relationshipEndpointNames(relationships);
+  const ids = uniqueDatasetIds(relationships, [], datasetIds);
+  return ids.map((datasetId) => {
+    const names = endpointNames.get(datasetId);
+    return {
+      dataset_id: datasetId,
+      dataset_name: names?.dataset_name,
+      filename: names?.filename,
+      role: 'connected',
+      reason,
+      selected_by_user: false,
+      joinable: true,
+      included_in_context: true,
+    };
+  });
+}
+
+function normalizeDatasetNode(raw: unknown): RelationshipSetDatasetNode | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const item = raw as Partial<RelationshipSetDatasetNode>;
+  if (typeof item.dataset_id !== 'string') return null;
+  const role =
+    item.role === 'isolated' ||
+    item.role === 'excluded' ||
+    item.role === 'reference_only' ||
+    item.role === 'connected'
+      ? item.role
+      : 'connected';
+  return {
+    dataset_id: item.dataset_id,
+    dataset_name: typeof item.dataset_name === 'string' ? item.dataset_name : undefined,
+    filename: typeof item.filename === 'string' ? item.filename : undefined,
+    role,
+    reason: typeof item.reason === 'string' ? item.reason : undefined,
+    selected_by_user: Boolean(item.selected_by_user),
+    joinable: typeof item.joinable === 'boolean' ? item.joinable : role === 'connected',
+    included_in_context:
+      typeof item.included_in_context === 'boolean'
+        ? item.included_in_context
+        : role !== 'excluded',
+  };
+}
+
+function normalizeDatasetNodesForSet(
+  relationships: TableRelationship[],
+  rawNodes: unknown,
+  rawDatasetIds: unknown
+): RelationshipSetDatasetNode[] {
+  const datasetIds = Array.isArray(rawDatasetIds)
+    ? rawDatasetIds.filter((id): id is string => typeof id === 'string')
+    : [];
+  const normalized = Array.isArray(rawNodes)
+    ? rawNodes
+        .map(normalizeDatasetNode)
+        .filter((node): node is RelationshipSetDatasetNode => Boolean(node))
+    : [];
+
+  if (normalized.length > 0) {
+    const missing = uniqueDatasetIds(relationships, [], datasetIds).filter(
+      (id) => !normalized.some((node) => node.dataset_id === id)
+    );
+    if (missing.length === 0) return normalized;
+    return [
+      ...normalized,
+      ...deriveDatasetNodes(relationships, missing, '从旧版关系组字段迁移'),
+    ];
+  }
+
+  return deriveDatasetNodes(relationships, datasetIds);
+}
+
+function mergeConnectedNodesForRelationships(
+  existingNodes: RelationshipSetDatasetNode[],
+  relationships: TableRelationship[]
+): RelationshipSetDatasetNode[] {
+  const nodes = [...existingNodes];
+  const names = relationshipEndpointNames(relationships);
+  for (const datasetId of getDatasetIds(relationships)) {
+    if (nodes.some((node) => node.dataset_id === datasetId)) continue;
+    const nodeNames = names.get(datasetId);
+    nodes.push({
+      dataset_id: datasetId,
+      dataset_name: nodeNames?.dataset_name,
+      filename: nodeNames?.filename,
+      role: 'connected',
+      reason: '由已确认关系连接',
+      selected_by_user: false,
+      joinable: true,
+      included_in_context: true,
+    });
+  }
+  return nodes;
+}
+
 function createId(prefix: string): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return `${prefix}_${crypto.randomUUID()}`;
@@ -53,14 +197,18 @@ function normalizeRelationshipSet(raw: unknown): RelationshipSet | null {
   }
 
   const now = new Date().toISOString();
+  const dataset_nodes = normalizeDatasetNodesForSet(
+    item.relationships,
+    (item as Partial<RelationshipSet>).dataset_nodes,
+    item.dataset_ids
+  );
   return {
     id: item.id,
     name: item.name,
     description: typeof item.description === 'string' ? item.description : undefined,
     relationships: item.relationships,
-    dataset_ids: Array.isArray(item.dataset_ids)
-      ? item.dataset_ids.filter((id): id is string => typeof id === 'string')
-      : getDatasetIds(item.relationships),
+    dataset_nodes,
+    dataset_ids: uniqueDatasetIds(item.relationships, dataset_nodes),
     created_at: typeof item.created_at === 'string' ? item.created_at : now,
     updated_at: typeof item.updated_at === 'string' ? item.updated_at : now,
     is_default: item.is_default,
@@ -115,17 +263,24 @@ function loadRelationshipSets(): RelationshipSet[] {
   if (legacyRelationships.length === 0) return [];
 
   const now = new Date().toISOString();
+  const relationships = legacyRelationships.map((rel) => ({
+    ...rel,
+    status: 'confirmed' as const,
+    confirmed_at: rel.confirmed_at || now,
+  }));
+  const dataset_nodes = deriveDatasetNodes(
+    relationships,
+    getDatasetIds(relationships),
+    '从旧版已确认关系迁移'
+  );
   return [
     {
       id: 'legacy_confirmed_relationships',
       name: '旧版已确认关系',
       description: '从旧版全局已确认关系自动迁移而来。',
-      relationships: legacyRelationships.map((rel) => ({
-        ...rel,
-        status: 'confirmed',
-        confirmed_at: rel.confirmed_at || now,
-      })),
-      dataset_ids: getDatasetIds(legacyRelationships),
+      relationships,
+      dataset_nodes,
+      dataset_ids: uniqueDatasetIds(relationships, dataset_nodes),
       created_at: now,
       updated_at: now,
       is_default: true,
@@ -160,6 +315,7 @@ export interface CreateRelationshipSetInput {
   name: string;
   description?: string;
   relationships: TableRelationship[];
+  dataset_nodes?: RelationshipSetDatasetNode[];
 }
 
 export interface AssistantContext {
@@ -170,7 +326,7 @@ export interface AssistantContext {
   createRelationshipSet: (input: CreateRelationshipSetInput) => RelationshipSet;
   updateRelationshipSet: (
     id: string,
-    patch: Partial<Pick<RelationshipSet, 'name' | 'description' | 'relationships'>>
+    patch: Partial<Pick<RelationshipSet, 'name' | 'description' | 'relationships' | 'dataset_nodes'>>
   ) => void;
   deleteRelationshipSet: (id: string) => void;
   setActiveRelationshipSet: (id?: string) => void;
@@ -236,13 +392,18 @@ export function useAssistantContext(): AssistantContext {
       status: 'confirmed' as const,
       confirmed_at: rel.confirmed_at || now,
     }));
+    const dataset_nodes = mergeConnectedNodesForRelationships(
+      input.dataset_nodes ?? [],
+      relationships
+    );
     const hasCustom = relationships.some((rel) => rel.is_custom || rel.risk_level === 'high');
     const set: RelationshipSet = {
       id: createId('relset'),
       name: input.name.trim() || '未命名关系组',
       description: input.description?.trim() || undefined,
       relationships,
-      dataset_ids: getDatasetIds(relationships),
+      dataset_nodes,
+      dataset_ids: uniqueDatasetIds(relationships, dataset_nodes),
       created_at: now,
       updated_at: now,
       source: hasCustom ? 'mixed' : 'inferred',
@@ -256,12 +417,16 @@ export function useAssistantContext(): AssistantContext {
   const updateRelationshipSet = useCallback(
     (
       id: string,
-      patch: Partial<Pick<RelationshipSet, 'name' | 'description' | 'relationships'>>
+      patch: Partial<Pick<RelationshipSet, 'name' | 'description' | 'relationships' | 'dataset_nodes'>>
     ) => {
       setRelationshipSets((prev) =>
         prev.map((set) => {
           if (set.id !== id) return set;
           const relationships = patch.relationships ?? set.relationships;
+          const dataset_nodes = mergeConnectedNodesForRelationships(
+            patch.dataset_nodes ?? set.dataset_nodes ?? [],
+            relationships
+          );
           return {
             ...set,
             ...patch,
@@ -271,7 +436,8 @@ export function useAssistantContext(): AssistantContext {
                 ? patch.description.trim() || undefined
                 : set.description,
             relationships,
-            dataset_ids: getDatasetIds(relationships),
+            dataset_nodes,
+            dataset_ids: uniqueDatasetIds(relationships, dataset_nodes),
             updated_at: new Date().toISOString(),
             source: relationships.some((rel) => rel.is_custom || rel.risk_level === 'high')
               ? 'mixed'

@@ -943,3 +943,10 @@
   - 直接 URL 访问不中断
   - 作为未来迁移参考保留
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 16.41s ✅
+## Phase 4B-8D-D: Relationship Set as Topic Dataset Graph
+
+- Added `dataset_nodes` to Relationship Sets so saved relationship contexts can include connected tables and isolated/reference tables.
+- Migrated old edge-only localStorage relationship sets into graph-shaped sets without dropping existing confirmed relationships.
+- Updated Relationship Review UI to keep unmatched selected datasets as isolated reference nodes.
+- Updated planner/runtime semantics so active Relationship Set is allowed context, not a source for all `required_datasets`.
+- Updated Guided Quick Analysis and Analysis Plan display to scope and label relationship-set context safely.

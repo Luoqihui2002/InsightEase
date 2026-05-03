@@ -14,6 +14,8 @@ import type {
   AssistantAnalysisPlan,
   TableRelationship,
   DatasetProfile,
+  RelationshipSet,
+  RelationshipSetDatasetNode,
 } from '@/types/assistant';
 
 export type AssistantRuntimeMode = 'rule_based' | 'hermes' | 'llm';
@@ -41,6 +43,10 @@ export interface AssistantContext {
   selected_dataset_id?: string;
   /** User-confirmed table relationships */
   confirmed_relationships: TableRelationship[];
+  /** Active topic-scoped relationship set, used as allowed context graph only */
+  relationship_set?: RelationshipSet;
+  /** Dataset nodes available from the active relationship set context */
+  available_dataset_nodes?: RelationshipSetDatasetNode[];
   /** Optional dataset profiles (metadata only) */
   dataset_profiles?: DatasetProfile[];
   /** Optional lightweight dataset schema info for planning */

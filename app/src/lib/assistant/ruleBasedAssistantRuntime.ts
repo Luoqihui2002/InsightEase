@@ -24,6 +24,9 @@ export const ruleBasedAssistantRuntime: AssistantRuntime = {
     const plan = generateMockAnalysisPlan({
       question: request.question,
       datasets: request.context.datasets ?? [],
+      selectedDatasetId: request.context.selected_dataset_id,
+      relationshipSet: request.context.relationship_set,
+      availableDatasetNodes: request.context.available_dataset_nodes,
       confirmedRelationships: request.context.confirmed_relationships,
     });
 
