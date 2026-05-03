@@ -6,7 +6,7 @@
  * - 左右布局(horizontal)：AI工作台在左(62%)，数据预览在右(38%)
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   X, Send, Sparkles, BarChart3, TrendingUp, 
@@ -76,10 +76,93 @@ interface AIWorkspaceProps {
 }
 
 const STORAGE_KEY = 'ai_workspace_sessions';
+const ACTIVE_SESSION_STORAGE_KEY = 'insightease_ai_workbench_active_session';
+
+interface AIWorkbenchSessionSnapshot {
+  messages: Message[];
+  active_tab: 'chat' | 'capabilities' | 'history';
+  selected_dataset_id?: string;
+  active_relationship_set_id?: string;
+  current_plan?: AssistantAnalysisPlan | null;
+  current_session_id?: string;
+  plan_question?: string;
+  main_layout?: 'vertical' | 'horizontal';
+  show_preview?: boolean;
+  updated_at: string;
+}
+
+function reviveMessages(value: unknown): Message[] | null {
+  if (!Array.isArray(value)) return null;
+
+  return value
+    .filter((message) => {
+      const candidate = message as Partial<Message>;
+      return (
+        typeof candidate.id === 'string' &&
+        (candidate.role === 'user' || candidate.role === 'assistant') &&
+        typeof candidate.content === 'string'
+      );
+    })
+    .map((message) => {
+      const candidate = message as Partial<Message>;
+      return {
+        ...candidate,
+        id: candidate.id ?? Date.now().toString(),
+        role: candidate.role ?? 'assistant',
+        content: candidate.content ?? '',
+        timestamp: candidate.timestamp ? new Date(candidate.timestamp) : new Date(),
+      } as Message;
+    });
+}
+
+function loadActiveWorkbenchSession(): AIWorkbenchSessionSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<AIWorkbenchSessionSnapshot>;
+    const messages = reviveMessages(parsed.messages);
+    if (!messages || messages.length === 0) return null;
+
+    return {
+      messages,
+      active_tab:
+        parsed.active_tab === 'capabilities' || parsed.active_tab === 'history'
+          ? parsed.active_tab
+          : 'chat',
+      selected_dataset_id:
+        typeof parsed.selected_dataset_id === 'string' ? parsed.selected_dataset_id : undefined,
+      active_relationship_set_id:
+        typeof parsed.active_relationship_set_id === 'string'
+          ? parsed.active_relationship_set_id
+          : undefined,
+      current_plan: parsed.current_plan ?? null,
+      current_session_id:
+        typeof parsed.current_session_id === 'string' ? parsed.current_session_id : undefined,
+      plan_question: typeof parsed.plan_question === 'string' ? parsed.plan_question : '',
+      main_layout: parsed.main_layout === 'horizontal' ? 'horizontal' : 'vertical',
+      show_preview: typeof parsed.show_preview === 'boolean' ? parsed.show_preview : true,
+      updated_at: typeof parsed.updated_at === 'string' ? parsed.updated_at : new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveActiveWorkbenchSession(snapshot: AIWorkbenchSessionSnapshot): void {
+  try {
+    sessionStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Ignore storage quota or private-mode failures; in-memory state still remains.
+  }
+}
 
 export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
+  const restoredSessionRef = useRef<AIWorkbenchSessionSnapshot | null>(loadActiveWorkbenchSession());
+  const restoredSession = restoredSessionRef.current;
+
   // 当前会话消息
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(restoredSession?.messages ?? [
     {
       id: 'welcome',
       role: 'assistant',
@@ -91,28 +174,50 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
+  const [selectedDataset, setSelectedDataset] = useState<string | null>(
+    restoredSession?.selected_dataset_id ?? null
+  );
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [activeTab, setActiveTab] = useState<'chat' | 'capabilities' | 'history'>('chat');
-  const [mainLayout, setMainLayout] = useState<'vertical' | 'horizontal'>('vertical');
+  const [activeTab, setActiveTab] = useState<'chat' | 'capabilities' | 'history'>(
+    restoredSession?.active_tab ?? 'chat'
+  );
+  const [mainLayout, setMainLayout] = useState<'vertical' | 'horizontal'>(
+    restoredSession?.main_layout ?? 'vertical'
+  );
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  const [currentSessionId, setCurrentSessionId] = useState<string>(
+    restoredSession?.current_session_id ?? Date.now().toString()
+  );
   const [datasetPreview, setDatasetPreview] = useState<{
     columns: string[];
     rows: Record<string, any>[];
     totalRows: number;
     columnTypes: Record<string, string>;
   } | null>(null);
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(restoredSession?.show_preview ?? true);
   const [showRelationshipPanel, setShowRelationshipPanel] = useState(false);
   const [showAnalysisPlanPanel, setShowAnalysisPlanPanel] = useState(false);
   const [showQuickAnalysisPanel, setShowQuickAnalysisPanel] = useState(false);
-  const [planQuestion, setPlanQuestion] = useState('');
-  const [generatedPlan, setGeneratedPlan] = useState<AssistantAnalysisPlan | null>(null);
+  const [planQuestion, setPlanQuestion] = useState(restoredSession?.plan_question ?? '');
+  const [generatedPlan, setGeneratedPlan] = useState<AssistantAnalysisPlan | null>(
+    restoredSession?.current_plan ?? null
+  );
   const [isPlanning, setIsPlanning] = useState(false);
+  const [datasetSearch, setDatasetSearch] = useState('');
+  const [relationshipSetSearch, setRelationshipSetSearch] = useState('');
 
   const assistantContext = useAssistantContext();
   const activeRelationshipSet = assistantContext.getActiveRelationshipSet();
+  const filteredDatasets = useMemo(() => {
+    const query = datasetSearch.trim().toLowerCase();
+    if (!query) return datasets;
+    return datasets.filter((dataset) => dataset.filename.toLowerCase().includes(query));
+  }, [datasetSearch, datasets]);
+  const filteredRelationshipSets = useMemo(() => {
+    const query = relationshipSetSearch.trim().toLowerCase();
+    if (!query) return assistantContext.relationshipSets;
+    return assistantContext.relationshipSets.filter((set) => set.name.toLowerCase().includes(query));
+  }, [assistantContext.relationshipSets, relationshipSetSearch]);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -122,9 +227,40 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     if (isOpen) {
       loadDatasets();
       loadChatHistory();
-      createNewSession();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const restoredRelationshipSetId = restoredSessionRef.current?.active_relationship_set_id;
+    if (restoredRelationshipSetId) {
+      assistantContext.setActiveRelationshipSet(restoredRelationshipSetId);
+    }
+  }, []);
+
+  useEffect(() => {
+    saveActiveWorkbenchSession({
+      messages,
+      active_tab: activeTab,
+      selected_dataset_id: selectedDataset ?? undefined,
+      active_relationship_set_id: assistantContext.activeRelationshipSetId,
+      current_plan: generatedPlan,
+      current_session_id: currentSessionId,
+      plan_question: planQuestion,
+      main_layout: mainLayout,
+      show_preview: showPreview,
+      updated_at: new Date().toISOString(),
+    });
+  }, [
+    activeTab,
+    assistantContext.activeRelationshipSetId,
+    currentSessionId,
+    generatedPlan,
+    mainLayout,
+    messages,
+    planQuestion,
+    selectedDataset,
+    showPreview,
+  ]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -204,6 +340,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     };
     setCurrentSessionId(newSession.id);
     setMessages(newSession.messages);
+    setGeneratedPlan(null);
+    setPlanQuestion('');
+    setShowAnalysisPlanPanel(false);
+    setShowQuickAnalysisPanel(false);
+    setShowRelationshipPanel(false);
+    setActiveTab('chat');
   };
 
   // 切换到历史会话
@@ -591,31 +733,53 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             {/* 数据集选择 */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Database className="w-4 h-4 text-[var(--text-muted)]" />
-              <select
-                value={selectedDataset || ''}
-                onChange={(e) => setSelectedDataset(e.target.value || null)}
-                className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] w-[130px]"
-              >
+              <div className="flex flex-col gap-1">
+                <input
+                  value={datasetSearch}
+                  onChange={(e) => setDatasetSearch(e.target.value)}
+                  placeholder="搜索数据集"
+                  className="px-2 py-1 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-primary)] w-[150px] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
+                />
+                <select
+                  value={selectedDataset || ''}
+                  onChange={(e) => setSelectedDataset(e.target.value || null)}
+                  className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] w-[150px]"
+                >
                 <option value="">选择数据集...</option>
-                {datasets.map(d => (
+                {filteredDatasets.map(d => (
                   <option key={d.id} value={d.id}>{d.filename}</option>
                 ))}
+                {filteredDatasets.length === 0 && (
+                  <option value="" disabled>未找到匹配的数据集</option>
+                )}
               </select>
+              </div>
             </div>
 
             {/* 关系组选择 */}
             <div className="flex items-center gap-2 flex-shrink-0" title="关系组用于告诉助手哪些表关系可以作为分析上下文；不会自动 join。">
               <GitBranch className="w-4 h-4 text-[var(--text-muted)]" />
-              <select
-                value={assistantContext.activeRelationshipSetId || ''}
-                onChange={(e) => assistantContext.setActiveRelationshipSet(e.target.value || undefined)}
-                className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] w-[170px]"
-              >
+              <div className="flex flex-col gap-1">
+                <input
+                  value={relationshipSetSearch}
+                  onChange={(e) => setRelationshipSetSearch(e.target.value)}
+                  placeholder="搜索关系组"
+                  className="px-2 py-1 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-primary)] w-[180px] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
+                />
+                <select
+                  value={assistantContext.activeRelationshipSetId || ''}
+                  onChange={(e) => assistantContext.setActiveRelationshipSet(e.target.value || undefined)}
+                  className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] w-[180px]"
+                >
                 <option value="">不使用关系组</option>
-                {assistantContext.relationshipSets.map((set) => (
+                {filteredRelationshipSets.map((set) => (
                   <option key={set.id} value={set.id}>{set.name}</option>
                 ))}
+                {filteredRelationshipSets.length === 0 && (
+                  <option value="" disabled>未找到匹配的关系组</option>
+                )}
               </select>
+              </div>
             </div>
 
             {/* 布局切换 - 左右排版 | 上下排版 */}

@@ -362,3 +362,19 @@ AI 对话（流式 SSE）。
 | AI | `app/src/api/ai.ts` |
 
 通用 request 实例: `app/src/lib/request.ts`
+---
+
+## Frontend Navigation Contract: AI Workbench Prefill
+
+Phase 4B-8E adds a frontend-only navigation payload for AI Workbench handoff.
+
+There is no backend API change.
+
+- Storage: `sessionStorage`
+- Key prefix: `insightease_analysis_prefill_`
+- Route query: `?prefill=<sessionStorageKey>`
+- Payload type: `AnalysisPrefillPayload` in `app/src/types/assistant.ts`
+- Helper: `app/src/lib/assistant/prefillNavigation.ts`
+- TTL: 24 hours
+
+The payload carries dataset IDs and suggested field names only. It does not store raw dataset values, does not create backend analysis tasks, and does not auto-run analysis.

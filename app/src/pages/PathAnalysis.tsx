@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { companionService } from '@/services';
 import { 
   Route, 
@@ -11,6 +12,7 @@ import {
   Download,
   RotateCcw,
   AlertCircle,
+  Info,
   Target,
   Layers,
 } from 'lucide-react';
@@ -32,6 +34,13 @@ import * as echarts from 'echarts';
 import { ResultView } from '@/components/results';
 import { toPathAnalysisResult } from '@/lib/adapters/pathAnalysisResultAdapter';
 import { getChartColors, withAlpha } from '@/hooks/useChartColors';
+import {
+  clearAnalysisPrefill,
+  getFirstExactSuggestedColumn,
+  getSuggestedColumns,
+  readAnalysisPrefill,
+} from '@/lib/assistant/prefillNavigation';
+import type { AnalysisPrefillPayload } from '@/types/assistant';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
 
 // 路径分析类型
@@ -110,6 +119,8 @@ interface TopPath {
 }
 
 export function PathAnalysis() {
+  const location = useLocation();
+
   // 设置当前页面
   useEffect(() => {
     companionService.setPage('path-analysis');
@@ -133,6 +144,8 @@ export function PathAnalysis() {
   const [userIdCol, setUserIdCol] = useState('');
   const [eventCol, setEventCol] = useState('');
   const [timestampCol, setTimestampCol] = useState('');
+  const [prefillPayload, setPrefillPayload] = useState<AnalysisPrefillPayload | null>(null);
+  const [prefillFieldsApplied, setPrefillFieldsApplied] = useState(false);
   
   // 漏斗配置
   const [funnelSteps, setFunnelSteps] = useState<string[]>(['']);
@@ -192,6 +205,42 @@ export function PathAnalysis() {
   const funnelChartInstance = useRef<echarts.ECharts | null>(null);
   const sankeyChartInstance = useRef<echarts.ECharts | null>(null);
   const graphChartInstance = useRef<echarts.ECharts | null>(null);
+
+  useEffect(() => {
+    const key = new URLSearchParams(location.search).get('prefill');
+    if (!key) return;
+
+    const payload = readAnalysisPrefill(key);
+    clearAnalysisPrefill(key);
+
+    if (!payload || payload.analysis_type !== 'path_analysis') return;
+
+    setPrefillPayload(payload);
+    setPrefillFieldsApplied(false);
+
+    const datasetId = payload.primary_dataset_id || payload.dataset_ids[0];
+    if (datasetId) {
+      setSelectedDataset(datasetId);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!prefillPayload || prefillFieldsApplied || columns.length === 0) return;
+
+    const availableColumns = columns.map((column) => column.name);
+    const suggestedUserId = getFirstExactSuggestedColumn(prefillPayload, 'user_id', availableColumns);
+    const suggestedEvent = getFirstExactSuggestedColumn(prefillPayload, 'event_name', availableColumns);
+    const suggestedTimestamp = getFirstExactSuggestedColumn(
+      prefillPayload,
+      'time_column',
+      availableColumns
+    );
+
+    if (suggestedUserId) setUserIdCol(suggestedUserId);
+    if (suggestedEvent) setEventCol(suggestedEvent);
+    if (suggestedTimestamp) setTimestampCol(suggestedTimestamp);
+    setPrefillFieldsApplied(true);
+  }, [columns, prefillFieldsApplied, prefillPayload]);
   
   // 可视化类型选择
   const [vizType, setVizType] = useState<'sankey' | 'graph'>('sankey');
@@ -826,6 +875,36 @@ export function PathAnalysis() {
           }
         >
               {/* 数据集选择 */}
+              {prefillPayload && (
+                <div className="rounded-lg border border-[var(--neon-cyan)]/25 bg-[var(--neon-cyan)]/10 p-3 text-xs text-[var(--text-secondary)]">
+                  <div className="flex items-start gap-2">
+                    <Info className="w-4 h-4 text-[var(--neon-cyan)] mt-0.5 flex-shrink-0" />
+                    <div className="space-y-2">
+                      <p className="font-medium text-[var(--text-primary)]">来自 AI 工作台的预填建议</p>
+                      <p>这些配置尚未运行分析，请确认数据集和字段后再点击运行。</p>
+                      {prefillPayload.suggested_fields && prefillPayload.suggested_fields.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {Array.from(
+                            new Set(
+                              ['user_id', 'event_name', 'time_column'].flatMap((role) =>
+                                getSuggestedColumns(
+                                  prefillPayload,
+                                  role as 'user_id' | 'event_name' | 'time_column'
+                                )
+                              )
+                            )
+                          ).slice(0, 8).map((field) => (
+                            <span key={field} className="rounded border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px]">
+                              {field}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
                 <DatasetSelector 

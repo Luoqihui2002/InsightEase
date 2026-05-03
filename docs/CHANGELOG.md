@@ -950,3 +950,18 @@
 - Updated Relationship Review UI to keep unmatched selected datasets as isolated reference nodes.
 - Updated planner/runtime semantics so active Relationship Set is allowed context, not a source for all `required_datasets`.
 - Updated Guided Quick Analysis and Analysis Plan display to scope and label relationship-set context safely.
+# Phase 4B-8E: Prefill Navigation Payload from AI Workbench
+
+- Added `AnalysisPrefillPayload` for safe AI Workbench to analysis-page handoff.
+- Added `app/src/lib/assistant/prefillNavigation.ts` with sessionStorage save/read/clear helpers and 24-hour TTL validation.
+- Analysis plan next actions now store a prefill payload and navigate with `?prefill=<key>`.
+- Forecast, PathAnalysis, and Attribution show AI Workbench prefill banners and use exact field suggestions only.
+- No backend API, Hermes/LLM, SQL generation, auto-run, auto-join, or SmartAnalysis changes.
+
+# Phase 4B-8E-A: AI Workbench Continuity & Prefill Gap Fix
+
+- Preserved AI Workbench active session state across close/reopen using sessionStorage.
+- Removed the unintended new-session creation on every Workbench open.
+- Added safe Statistics prefill support for descriptive/statistics-family plans.
+- Added searchable dataset and relationship-set selectors in AI Workbench and relationship review.
+- No backend API, Hermes/LLM, SQL generation, auto-run, auto-join, dependency, package-file, or SmartAnalysis changes.

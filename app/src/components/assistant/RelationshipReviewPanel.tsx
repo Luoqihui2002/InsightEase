@@ -240,6 +240,7 @@ export function RelationshipReviewPanel({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingHighRiskRel, setPendingHighRiskRel] = useState<TableRelationship | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [datasetSearch, setDatasetSearch] = useState('');
 
   const activeSet = relationshipSets.find((set) => set.id === activeRelationshipSetId);
   const resultRelationships = result?.relationships ?? [];
@@ -247,6 +248,11 @@ export function RelationshipReviewPanel({
     () => datasets.filter((ds) => selectedIds.has(ds.id)),
     [datasets, selectedIds]
   );
+  const filteredDatasets = useMemo(() => {
+    const query = datasetSearch.trim().toLowerCase();
+    if (!query) return datasets;
+    return datasets.filter((ds) => getDatasetLabel(ds).toLowerCase().includes(query));
+  }, [datasetSearch, datasets]);
 
   const selectedRelationships = useMemo(
     () =>
@@ -440,8 +446,14 @@ export function RelationshipReviewPanel({
             <p className="text-xs text-[var(--text-muted)]">
               请选择与你当前分析主题相关的一组表。我会推断这些表之间可能的关系；无法关联的表也可以作为孤立参考表保留。
             </p>
+            <input
+              value={datasetSearch}
+              onChange={(event) => setDatasetSearch(event.target.value)}
+              placeholder="搜索数据集"
+              className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
+            />
             <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto">
-              {datasets.map((ds) => {
+              {filteredDatasets.map((ds) => {
                 const selected = selectedIds.has(ds.id);
                 return (
                   <button
@@ -459,6 +471,9 @@ export function RelationshipReviewPanel({
                   </button>
                 );
               })}
+              {filteredDatasets.length === 0 && (
+                <p className="text-xs text-[var(--text-muted)]">未找到匹配的数据集</p>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -900,6 +915,12 @@ function RelationshipSetManagement({
   );
   const highRiskRelationships =
     activeSet?.relationships.filter((rel) => rel.risk_level === 'high') ?? [];
+  const [relationshipSetSearch, setRelationshipSetSearch] = useState('');
+  const filteredRelationshipSets = useMemo(() => {
+    const query = relationshipSetSearch.trim().toLowerCase();
+    if (!query) return relationshipSets;
+    return relationshipSets.filter((set) => set.name.toLowerCase().includes(query));
+  }, [relationshipSetSearch, relationshipSets]);
 
   return (
     <section
@@ -937,6 +958,12 @@ function RelationshipSetManagement({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={relationshipSetSearch}
+              onChange={(event) => setRelationshipSetSearch(event.target.value)}
+              placeholder="搜索关系组"
+              className="w-[180px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
+            />
             <Select
               value={activeRelationshipSetId ?? NO_ACTIVE_SET_VALUE}
               onValueChange={(value) =>
@@ -948,13 +975,16 @@ function RelationshipSetManagement({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_ACTIVE_SET_VALUE}>不使用关系组</SelectItem>
-                {relationshipSets.map((set) => (
+                {filteredRelationshipSets.map((set) => (
                   <SelectItem key={set.id} value={set.id}>
                     {set.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {filteredRelationshipSets.length === 0 && (
+              <span className="text-xs text-[var(--text-muted)]">未找到匹配的关系组</span>
+            )}
 
             <Button
               variant="outline"
@@ -990,7 +1020,7 @@ function RelationshipSetManagement({
 
         {relationshipSets.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {relationshipSets.map((set) => {
+            {filteredRelationshipSets.map((set) => {
               const nodeCount =
                 set.dataset_nodes?.filter((node) => node.included_in_context).length ??
                 set.dataset_ids.length;

@@ -412,3 +412,21 @@ Status: implemented.
 - Isolated selected datasets can be retained as reference context.
 - Planner integration distinguishes relationship-set context from query-specific required datasets.
 - Remaining future work: backend persistence, richer graph relevance, and optional join preview remain out of scope.
+
+## Phase 4B-8E: Prefill Navigation Payload from AI Workbench
+
+Status: implemented.
+
+- AI Workbench plan cards can open target analysis pages with a safe `sessionStorage` prefill payload.
+- Forecast, PathAnalysis, and Attribution consume the payload as suggestions only.
+- Target pages require the user to confirm configuration and click run; no analysis auto-runs.
+- Remaining future work: extend the same contract to Statistics, Semantic, and DataWorkshop.
+
+## Phase 4B-8E-A: AI Workbench Continuity & Prefill Gap Fix
+
+Status: implemented.
+
+- AI Workbench active session now survives close/reopen.
+- Statistics consumes AI Workbench prefill payloads safely and does not auto-run analysis.
+- Dataset and relationship-set selectors now support search for larger workspaces.
+- Remaining future work: Semantic/DataWorkshop prefill and reusable prefill UI extraction.

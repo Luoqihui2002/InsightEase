@@ -17,6 +17,7 @@ import {
   Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { saveAnalysisPrefill } from '@/lib/assistant/prefillNavigation';
 import type { AssistantAnalysisPlan, RecommendedAnalysisType } from '@/types/assistant';
 
 interface AnalysisPlanCardProps {
@@ -73,8 +74,24 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
 
   const handleNavigate = (target?: string) => {
     if (target) {
-      onNavigate?.(target);
-      navigate(target);
+      const datasetIds = plan.required_dataset_ids ?? plan.required_datasets;
+      const prefillKey = saveAnalysisPrefill({
+        source: 'ai_workbench',
+        plan_id: plan.id,
+        analysis_type: plan.recommended_analysis_type,
+        dataset_ids: datasetIds,
+        primary_dataset_id: datasetIds[0],
+        relationship_set_id: plan.relationship_set_id,
+        relationship_set_name: plan.relationship_set_name,
+        suggested_fields: plan.required_fields,
+        user_question: plan.user_question,
+        created_at: new Date().toISOString(),
+      });
+      const separator = target.includes('?') ? '&' : '?';
+      const targetWithPrefill = `${target}${separator}prefill=${encodeURIComponent(prefillKey)}`;
+
+      onNavigate?.(targetWithPrefill);
+      navigate(targetWithPrefill);
     }
   };
 
@@ -283,6 +300,9 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
 
       {/* 底部操作 */}
       <div className="px-5 py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)]/30">
+        <p className="text-[10px] text-[var(--text-muted)] mb-3">
+          打开目标页面并带入建议配置，不会自动运行分析。
+        </p>
         <div className="flex items-center gap-2 flex-wrap">
           {plan.next_actions.map((action, i) => {
             if (action.type === 'navigate' && action.target) {

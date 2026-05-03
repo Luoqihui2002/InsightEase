@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { companionService } from '@/services';
 import { 
   Play, 
-  Loader2
+  Loader2,
+  Info
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -22,6 +24,13 @@ import {
 } from '@/components/analysis';
 import { ResultView } from '@/components/results';
 import { toStatisticsAnalysisResult } from '@/lib/adapters/statisticsResultAdapter';
+import {
+  clearAnalysisPrefill,
+  getFirstExactSuggestedColumn,
+  getSuggestedColumns,
+  readAnalysisPrefill,
+} from '@/lib/assistant/prefillNavigation';
+import type { AnalysisPrefillPayload } from '@/types/assistant';
 
 interface ColumnInfo {
   name: string;
@@ -30,6 +39,8 @@ interface ColumnInfo {
 }
 
 export function Statistics() {
+  const location = useLocation();
+
   // 设置当前页面
   useEffect(() => {
     companionService.setPage('statistics');
@@ -42,7 +53,47 @@ export function Statistics() {
   const [selectedColumn, setSelectedColumn] = useState<string>('all');
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [showResult, setShowResult] = useState(false);
+  const [prefillPayload, setPrefillPayload] = useState<AnalysisPrefillPayload | null>(null);
+  const [prefillFieldsApplied, setPrefillFieldsApplied] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const key = new URLSearchParams(location.search).get('prefill');
+    if (!key) return;
+
+    const payload = readAnalysisPrefill(key);
+    clearAnalysisPrefill(key);
+
+    if (
+      !payload ||
+      !['descriptive', 'ab_test', 'regression', 'custom_query'].includes(payload.analysis_type)
+    ) {
+      return;
+    }
+
+    setPrefillPayload(payload);
+    setPrefillFieldsApplied(false);
+
+    const datasetId = payload.primary_dataset_id || payload.dataset_ids[0];
+    if (datasetId) {
+      setSelectedDataset(datasetId);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!prefillPayload || prefillFieldsApplied || columns.length === 0) return;
+
+    const availableColumns = columns.map((column) => column.name);
+    const suggestedColumn =
+      getFirstExactSuggestedColumn(prefillPayload, 'target_metric', availableColumns) ||
+      getFirstExactSuggestedColumn(prefillPayload, 'dimension', availableColumns) ||
+      getFirstExactSuggestedColumn(prefillPayload, 'group_column', availableColumns);
+
+    if (suggestedColumn) {
+      setSelectedColumn(suggestedColumn);
+    }
+    setPrefillFieldsApplied(true);
+  }, [columns, prefillFieldsApplied, prefillPayload]);
 
   // 加载数据集信息
   useEffect(() => {
@@ -293,6 +344,36 @@ export function Statistics() {
           }
         >
           {/* 数据集选择 */}
+          {prefillPayload && (
+            <div className="rounded-lg border border-[var(--neon-cyan)]/25 bg-[var(--neon-cyan)]/10 p-3 text-xs text-[var(--text-secondary)]">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-[var(--neon-cyan)] mt-0.5 flex-shrink-0" />
+                <div className="space-y-2">
+                  <p className="font-medium text-[var(--text-primary)]">已从 AI 工作台带入统计分析建议</p>
+                  <p>请检查数据集和字段配置后再运行。当前不会自动运行分析。</p>
+                  {prefillPayload.suggested_fields && prefillPayload.suggested_fields.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {Array.from(
+                        new Set(
+                          ['target_metric', 'dimension', 'group_column', 'feature'].flatMap((role) =>
+                            getSuggestedColumns(
+                              prefillPayload,
+                              role as 'target_metric' | 'dimension' | 'group_column' | 'feature'
+                            )
+                          )
+                        )
+                      ).slice(0, 8).map((field) => (
+                        <span key={field} className="rounded border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px]">
+                          {field}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
             <DatasetSelector 

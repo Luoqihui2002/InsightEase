@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { companionService } from '@/services';
 import { 
   Play, 
@@ -8,7 +9,8 @@ import {
   Target,
   BarChart3,
   GitBranch,
-  Loader2
+  Loader2,
+  Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DatasetSelector } from '@/components/DatasetSelector';
@@ -27,6 +29,13 @@ import {
 } from '@/components/analysis';
 import { ResultView } from '@/components/results';
 import { toAttributionAnalysisResult } from '@/lib/adapters/attributionResultAdapter';
+import {
+  clearAnalysisPrefill,
+  getFirstExactSuggestedColumn,
+  getSuggestedColumns,
+  readAnalysisPrefill,
+} from '@/lib/assistant/prefillNavigation';
+import type { AnalysisPrefillPayload } from '@/types/assistant';
 
 interface ColumnInfo {
   name: string;
@@ -132,6 +141,8 @@ const ATTRIBUTION_MODELS = [
 ];
 
 export function Attribution() {
+  const location = useLocation();
+
   // 设置当前页面
   useEffect(() => {
     companionService.setPage('attribution');
@@ -153,6 +164,50 @@ export function Attribution() {
   const [conversionCol, setConversionCol] = useState('');
   const [conversionValueCol, setConversionValueCol] = useState('');
   const [selectedModels, setSelectedModels] = useState<string[]>(['first_touch', 'last_touch', 'linear']);
+  const [prefillPayload, setPrefillPayload] = useState<AnalysisPrefillPayload | null>(null);
+  const [prefillFieldsApplied, setPrefillFieldsApplied] = useState(false);
+
+  useEffect(() => {
+    const key = new URLSearchParams(location.search).get('prefill');
+    if (!key) return;
+
+    const payload = readAnalysisPrefill(key);
+    clearAnalysisPrefill(key);
+
+    if (!payload || payload.analysis_type !== 'attribution') return;
+
+    setPrefillPayload(payload);
+    setPrefillFieldsApplied(false);
+
+    const datasetId = payload.primary_dataset_id || payload.dataset_ids[0];
+    if (datasetId) {
+      setSelectedDataset(datasetId);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!prefillPayload || prefillFieldsApplied || columns.length === 0) return;
+
+    const availableColumns = columns.map((column) => column.name);
+    const suggestedUserId = getFirstExactSuggestedColumn(prefillPayload, 'user_id', availableColumns);
+    const suggestedTouchpoint = getFirstExactSuggestedColumn(prefillPayload, 'dimension', availableColumns);
+    const suggestedTimestamp = getFirstExactSuggestedColumn(
+      prefillPayload,
+      'time_column',
+      availableColumns
+    );
+    const suggestedMetric = getFirstExactSuggestedColumn(
+      prefillPayload,
+      'target_metric',
+      availableColumns
+    );
+
+    if (suggestedUserId) setUserIdCol(suggestedUserId);
+    if (suggestedTouchpoint) setTouchpointCol(suggestedTouchpoint);
+    if (suggestedTimestamp) setTimestampCol(suggestedTimestamp);
+    if (suggestedMetric) setConversionValueCol(suggestedMetric);
+    setPrefillFieldsApplied(true);
+  }, [columns, prefillFieldsApplied, prefillPayload]);
 
   // 加载数据集信息
   useEffect(() => {
@@ -415,6 +470,36 @@ export function Attribution() {
           }
         >
           {/* 数据集选择 */}
+          {prefillPayload && (
+            <div className="rounded-lg border border-[var(--neon-cyan)]/25 bg-[var(--neon-cyan)]/10 p-3 text-xs text-[var(--text-secondary)]">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-[var(--neon-cyan)] mt-0.5 flex-shrink-0" />
+                <div className="space-y-2">
+                  <p className="font-medium text-[var(--text-primary)]">来自 AI 工作台的预填建议</p>
+                  <p>这些配置尚未运行分析，请确认数据集和字段后再点击运行。</p>
+                  {prefillPayload.suggested_fields && prefillPayload.suggested_fields.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {Array.from(
+                        new Set(
+                          ['user_id', 'dimension', 'time_column', 'target_metric'].flatMap((role) =>
+                            getSuggestedColumns(
+                              prefillPayload,
+                              role as 'user_id' | 'dimension' | 'time_column' | 'target_metric'
+                            )
+                          )
+                        )
+                      ).slice(0, 8).map((field) => (
+                        <span key={field} className="rounded border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px]">
+                          {field}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
             <DatasetSelector 

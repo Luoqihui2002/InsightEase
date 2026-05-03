@@ -247,6 +247,7 @@ export interface AssistantAnalysisPlan {
   interpreted_goal: string;
   recommended_analysis_type: RecommendedAnalysisType;
   required_datasets: string[];
+  required_dataset_ids?: string[];
   required_fields: AnalysisFieldRequirement[];
   required_relationships?: TableRelationship[];
   relationship_set_id?: string;
@@ -255,4 +256,17 @@ export interface AssistantAnalysisPlan {
   assumptions: string[];
   warnings: string[];
   next_actions: AssistantNextAction[];
+}
+
+export interface AnalysisPrefillPayload {
+  source: "ai_workbench";
+  plan_id: string;
+  analysis_type: RecommendedAnalysisType;
+  dataset_ids: string[];
+  primary_dataset_id?: string;
+  relationship_set_id?: string;
+  relationship_set_name?: string;
+  suggested_fields?: AnalysisFieldRequirement[];
+  user_question?: string;
+  created_at: string;
 }

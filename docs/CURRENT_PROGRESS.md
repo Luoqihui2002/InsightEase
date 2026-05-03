@@ -1287,3 +1287,19 @@ cd app && npm run build        # built in 20.50s ✅
 - Planner/runtime context now receives the active relationship set as an allowed graph, while `required_datasets` remains a question-specific subset.
 - Guided Quick Analysis scopes active relationship context to the selected dataset only.
 - Validation: `cd app && npx tsc --noEmit` passed; `cd app && npm run build` passed.
+
+## Phase 4B-8E: Prefill Navigation Payload from AI Workbench
+
+- Added frontend-only `AnalysisPrefillPayload` and `sessionStorage` transfer helpers.
+- AI Workbench plan next actions now open target pages with a prefill key and do not auto-run analysis.
+- Forecast, PathAnalysis, and Attribution can read valid prefill payloads, preselect the suggested dataset, and show/apply exact field suggestions.
+- Route mapping documented for forecast, path analysis, attribution, statistics, semantic, and data-workshop.
+- Safety contract preserved: no backend persistence, no auto-join, no SQL generation, no Hermes/LLM call, and SmartAnalysis unchanged.
+
+## Phase 4B-8E-A: AI Workbench Continuity & Prefill Gap Fix
+
+- AI Workbench now preserves the active conversation, selected dataset, active relationship set, generated plan, active tab, and preview layout across close/reopen.
+- `新对话` is the intentional reset path for conversation state.
+- Statistics now consumes AI Workbench prefill payloads for descriptive/statistics-family plans without auto-running analysis.
+- Dataset and relationship-set selectors now support lightweight client-side search with empty states.
+- Safety contract preserved: no backend changes, no auto-run, no auto-join, no SQL generation, no Hermes/LLM call, and SmartAnalysis unchanged.

@@ -404,6 +404,7 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
     interpreted_goal: matchedRule.label,
     recommended_analysis_type: matchedRule.type,
     required_datasets: planningDatasets.map((d) => d.filename || d.name || d.id),
+    required_dataset_ids: planningDatasets.map((d) => d.id),
     required_fields: requiredFields,
     required_relationships: scopedRelationships,
     relationship_set_id: relationshipSet?.id,
