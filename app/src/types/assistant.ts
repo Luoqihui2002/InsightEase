@@ -103,6 +103,8 @@ export type RelationshipType =
 
 export type RelationshipStatus = "suggested" | "confirmed" | "rejected";
 
+export type RelationshipRiskLevel = "low" | "medium" | "high";
+
 export type RelationshipEvidenceType =
   | "column_name_match"
   | "role_match"
@@ -134,6 +136,29 @@ export interface TableRelationship {
   warnings: string[];
   created_at?: string;
   confirmed_at?: string;
+  risk_level?: RelationshipRiskLevel;
+  is_custom?: boolean;
+}
+
+export interface RelationshipSet {
+  id: string;
+  name: string;
+  description?: string;
+  relationships: TableRelationship[];
+  dataset_ids: string[];
+  created_at: string;
+  updated_at: string;
+  is_default?: boolean;
+  source: "inferred" | "manual" | "mixed";
+}
+
+export interface RelationshipSetSummary {
+  id: string;
+  name: string;
+  relationship_count: number;
+  dataset_count: number;
+  updated_at: string;
+  is_default?: boolean;
 }
 
 export interface InferRelationshipsRequest {

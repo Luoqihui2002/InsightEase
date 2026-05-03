@@ -900,6 +900,34 @@
 - `RelationshipReviewPanel.tsx`: 管理区列表合并 controlled + local 已确认关系并按 id 去重
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 16.64s ✅
 
+## Phase 4B-8D-C: Relationship Set Management Redesign
+
+- 新增 Relationship Set 类型模型：
+  - `RelationshipSet`
+  - `RelationshipSetSummary`
+  - `RelationshipRiskLevel`
+  - `TableRelationship.risk_level` / `is_custom`
+- 重构 `useAssistantContext.ts`
+  - 关系状态主模型改为 `relationshipSets` + `activeRelationshipSetId`
+  - 新增 CRUD 和 active set API
+  - 新增 localStorage keys: `insightease_assistant_relationship_sets`, `insightease_assistant_active_relationship_set_id`
+  - 自动将旧 `insightease_assistant_confirmed_relationships` 迁移为 `旧版已确认关系`
+  - 不再写入旧 flat confirmed relationship 格式
+- 重构 `RelationshipReviewPanel.tsx`
+  - 关系组管理区在推断前即可见
+  - 候选关系按 key family 分组
+  - checkbox 选择候选关系，保存为命名关系组
+  - 支持 active set 切换、重命名、删除、清除当前
+  - 高风险语义不一致关系需显式确认后才能加入
+- 修改 `AIWorkspace.tsx`
+  - 新增紧凑关系组 selector
+  - chat planner / 生成分析计划只传 active relationship set
+- 修改 `GuidedQuickAnalysisPanel.tsx`
+  - 只消费 active relationship set
+  - 生成计划前过滤为触达所选数据集的关系
+- 安全边界：无后端持久化、无自动 join、无 SQL 生成、无 Hermes/LLM 调用
+- 验证: `npx.cmd tsc --noEmit` 0 errors；`npm.cmd run build` built in 20.39s（保留既有 large chunk warning）
+
 ## Phase 4B-8C: Hide Legacy SmartAnalysis Entry
 
 - 修改 `AppSidebar.tsx`

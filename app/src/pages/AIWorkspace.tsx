@@ -112,6 +112,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const [isPlanning, setIsPlanning] = useState(false);
 
   const assistantContext = useAssistantContext();
+  const activeRelationshipSet = assistantContext.getActiveRelationshipSet();
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -271,15 +272,15 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
     try {
       const selectedDatasetIds = selectedDataset ? [selectedDataset] : datasets.map((d) => d.id);
-      const relevantConfirmed = assistantContext.getConfirmedForDatasets(selectedDatasetIds);
+      const activeSetRelationships = activeRelationshipSet?.relationships ?? [];
 
       const runtime = getAssistantRuntime();
       const response = await runtime.generateAnalysisPlan({
         question,
         context: {
-          selected_dataset_ids: datasets.map((d) => d.id),
+          selected_dataset_ids: selectedDatasetIds,
           selected_dataset_id: selectedDataset ?? undefined,
-          confirmed_relationships: relevantConfirmed,
+          confirmed_relationships: activeSetRelationships,
           datasets: datasets.map((d) => ({
             id: d.id,
             filename: d.filename,
@@ -401,16 +402,16 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     setGeneratedPlan(null);
 
     try {
-      const selectedDatasetIds = datasets.map((d) => d.id);
-      const relevantConfirmed = assistantContext.getConfirmedForDatasets(selectedDatasetIds);
+      const selectedDatasetIds = selectedDataset ? [selectedDataset] : datasets.map((d) => d.id);
+      const activeSetRelationships = activeRelationshipSet?.relationships ?? [];
 
       const runtime = getAssistantRuntime();
       const response = await runtime.generateAnalysisPlan({
         question: planQuestion.trim(),
         context: {
-          selected_dataset_ids: datasets.map((d) => d.id),
+          selected_dataset_ids: selectedDatasetIds,
           selected_dataset_id: selectedDataset ?? undefined,
-          confirmed_relationships: relevantConfirmed,
+          confirmed_relationships: activeSetRelationships,
           datasets: datasets.map((d) => ({
             id: d.id,
             filename: d.filename,
@@ -594,6 +595,21 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                 <option value="">选择数据集...</option>
                 {datasets.map(d => (
                   <option key={d.id} value={d.id}>{d.filename}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 关系组选择 */}
+            <div className="flex items-center gap-2 flex-shrink-0" title="关系组用于告诉助手哪些表关系可以作为分析上下文；不会自动 join。">
+              <GitBranch className="w-4 h-4 text-[var(--text-muted)]" />
+              <select
+                value={assistantContext.activeRelationshipSetId || ''}
+                onChange={(e) => assistantContext.setActiveRelationshipSet(e.target.value || undefined)}
+                className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] w-[170px]"
+              >
+                <option value="">不使用关系组</option>
+                {assistantContext.relationshipSets.map((set) => (
+                  <option key={set.id} value={set.id}>{set.name}</option>
                 ))}
               </select>
             </div>
@@ -813,13 +829,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <RelationshipReviewPanel
                         datasets={datasets}
-                        confirmedRelationships={assistantContext.confirmedRelationships}
-                        confirmedRelationshipIds={assistantContext.confirmedRelationships.map((r) => r.id)}
-                        rejectedRelationshipIds={assistantContext.rejectedRelationshipIds}
-                        onConfirmRelationship={assistantContext.confirmRelationship}
-                        onRejectRelationship={assistantContext.rejectRelationship}
-                        onResetRelationship={assistantContext.resetRelationship}
-                        onClearAllConfirmed={assistantContext.clearConfirmedRelationships}
+                        relationshipSets={assistantContext.relationshipSets}
+                        activeRelationshipSetId={assistantContext.activeRelationshipSetId}
+                        onCreateRelationshipSet={assistantContext.createRelationshipSet}
+                        onUpdateRelationshipSet={assistantContext.updateRelationshipSet}
+                        onDeleteRelationshipSet={assistantContext.deleteRelationshipSet}
+                        onSetActiveRelationshipSet={assistantContext.setActiveRelationshipSet}
                       />
                     </div>
                   </div>
@@ -827,7 +842,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                   <GuidedQuickAnalysisPanel
                     datasets={datasets}
                     defaultDatasetId={selectedDataset ?? undefined}
-                    confirmedRelationships={assistantContext.confirmedRelationships}
+                    activeRelationshipSet={activeRelationshipSet}
                     onNavigate={(target) => {
                       window.dispatchEvent(new CustomEvent('companion-navigate', { detail: target }));
                       onClose();

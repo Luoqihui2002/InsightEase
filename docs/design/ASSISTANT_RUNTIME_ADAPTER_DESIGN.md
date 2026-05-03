@@ -50,16 +50,23 @@ The runtime receives a structured `AssistantContext`:
 interface AssistantContext {
   selected_dataset_ids: string[];
   selected_dataset_id?: string;
-  confirmed_relationships: TableRelationship[];
+  confirmed_relationships: TableRelationship[]; // active relationship set only
   dataset_profiles?: DatasetProfile[];
   datasets?: Array<{ id; filename; name; schema? }>;
 }
 ```
 
 This context is built by AIWorkspace from:
-- `useAssistantContext()` (confirmed relationships)
+- `useAssistantContext()` (active relationship set relationships)
 - `datasetApi.list()` (dataset list)
 - `selectedDataset` state (primary dataset)
+
+Relationship context contract after Phase 4B-8D-C:
+
+- `confirmed_relationships` means relationships from the active Relationship Set only.
+- Saved relationship sets that are not active are never passed to the runtime.
+- If no active set exists, `confirmed_relationships` is `[]`.
+- Relationship sets are local assistant metadata and do not trigger joins or SQL generation.
 
 ### Factory
 
@@ -88,7 +95,7 @@ const ruleBasedAssistantRuntime: AssistantRuntime = {
     const plan = generateMockAnalysisPlan({
       question: request.question,
       datasets: request.context.datasets ?? [],
-      confirmedRelationships: request.context.confirmed_relationships,
+      confirmedRelationships: request.context.confirmed_relationships, // active set only
     });
     return { plan, runtime_mode: "rule_based", warnings: [] };
   },

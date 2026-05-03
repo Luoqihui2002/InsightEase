@@ -35,7 +35,7 @@ import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import type {
   DatasetProfile,
-  TableRelationship,
+  RelationshipSet,
   AssistantAnalysisPlan,
   ColumnProfile,
   TableClassification,
@@ -58,7 +58,7 @@ interface DatasetOption {
 interface GuidedQuickAnalysisPanelProps {
   datasets: DatasetOption[];
   defaultDatasetId?: string;
-  confirmedRelationships?: TableRelationship[];
+  activeRelationshipSet?: RelationshipSet;
   onNavigate?: (target: string, payload?: Record<string, unknown>) => void;
   onBack?: () => void;
 }
@@ -254,7 +254,7 @@ function getKeyFields(profile: DatasetProfile): string[] {
 export function GuidedQuickAnalysisPanel({
   datasets,
   defaultDatasetId,
-  confirmedRelationships = [],
+  activeRelationshipSet,
   onNavigate,
   onBack,
 }: GuidedQuickAnalysisPanelProps) {
@@ -268,6 +268,7 @@ export function GuidedQuickAnalysisPanel({
   const [planQuestion, setPlanQuestion] = useState('');
   const [generatedPlan, setGeneratedPlan] = useState<AssistantAnalysisPlan | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
+  const [relationshipScopeHint, setRelationshipScopeHint] = useState('');
 
   const selectedDataset = datasets.find((d) => d.id === selectedDatasetId);
 
@@ -315,10 +316,16 @@ export function GuidedQuickAnalysisPanel({
     setGeneratedPlan(null);
 
     // Scope confirmed relationships to the selected dataset
-    const scopedRelationships = confirmedRelationships.filter(
+    const activeSetRelationships = activeRelationshipSet?.relationships ?? [];
+    const scopedRelationships = activeSetRelationships.filter(
       (rel) =>
         rel.source_dataset_id === selectedDataset.id ||
         rel.target_dataset_id === selectedDataset.id
+    );
+    setRelationshipScopeHint(
+      activeRelationshipSet && scopedRelationships.length === 0
+        ? '当前关系组不包含该数据集，已按单表分析生成计划。'
+        : ''
     );
 
     try {
@@ -721,6 +728,21 @@ export function GuidedQuickAnalysisPanel({
           当前为规则型分析向导，未来可接入 Hermes/LLM 提供更强的自然语言理解。
         </p>
       </div>
+
+      <div className="flex items-start gap-2 text-xs text-[var(--text-muted)] bg-[var(--bg-tertiary)]/50 border border-[var(--border-subtle)] rounded-lg px-3 py-2">
+        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--neon-cyan)]" />
+        <p>
+          关系组：{activeRelationshipSet ? activeRelationshipSet.name : '未使用'}。
+          快速分析只会使用当前关系组中触达所选数据集的关系。
+        </p>
+      </div>
+
+      {relationshipScopeHint && (
+        <div className="flex items-start gap-2 text-xs text-amber-400 bg-amber-400/5 border border-amber-400/20 rounded-lg px-3 py-2">
+          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <p>{relationshipScopeHint}</p>
+        </div>
+      )}
 
       {/* Generated plan */}
       {generatedPlan && (

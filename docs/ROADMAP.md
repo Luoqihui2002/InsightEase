@@ -288,8 +288,17 @@
 - 移除侧边栏入口和 Dashboard 快捷方式
 - 添加弃用注释和页面提示
 
-#### 4B-8D: Guided Quick Analysis in AI Workbench（下一Phase）
+#### 4B-8D: Guided Quick Analysis in AI Workbench ✅
 - 将快速分析向导迁移到 AI Workbench
+- 后续修复：画像字段 casing 归一化、confirmed relationship scope 管理
+
+#### 4B-8D-C: Relationship Set Management Redesign ✅
+- 将全局 confirmed edge list 改为 Relationship Set 模型
+- 本地保存多个命名关系组，支持 active set 切换、重命名、删除
+- 旧 `insightease_assistant_confirmed_relationships` 自动迁移为 `旧版已确认关系`
+- Planner/Chat 只使用 active relationship set
+- Guided Quick Analysis 只使用 active set 中触达所选数据集的关系
+- 无后端持久化、无自动 join、无 SQL 生成
 
 #### 4B-8E: Hermes Backend Adapter（远期）
 - 后端 Hermes API 适配层

@@ -1223,6 +1223,33 @@ Upload CSV/Excel
   - 管理区列表合并 controlled + local 已确认关系并去重
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 16.64s ✅
 
+## Phase 4B-8D-C: Relationship Set Management Redesign
+
+- **目标**: 将 AI Workbench 表关系确认从全局扁平 confirmed edge list 改为一等公民 Relationship Set 模型。
+- **新增类型** `app/src/types/assistant.ts`:
+  - `RelationshipSet`
+  - `RelationshipSetSummary`
+  - `RelationshipRiskLevel`
+  - `TableRelationship.risk_level` / `is_custom`
+- **状态模型** `app/src/hooks/useAssistantContext.ts`:
+  - 新增 `relationshipSets` / `activeRelationshipSetId`
+  - 新增 `createRelationshipSet`, `updateRelationshipSet`, `deleteRelationshipSet`, `setActiveRelationshipSet`, `getActiveRelationshipSet`, `getRelationshipsForActiveSet`
+  - 新 localStorage keys: `insightease_assistant_relationship_sets`, `insightease_assistant_active_relationship_set_id`
+  - 旧 `insightease_assistant_confirmed_relationships` 自动迁移为 `旧版已确认关系`
+  - 不再写入旧 confirmed relationship 格式
+- **UI** `RelationshipReviewPanel.tsx`:
+  - 关系组管理区打开面板即显示
+  - 候选关系按 key family 分组
+  - 行级确认改为 checkbox 选择 + 保存为命名关系组
+  - 支持当前关系组切换、重命名、删除、清除当前
+  - 高风险关系需要显式确认后才能加入本次关系组
+- **Planner / Runtime**:
+  - `AIWorkspace.tsx` 新增紧凑关系组 selector
+  - chat planner / 生成分析计划只传 active relationship set，不传全部保存关系组
+  - `GuidedQuickAnalysisPanel.tsx` 仅使用 active set 中触达所选数据集的关系
+- **约束**: 未新增 backend persistence、自动 join、SQL 生成、Hermes 或 LLM。
+- **验证**: `npx.cmd tsc --noEmit` 0 errors；`npm.cmd run build` built in 20.39s（保留既有 large chunk warning）。
+
 ## 下一步建议
 
 ### 立即执行
