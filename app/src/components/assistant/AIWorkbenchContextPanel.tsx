@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   AlertTriangle,
+  BarChart3,
   ChevronDown,
   ChevronRight,
   Database,
   GitBranch,
+  History,
   Info,
   Loader2,
   ShieldAlert,
@@ -12,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DataTablePreview } from '@/components/data-display/DataTablePreview';
+import { analysisApi } from '@/api/analysis';
 import { datasetApi } from '@/api/datasets';
 import { cn } from '@/lib/utils';
 import type {
@@ -19,7 +23,9 @@ import type {
   RelationshipSetDatasetNode,
   TableRelationship,
 } from '@/types/assistant';
-import type { FieldSchema } from '@/types/api';
+import type { Analysis, FieldSchema } from '@/types/api';
+
+const SECTION_STORAGE_KEY = 'insightease_ai_workbench_context_panel_sections';
 
 interface ContextDataset {
   id: string;
@@ -45,7 +51,43 @@ interface AIWorkbenchContextPanelProps {
   activeRelationshipSet?: RelationshipSet;
   datasets: ContextDataset[];
   layoutMode: 'horizontal' | 'vertical';
+  selectedAnalysisHistoryId?: string;
   onSelectDataset?: (datasetId: string) => void;
+  onSelectAnalysisHistory?: (analysisId?: string) => void;
+}
+
+interface ContextPanelSectionProps {
+  id: string;
+  title: string;
+  subtitle?: string;
+  icon?: ReactNode;
+  defaultOpen?: boolean;
+  badge?: string | number;
+  openStates: Record<string, boolean>;
+  onToggle: (id: string, defaultOpen: boolean) => void;
+  children: ReactNode;
+}
+
+function loadSectionState(): Record<string, boolean> {
+  try {
+    const raw = sessionStorage.getItem(SECTION_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([, value]) => typeof value === 'boolean')
+    ) as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+}
+
+function saveSectionState(state: Record<string, boolean>) {
+  try {
+    sessionStorage.setItem(SECTION_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Non-critical UI preference only.
+  }
 }
 
 function getDatasetLabel(dataset?: ContextDataset | RelationshipSetDatasetNode): string {
@@ -59,6 +101,13 @@ function getDatasetLabel(dataset?: ContextDataset | RelationshipSetDatasetNode):
 function formatNumber(value?: number): string {
   if (typeof value !== 'number') return '-';
   return value.toLocaleString();
+}
+
+function formatDate(value?: string): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('zh-CN');
 }
 
 function getNodeDataset(node: RelationshipSetDatasetNode, datasets: ContextDataset[]) {
@@ -75,16 +124,59 @@ function getRiskLabel(rel: TableRelationship): string {
   return '低';
 }
 
+function getAnalysisTypeLabel(type?: string): string {
+  const labels: Record<string, string> = {
+    descriptive: '描述统计',
+    statistics: '统计分析',
+    correlation: '相关分析',
+    clustering: '聚类分析',
+    forecast: '预测分析',
+    attribution: '归因分析',
+    time_series: '时间序列',
+    funnel: '漏斗分析',
+    rfm: 'RFM 分析',
+    smart_process: '智能处理',
+  };
+  return type ? labels[type] || type : '-';
+}
+
+function getStatusLabel(status?: string): string {
+  const labels: Record<string, string> = {
+    pending: '等待中',
+    running: '运行中',
+    completed: '已完成',
+    failed: '失败',
+  };
+  return status ? labels[status] || status : '-';
+}
+
+function summarizeResult(result: unknown): string | undefined {
+  if (!result) return undefined;
+  if (Array.isArray(result)) return `结果包含 ${result.length} 条记录。`;
+  if (typeof result === 'object') {
+    const keys = Object.keys(result as Record<string, unknown>).slice(0, 6);
+    if (keys.length > 0) return `结果包含字段：${keys.join('、')}`;
+  }
+  return '该历史结果包含可查看的分析输出。';
+}
+
 export function AIWorkbenchContextPanel({
   selectedDatasetId,
   selectedDatasetName,
   activeRelationshipSet,
   datasets,
   layoutMode,
+  selectedAnalysisHistoryId,
   onSelectDataset,
+  onSelectAnalysisHistory,
 }: AIWorkbenchContextPanelProps) {
   const [previewCache, setPreviewCache] = useState<Record<string, PreviewState>>({});
   const [expandedPreviews, setExpandedPreviews] = useState<Set<string>>(new Set());
+  const [sectionOpenStates, setSectionOpenStates] = useState<Record<string, boolean>>(loadSectionState);
+  const [historyItems, setHistoryItems] = useState<Analysis[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historySearch, setHistorySearch] = useState('');
 
   const selectedDataset = useMemo(
     () => datasets.find((dataset) => dataset.id === selectedDatasetId),
@@ -97,6 +189,60 @@ export function AIWorkbenchContextPanel({
   );
   const relationships = activeRelationshipSet?.relationships ?? [];
   const highRiskRelationships = relationships.filter((rel) => rel.risk_level === 'high');
+  const selectedHistory = historyItems.find((item) => item.id === selectedAnalysisHistoryId);
+
+  const filteredHistoryItems = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+    if (!query) return historyItems;
+    return historyItems.filter((item) => {
+      const datasetName = datasets.find((dataset) => dataset.id === item.dataset_id)?.filename ?? '';
+      return (
+        getAnalysisTypeLabel(item.type).toLowerCase().includes(query) ||
+        datasetName.toLowerCase().includes(query) ||
+        item.status.toLowerCase().includes(query)
+      );
+    });
+  }, [datasets, historyItems, historySearch]);
+
+  useEffect(() => {
+    saveSectionState(sectionOpenStates);
+  }, [sectionOpenStates]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadHistory = async () => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const response = await analysisApi.list(1, 20);
+        const raw = response as unknown as {
+          items?: Analysis[];
+          data?: { items?: Analysis[] } | Analysis[];
+        };
+        const items = raw.items || (Array.isArray(raw.data) ? raw.data : raw.data?.items) || [];
+        if (mounted) setHistoryItems(items);
+      } catch (error) {
+        if (mounted) {
+          setHistoryError(error instanceof Error ? error.message : '分析历史加载失败');
+        }
+      } finally {
+        if (mounted) setHistoryLoading(false);
+      }
+    };
+
+    void loadHistory();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const toggleSection = (id: string, defaultOpen: boolean) => {
+    setSectionOpenStates((prev) => ({
+      ...prev,
+      [id]: !(prev[id] ?? defaultOpen),
+    }));
+  };
 
   const loadPreview = async (datasetId: string) => {
     const existing = previewCache[datasetId];
@@ -136,17 +282,9 @@ export function AIWorkbenchContextPanel({
     }
   };
 
-  useEffect(() => {
-    if (!selectedDatasetId) return;
-
-    setExpandedPreviews((prev) => {
-      if (prev.has(selectedDatasetId)) return prev;
-      const next = new Set(prev);
-      next.add(selectedDatasetId);
-      return next;
-    });
-    void loadPreview(selectedDatasetId);
-  }, [selectedDatasetId]);
+  const ensurePreview = (datasetId: string) => {
+    void loadPreview(datasetId);
+  };
 
   const togglePreview = (datasetId: string) => {
     setExpandedPreviews((prev) => {
@@ -158,7 +296,7 @@ export function AIWorkbenchContextPanel({
     void loadPreview(datasetId);
   };
 
-  const hasContext = Boolean(selectedDatasetId || activeRelationshipSet);
+  const hasContext = Boolean(selectedDatasetId || activeRelationshipSet || selectedAnalysisHistoryId);
 
   return (
     <aside
@@ -174,13 +312,13 @@ export function AIWorkbenchContextPanel({
         <div>
           <h3 className="text-sm font-medium text-[var(--text-primary)]">上下文面板</h3>
           <p className="text-[10px] text-[var(--text-muted)]">
-            这里只展示样例数据，不会运行分析或修改数据。
+            上下文面板只展示样例数据和元信息，不会运行分析或修改数据。
           </p>
         </div>
         <Info className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
         {!hasContext && <EmptyContext />}
 
         {selectedDatasetId && (
@@ -188,8 +326,11 @@ export function AIWorkbenchContextPanel({
             dataset={selectedDataset}
             fallbackName={selectedDatasetName}
             preview={previewCache[selectedDatasetId]}
-            expanded={expandedPreviews.has(selectedDatasetId)}
+            expandedPreview={expandedPreviews.has(selectedDatasetId)}
+            sectionOpenStates={sectionOpenStates}
+            onToggleSection={toggleSection}
             onTogglePreview={() => togglePreview(selectedDatasetId)}
+            onEnsurePreview={() => ensurePreview(selectedDatasetId)}
           />
         )}
 
@@ -203,22 +344,74 @@ export function AIWorkbenchContextPanel({
             datasets={datasets}
             previewCache={previewCache}
             expandedPreviews={expandedPreviews}
+            sectionOpenStates={sectionOpenStates}
+            onToggleSection={toggleSection}
             onTogglePreview={togglePreview}
             onSelectDataset={onSelectDataset}
           />
         )}
 
-        <section className="rounded-xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-secondary)]/35 p-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
-            <Info className="w-3.5 h-3.5" />
-            分析历史上下文
-          </div>
-          <p className="mt-2 text-xs text-[var(--text-muted)] leading-relaxed">
-            后续将支持选择历史分析结果，并让 AI 基于结果继续解释或生成下一步分析。
-          </p>
-        </section>
+        <AnalysisHistoryContext
+          historyItems={filteredHistoryItems}
+          allHistoryCount={historyItems.length}
+          selectedHistory={selectedHistory}
+          datasets={datasets}
+          loading={historyLoading}
+          error={historyError}
+          search={historySearch}
+          onSearchChange={setHistorySearch}
+          onSelect={onSelectAnalysisHistory}
+          sectionOpenStates={sectionOpenStates}
+          onToggleSection={toggleSection}
+        />
       </div>
     </aside>
+  );
+}
+
+function ContextPanelSection({
+  id,
+  title,
+  subtitle,
+  icon,
+  defaultOpen = false,
+  badge,
+  openStates,
+  onToggle,
+  children,
+}: ContextPanelSectionProps) {
+  const open = openStates[id] ?? defaultOpen;
+
+  return (
+    <section className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]/45 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onToggle(id, defaultOpen)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-[var(--bg-tertiary)]/45 transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {icon && <span className="text-[var(--neon-cyan)] shrink-0">{icon}</span>}
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-[var(--text-primary)] truncate">{title}</p>
+            {subtitle && <p className="text-[10px] text-[var(--text-muted)] truncate">{subtitle}</p>}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {badge !== undefined && (
+            <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">
+              {badge}
+            </span>
+          )}
+          {open ? (
+            <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+          )}
+        </div>
+      </button>
+      <div className={cn('px-3 pb-3', !open && 'hidden')}>{children}</div>
+    </section>
   );
 }
 
@@ -235,7 +428,7 @@ function EmptyContext() {
       <div className="mt-3 space-y-2 text-xs text-[var(--text-secondary)]">
         <p>- 选择单个数据集：查看字段和样例数据</p>
         <p>- 选择关系组：查看相关表、关系边和参考表</p>
-        <p>- 后续可选择分析历史：让 AI 继续解释历史结果</p>
+        <p>- 选择分析历史：为后续解释和追问准备上下文</p>
       </div>
     </section>
   );
@@ -245,53 +438,94 @@ function DatasetContext({
   dataset,
   fallbackName,
   preview,
-  expanded,
+  expandedPreview,
+  sectionOpenStates,
+  onToggleSection,
   onTogglePreview,
+  onEnsurePreview,
 }: {
   dataset?: ContextDataset;
   fallbackName?: string;
   preview?: PreviewState;
-  expanded: boolean;
+  expandedPreview: boolean;
+  sectionOpenStates: Record<string, boolean>;
+  onToggleSection: (id: string, defaultOpen: boolean) => void;
   onTogglePreview: () => void;
+  onEnsurePreview: () => void;
 }) {
   const schema = dataset?.schema ?? [];
 
   return (
-    <section className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]/45 p-3 space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">当前主数据集</p>
-          <h4 className="text-sm font-medium text-[var(--text-primary)] truncate">
-            {getDatasetLabel(dataset) || fallbackName}
-          </h4>
-        </div>
-        <Table2 className="w-4 h-4 text-[var(--neon-cyan)] shrink-0" />
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 text-xs">
-        <Metric label="行数" value={formatNumber(dataset?.row_count)} />
-        <Metric label="列数" value={formatNumber(dataset?.col_count)} />
-        <Metric
-          label="质量"
-          value={typeof dataset?.quality_score === 'number' ? `${Math.round(dataset.quality_score)}%` : '-'}
-        />
-      </div>
-
-      <button
-        onClick={onTogglePreview}
-        className="flex items-center gap-1.5 text-xs text-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]/80"
+    <>
+      <ContextPanelSection
+        id="dataset-summary"
+        title="当前主数据集"
+        subtitle={getDatasetLabel(dataset) || fallbackName}
+        icon={<Table2 className="w-4 h-4" />}
+        defaultOpen
+        openStates={sectionOpenStates}
+        onToggle={onToggleSection}
       >
-        {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-        {expanded ? '收起样例数据' : '查看前 5 行'}
-      </button>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <Metric label="行数" value={formatNumber(dataset?.row_count)} />
+          <Metric label="列数" value={formatNumber(dataset?.col_count)} />
+          <Metric
+            label="质量"
+            value={typeof dataset?.quality_score === 'number' ? `${Math.round(dataset.quality_score)}%` : '-'}
+          />
+        </div>
+      </ContextPanelSection>
 
-      {expanded && <PreviewBlock preview={preview} />}
+      <ContextPanelSection
+        id="dataset-preview"
+        title="样例数据"
+        subtitle="前 5 行，不会运行分析"
+        icon={<Database className="w-4 h-4" />}
+        defaultOpen={false}
+        openStates={sectionOpenStates}
+        onToggle={(id, defaultOpen) => {
+          onToggleSection(id, defaultOpen);
+          onEnsurePreview();
+        }}
+      >
+        {!expandedPreview && (
+          <button
+            onClick={onTogglePreview}
+            className="mb-2 flex items-center gap-1.5 text-xs text-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]/80"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+            查看前 5 行
+          </button>
+        )}
+        {expandedPreview ? (
+          <>
+            <button
+              onClick={onTogglePreview}
+              className="mb-2 flex items-center gap-1.5 text-xs text-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]/80"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+              收起样例数据
+            </button>
+            <PreviewBlock preview={preview} />
+          </>
+        ) : (
+          <p className="text-xs text-[var(--text-muted)]">展开后只加载当前数据集的前 5 行。</p>
+        )}
+      </ContextPanelSection>
 
       {schema.length > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-medium text-[var(--text-secondary)]">字段摘要</p>
-          <div className="max-h-40 overflow-y-auto rounded-lg border border-[var(--border-subtle)]">
-            {schema.slice(0, 18).map((field) => (
+        <ContextPanelSection
+          id="dataset-fields"
+          title="字段摘要"
+          subtitle={`${schema.length} 个字段`}
+          icon={<Info className="w-4 h-4" />}
+          defaultOpen={schema.length <= 8}
+          badge={schema.length}
+          openStates={sectionOpenStates}
+          onToggle={onToggleSection}
+        >
+          <div className="max-h-44 overflow-y-auto rounded-lg border border-[var(--border-subtle)]">
+            {schema.slice(0, 30).map((field) => (
               <div
                 key={field.name}
                 className="flex items-center justify-between gap-2 border-b border-[var(--border-subtle)]/60 px-2 py-1.5 last:border-b-0"
@@ -303,9 +537,9 @@ function DatasetContext({
               </div>
             ))}
           </div>
-        </div>
+        </ContextPanelSection>
       )}
-    </section>
+    </>
   );
 }
 
@@ -318,6 +552,8 @@ function RelationshipSetContext({
   datasets,
   previewCache,
   expandedPreviews,
+  sectionOpenStates,
+  onToggleSection,
   onTogglePreview,
   onSelectDataset,
 }: {
@@ -329,147 +565,209 @@ function RelationshipSetContext({
   datasets: ContextDataset[];
   previewCache: Record<string, PreviewState>;
   expandedPreviews: Set<string>;
+  sectionOpenStates: Record<string, boolean>;
+  onToggleSection: (id: string, defaultOpen: boolean) => void;
   onTogglePreview: (datasetId: string) => void;
   onSelectDataset?: (datasetId: string) => void;
 }) {
   const nodeCount = relationshipSet.dataset_nodes.filter((node) => node.included_in_context).length;
 
   return (
-    <section className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]/45 p-3 space-y-3">
-      <div>
-        <div className="flex items-center gap-2">
-          <GitBranch className="w-4 h-4 text-[var(--neon-cyan)]" />
-          <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">当前关系组</p>
+    <>
+      <ContextPanelSection
+        id="relationship-set-summary"
+        title="当前关系组"
+        subtitle={relationshipSet.name}
+        icon={<GitBranch className="w-4 h-4" />}
+        defaultOpen
+        openStates={sectionOpenStates}
+        onToggle={onToggleSection}
+      >
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <Metric label="表" value={formatNumber(nodeCount)} />
+          <Metric label="关系" value={formatNumber(relationships.length)} />
+          <Metric label="参考表" value={formatNumber(isolatedNodes.length)} />
         </div>
-        <h4 className="mt-1 text-sm font-medium text-[var(--text-primary)]">{relationshipSet.name}</h4>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">
-          包含 {nodeCount} 张表，{relationships.length} 条关系
+        <p className="mt-3 text-xs text-[var(--text-muted)] leading-relaxed">
+          关系组用于提供可参考的表关系上下文，不会自动 join。
         </p>
-        <p className="mt-2 text-xs text-[var(--text-muted)] leading-relaxed">
-          关系组用于告诉助手哪些表和关系可以作为分析上下文，不会自动 join。
-        </p>
-      </div>
+      </ContextPanelSection>
 
       <NodeSection
+        id="relationship-connected"
         title="已连接表"
         nodes={connectedNodes}
         datasets={datasets}
         previewCache={previewCache}
         expandedPreviews={expandedPreviews}
+        defaultOpen={connectedNodes.length <= 4}
+        sectionOpenStates={sectionOpenStates}
+        onToggleSection={onToggleSection}
         onTogglePreview={onTogglePreview}
         onSelectDataset={onSelectDataset}
       />
 
       <NodeSection
+        id="relationship-isolated"
         title="孤立/参考表"
         nodes={isolatedNodes}
         datasets={datasets}
         previewCache={previewCache}
         expandedPreviews={expandedPreviews}
+        defaultOpen={false}
+        sectionOpenStates={sectionOpenStates}
+        onToggleSection={onToggleSection}
         onTogglePreview={onTogglePreview}
         onSelectDataset={onSelectDataset}
         isolated
       />
 
-      <RelationshipSection title="已确认关系" relationships={relationships} />
-      <RelationshipSection title="高风险关系" relationships={highRiskRelationships} highRisk />
-    </section>
+      <RelationshipSection
+        id="relationship-edges"
+        title="已确认关系"
+        relationships={relationships}
+        defaultOpen={relationships.length <= 3}
+        sectionOpenStates={sectionOpenStates}
+        onToggleSection={onToggleSection}
+      />
+
+      <RelationshipSection
+        id="relationship-high-risk"
+        title="高风险关系"
+        relationships={highRiskRelationships}
+        defaultOpen={highRiskRelationships.length > 0}
+        sectionOpenStates={sectionOpenStates}
+        onToggleSection={onToggleSection}
+        highRisk
+      />
+    </>
   );
 }
 
 function NodeSection({
+  id,
   title,
   nodes,
   datasets,
   previewCache,
   expandedPreviews,
+  defaultOpen,
+  sectionOpenStates,
+  onToggleSection,
   onTogglePreview,
   onSelectDataset,
   isolated,
 }: {
+  id: string;
   title: string;
   nodes: RelationshipSetDatasetNode[];
   datasets: ContextDataset[];
   previewCache: Record<string, PreviewState>;
   expandedPreviews: Set<string>;
+  defaultOpen: boolean;
+  sectionOpenStates: Record<string, boolean>;
+  onToggleSection: (id: string, defaultOpen: boolean) => void;
   onTogglePreview: (datasetId: string) => void;
   onSelectDataset?: (datasetId: string) => void;
   isolated?: boolean;
 }) {
-  if (nodes.length === 0) {
-    return (
-      <div>
-        <p className="text-xs font-medium text-[var(--text-secondary)]">{title}</p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">暂无</p>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <p className="mb-2 text-xs font-medium text-[var(--text-secondary)]">{title}</p>
-      <div className="space-y-2">
-        {nodes.map((node) => {
-          const dataset = getNodeDataset(node, datasets);
-          const expanded = expandedPreviews.has(node.dataset_id);
-          return (
-            <div
-              key={node.dataset_id}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/50 p-2"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-medium text-[var(--text-primary)]">
-                    {getDatasetLabel(dataset ?? node)}
-                  </p>
-                  <p className="mt-1 text-[10px] text-[var(--text-muted)]">
-                    角色：{node.role} · {formatNumber(dataset?.row_count)} 行 / {formatNumber(dataset?.col_count)} 列
-                  </p>
-                  {isolated && (
-                    <p className="mt-1 text-[10px] text-amber-300">
-                      孤立参考表：未发现可确认关系，不会自动参与 join。
+    <ContextPanelSection
+      id={id}
+      title={title}
+      subtitle={isolated ? '不会自动参与 join' : undefined}
+      icon={<Table2 className="w-4 h-4" />}
+      defaultOpen={defaultOpen}
+      badge={nodes.length}
+      openStates={sectionOpenStates}
+      onToggle={onToggleSection}
+    >
+      {isolated && nodes.length > 0 && (
+        <p className="mb-2 text-xs text-[var(--text-muted)] leading-relaxed">
+          这些表被保留为当前主题的参考上下文，但未发现可确认关系，不会自动参与 join。
+        </p>
+      )}
+      {nodes.length === 0 ? (
+        <p className="text-xs text-[var(--text-muted)]">暂无</p>
+      ) : (
+        <div className="space-y-2">
+          {nodes.map((node) => {
+            const dataset = getNodeDataset(node, datasets);
+            const expanded = expandedPreviews.has(node.dataset_id);
+            return (
+              <div
+                key={node.dataset_id}
+                className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/50 p-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-[var(--text-primary)]">
+                      {getDatasetLabel(dataset ?? node)}
                     </p>
+                    <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                      角色：{node.role} · {formatNumber(dataset?.row_count)} 行 / {formatNumber(dataset?.col_count)} 列
+                    </p>
+                    {isolated && (
+                      <p className="mt-1 text-[10px] text-amber-300">
+                        孤立参考表：不会自动参与 join。
+                      </p>
+                    )}
+                  </div>
+                  {onSelectDataset && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onSelectDataset(node.dataset_id)}
+                      className="h-7 px-2 text-[10px]"
+                    >
+                      设为主表
+                    </Button>
                   )}
                 </div>
-                {onSelectDataset && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onSelectDataset(node.dataset_id)}
-                    className="h-7 px-2 text-[10px]"
-                  >
-                    设为主表
-                  </Button>
-                )}
+                <button
+                  onClick={() => onTogglePreview(node.dataset_id)}
+                  className="mt-2 flex items-center gap-1.5 text-xs text-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]/80"
+                >
+                  {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                  {expanded ? '收起前 5 行' : '查看前 5 行'}
+                </button>
+                {expanded && <div className="mt-2"><PreviewBlock preview={previewCache[node.dataset_id]} /></div>}
               </div>
-              <button
-                onClick={() => onTogglePreview(node.dataset_id)}
-                className="mt-2 flex items-center gap-1.5 text-xs text-[var(--neon-cyan)] hover:text-[var(--neon-cyan)]/80"
-              >
-                {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                {expanded ? '收起前 5 行' : '查看前 5 行'}
-              </button>
-              {expanded && <div className="mt-2"><PreviewBlock preview={previewCache[node.dataset_id]} /></div>}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      )}
+    </ContextPanelSection>
   );
 }
 
 function RelationshipSection({
+  id,
   title,
   relationships,
+  defaultOpen,
+  sectionOpenStates,
+  onToggleSection,
   highRisk,
 }: {
+  id: string;
   title: string;
   relationships: TableRelationship[];
+  defaultOpen: boolean;
+  sectionOpenStates: Record<string, boolean>;
+  onToggleSection: (id: string, defaultOpen: boolean) => void;
   highRisk?: boolean;
 }) {
   return (
-    <div>
-      <p className="mb-2 text-xs font-medium text-[var(--text-secondary)]">{title}</p>
+    <ContextPanelSection
+      id={id}
+      title={title}
+      icon={highRisk ? <ShieldAlert className="w-4 h-4" /> : <GitBranch className="w-4 h-4" />}
+      defaultOpen={defaultOpen}
+      badge={relationships.length}
+      openStates={sectionOpenStates}
+      onToggle={onToggleSection}
+    >
       {relationships.length === 0 ? (
         <p className="text-xs text-[var(--text-muted)]">暂无</p>
       ) : (
@@ -512,7 +810,146 @@ function RelationshipSection({
           ))}
         </div>
       )}
-    </div>
+    </ContextPanelSection>
+  );
+}
+
+function AnalysisHistoryContext({
+  historyItems,
+  allHistoryCount,
+  selectedHistory,
+  datasets,
+  loading,
+  error,
+  search,
+  onSearchChange,
+  onSelect,
+  sectionOpenStates,
+  onToggleSection,
+}: {
+  historyItems: Analysis[];
+  allHistoryCount: number;
+  selectedHistory?: Analysis;
+  datasets: ContextDataset[];
+  loading: boolean;
+  error: string | null;
+  search: string;
+  onSearchChange: (value: string) => void;
+  onSelect?: (analysisId?: string) => void;
+  sectionOpenStates: Record<string, boolean>;
+  onToggleSection: (id: string, defaultOpen: boolean) => void;
+}) {
+  const datasetName = selectedHistory
+    ? getDatasetLabel(datasets.find((dataset) => dataset.id === selectedHistory.dataset_id))
+    : undefined;
+  const resultSummary =
+    selectedHistory?.ai_interpretation ||
+    summarizeResult(selectedHistory?.result_data) ||
+    (selectedHistory ? '该历史结果暂无摘要。后续可接入 AI Result Explainer。' : undefined);
+
+  return (
+    <ContextPanelSection
+      id="analysis-history"
+      title="分析历史上下文"
+      subtitle="用于后续解释和追问，不会自动重新运行分析"
+      icon={<History className="w-4 h-4" />}
+      defaultOpen={Boolean(selectedHistory)}
+      badge={allHistoryCount}
+      openStates={sectionOpenStates}
+      onToggle={onToggleSection}
+    >
+      <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+        分析历史上下文用于后续解释和追问，不会自动重新运行分析。
+      </p>
+
+      <div className="mt-3 space-y-2">
+        <input
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="搜索历史分析"
+          className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
+        />
+        <select
+          value={selectedHistory?.id ?? ''}
+          onChange={(event) => onSelect?.(event.target.value || undefined)}
+          className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-primary)]"
+          disabled={loading || !onSelect}
+        >
+          <option value="">选择分析历史...</option>
+          {historyItems.map((item) => {
+            const itemDataset = datasets.find((dataset) => dataset.id === item.dataset_id);
+            return (
+              <option key={item.id} value={item.id}>
+                {getAnalysisTypeLabel(item.type)} · {getDatasetLabel(itemDataset)} · {formatDate(item.created_at)}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      {loading && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-[var(--text-muted)]">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          正在加载分析历史...
+        </div>
+      )}
+      {error && <p className="mt-3 text-xs text-red-300">{error}</p>}
+      {!loading && !error && allHistoryCount === 0 && (
+        <p className="mt-3 text-xs text-[var(--text-muted)] leading-relaxed">
+          暂无分析历史上下文。后续你可以选择一次历史分析结果，让 AI 基于结果继续解释或生成下一步分析。
+        </p>
+      )}
+      {!loading && !error && allHistoryCount > 0 && historyItems.length === 0 && (
+        <p className="mt-3 text-xs text-[var(--text-muted)]">未找到匹配的分析历史。</p>
+      )}
+
+      {selectedHistory && (
+        <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/50 p-3">
+          <div className="flex items-start gap-2">
+            <BarChart3 className="w-4 h-4 text-[var(--neon-cyan)] mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-[var(--text-primary)]">当前分析历史</p>
+              <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                {getAnalysisTypeLabel(selectedHistory.type)} · {datasetName} · {getStatusLabel(selectedHistory.status)}
+              </p>
+              <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                创建时间：{formatDate(selectedHistory.created_at)}
+              </p>
+              <p className="mt-2 text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-4">
+                {resultSummary}
+              </p>
+              {selectedHistory.ai_recommendations && selectedHistory.ai_recommendations.length > 0 && (
+                <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+                  包含 {selectedHistory.ai_recommendations.length} 条行动建议。
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent('companion-navigate', { detail: { path: '/app/history' } })
+                    )
+                  }
+                  className="h-7 px-2 text-[10px]"
+                >
+                  查看原结果
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onSelect?.(undefined)}
+                  className="h-7 px-2 text-[10px]"
+                >
+                  清除历史上下文
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </ContextPanelSection>
   );
 }
 

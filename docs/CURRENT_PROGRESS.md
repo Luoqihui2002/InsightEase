@@ -1312,3 +1312,11 @@ cd app && npm run build        # built in 20.50s ✅
 - The panel shows empty, dataset, relationship-set, and combined context states.
 - Relationship-set table previews are lazy-loaded per table and cached only in component state.
 - Added design note for future analysis history context.
+
+## Phase 4B-8G: Analysis History Context and Collapsible Sections
+
+- Added collapsible modules to `AIWorkbenchContextPanel` for dataset summary, sample rows, field summary, relationship set summary, connected tables, isolated/reference tables, confirmed edges, and high-risk edges.
+- Added session-only collapse state under `insightease_ai_workbench_context_panel_sections`; no preview rows or raw result tables are persisted.
+- Added initial analysis history context selection in the Context Panel using the existing `analysisApi.list()` frontend API.
+- AI Workbench active-session persistence now stores `selected_analysis_history_id` only, preserving context across close/reopen without storing raw analysis output.
+- Preserved safety constraints: no Hermes/LLM, no auto-run analysis, no auto-join, no SQL generation, no backend persistence, and no SmartAnalysis changes.

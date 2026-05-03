@@ -440,3 +440,13 @@ Status: implemented.
 - Relationship set context shows connected tables, isolated/reference tables, confirmed edges, and high-risk edges.
 - Related table previews are lazy-loaded per table.
 - Remaining future work: analysis history context and optional relationship graph visualization.
+
+## Phase 4B-8G: Analysis History Context and Collapsible Sections
+
+Status: implemented.
+
+- Context Panel modules are now collapsible to keep the right-side Workbench area usable as context grows.
+- Collapse state is session-only and stores no raw data.
+- Initial analysis history context is available in the Context Panel with recent-history search and safe summaries.
+- AI Workbench restores the selected history context id across close/reopen.
+- Remaining future work: reusable result-summary contract and future AI result explanation.

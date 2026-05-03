@@ -84,6 +84,7 @@ interface AIWorkbenchSessionSnapshot {
   active_tab: 'chat' | 'capabilities' | 'history';
   selected_dataset_id?: string;
   active_relationship_set_id?: string;
+  selected_analysis_history_id?: string;
   current_plan?: AssistantAnalysisPlan | null;
   current_session_id?: string;
   plan_question?: string;
@@ -136,6 +137,10 @@ function loadActiveWorkbenchSession(): AIWorkbenchSessionSnapshot | null {
       active_relationship_set_id:
         typeof parsed.active_relationship_set_id === 'string'
           ? parsed.active_relationship_set_id
+          : undefined,
+      selected_analysis_history_id:
+        typeof parsed.selected_analysis_history_id === 'string'
+          ? parsed.selected_analysis_history_id
           : undefined,
       current_plan: parsed.current_plan ?? null,
       current_session_id:
@@ -204,6 +209,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     restoredSession?.current_plan ?? null
   );
   const [isPlanning, setIsPlanning] = useState(false);
+  const [selectedAnalysisHistoryId, setSelectedAnalysisHistoryId] = useState<string | undefined>(
+    restoredSession?.selected_analysis_history_id
+  );
   const [datasetSearch, setDatasetSearch] = useState('');
   const [relationshipSetSearch, setRelationshipSetSearch] = useState('');
 
@@ -244,6 +252,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       active_tab: activeTab,
       selected_dataset_id: selectedDataset ?? undefined,
       active_relationship_set_id: assistantContext.activeRelationshipSetId,
+      selected_analysis_history_id: selectedAnalysisHistoryId,
       current_plan: generatedPlan,
       current_session_id: currentSessionId,
       plan_question: planQuestion,
@@ -259,6 +268,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     mainLayout,
     messages,
     planQuestion,
+    selectedAnalysisHistoryId,
     selectedDataset,
     showPreview,
   ]);
@@ -679,6 +689,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             datasets={datasets}
             layoutMode={mainLayout}
             onSelectDataset={(datasetId) => setSelectedDataset(datasetId)}
+            selectedAnalysisHistoryId={selectedAnalysisHistoryId}
+            onSelectAnalysisHistory={setSelectedAnalysisHistoryId}
           />
         )}
 
@@ -1262,6 +1274,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             datasets={datasets}
             layoutMode={mainLayout}
             onSelectDataset={(datasetId) => setSelectedDataset(datasetId)}
+            selectedAnalysisHistoryId={selectedAnalysisHistoryId}
+            onSelectAnalysisHistory={setSelectedAnalysisHistoryId}
           />
         )}
 

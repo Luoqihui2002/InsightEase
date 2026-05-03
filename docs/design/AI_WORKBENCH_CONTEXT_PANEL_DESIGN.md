@@ -37,3 +37,27 @@ The panel must explain what context the assistant is allowed to consider without
 - Primary dataset preview may load automatically.
 - Relationship-set table previews are lazy and per-table.
 - Preview cache is component-local and session-only.
+
+## Phase 4B-8G Update: Collapsible Context Modules
+
+Context Panel modules are collapsible so the right-side AI Workbench area stays usable as context grows.
+
+Section state is stored in `sessionStorage.insightease_ai_workbench_context_panel_sections` as boolean open/closed values only. No raw preview rows, raw result tables, or generated analysis output are persisted.
+
+Default behavior:
+
+- Current dataset summary and relationship set summary are open.
+- Sample rows, long field summaries, isolated/reference tables, and long relationship lists start collapsed.
+- High-risk relationship context is open when high-risk edges exist.
+- Relationship-set table previews remain lazy and per-table.
+
+## Phase 4B-8G Update: Initial Analysis History Context
+
+The Context Panel now has an initial analysis history context section. It can list recent analysis items, search them, select one as context, and show a compact safe summary.
+
+The history context is display-only in this phase:
+
+- It does not trigger AI explanation.
+- It does not rerun analysis.
+- It does not persist raw result data.
+- AI Workbench session persistence stores only `selected_analysis_history_id`.

@@ -974,3 +974,11 @@
 - Added lazy per-table preview loading for relationship-set table cards.
 - Added design documentation for the Context Panel contract and future analysis history context.
 - No backend API, Hermes/LLM, SQL generation, auto-run, auto-join, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8G: Analysis History Context and Collapsible Sections
+
+- Added collapsible Context Panel modules with accessible expand/collapse headers.
+- Persisted section open/closed state in sessionStorage without storing preview rows or raw result data.
+- Added an initial analysis history context section that lists recent analyses, supports search, and displays compact safe summaries.
+- AI Workbench session snapshots now retain only `selected_analysis_history_id` for close/reopen continuity.
+- No backend API, Hermes/LLM, SQL generation, auto-run, auto-join, dependency, package-file, or SmartAnalysis changes.
