@@ -1303,3 +1303,12 @@ cd app && npm run build        # built in 20.50s ✅
 - Statistics now consumes AI Workbench prefill payloads for descriptive/statistics-family plans without auto-running analysis.
 - Dataset and relationship-set selectors now support lightweight client-side search with empty states.
 - Safety contract preserved: no backend changes, no auto-run, no auto-join, no SQL generation, no Hermes/LLM call, and SmartAnalysis unchanged.
+
+## Phase 4B-8F: AI Workbench Context Panel Redesign
+
+- Added reusable `AIWorkbenchContextPanel` for dataset and relationship-set context.
+- Replaced the Workbench right-side preview-only area with a context panel in horizontal layout.
+- Vertical layout now uses the same panel as a compact top context area.
+- The panel shows empty, dataset, relationship-set, and combined context states.
+- Relationship-set table previews are lazy-loaded per table and cached only in component state.
+- Added design note for future analysis history context.

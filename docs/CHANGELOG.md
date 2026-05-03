@@ -965,3 +965,12 @@
 - Added safe Statistics prefill support for descriptive/statistics-family plans.
 - Added searchable dataset and relationship-set selectors in AI Workbench and relationship review.
 - No backend API, Hermes/LLM, SQL generation, auto-run, auto-join, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8F: AI Workbench Context Panel Redesign
+
+- Added `AIWorkbenchContextPanel` as the reusable context surface for AI Workbench.
+- Replaced the old preview-only right-side area with dataset and relationship-set context.
+- Added relationship set sections for connected tables, isolated/reference tables, confirmed edges, and high-risk edges.
+- Added lazy per-table preview loading for relationship-set table cards.
+- Added design documentation for the Context Panel contract and future analysis history context.
+- No backend API, Hermes/LLM, SQL generation, auto-run, auto-join, dependency, package-file, or SmartAnalysis changes.

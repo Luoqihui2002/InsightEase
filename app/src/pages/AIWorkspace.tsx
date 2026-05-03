@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AssistantAvatar } from '@/components/assistant/AssistantAvatar';
 
+import { AIWorkbenchContextPanel } from '@/components/assistant/AIWorkbenchContextPanel';
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import { GuidedQuickAnalysisPanel } from '@/components/assistant/GuidedQuickAnalysisPanel';
@@ -621,7 +622,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       loadDatasetPreview(selectedDataset);
     } else {
       setDatasetPreview(null);
-      setShowPreview(false);
+      setShowPreview(true);
     }
   }, [selectedDataset]);
 
@@ -670,12 +671,23 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         </button>
 
         {/* ========== 上下布局：数据预览在上方 ========== */}
-        {mainLayout === 'vertical' && showPreview && datasetPreview && (
+        {mainLayout === 'vertical' && showPreview && (
+          <AIWorkbenchContextPanel
+            selectedDatasetId={selectedDataset ?? undefined}
+            selectedDatasetName={datasets.find((dataset) => dataset.id === selectedDataset)?.filename}
+            activeRelationshipSet={activeRelationshipSet}
+            datasets={datasets}
+            layoutMode={mainLayout}
+            onSelectDataset={(datasetId) => setSelectedDataset(datasetId)}
+          />
+        )}
+
+        {datasetPreview !== null && false && mainLayout === 'vertical' && showPreview && (
           <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex-shrink-0 max-h-[240px] overflow-hidden flex flex-col">
             {/* 数据预览头部 */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)] flex-shrink-0">
               <h3 className="text-sm font-medium text-[var(--text-primary)]">
-                数据预览（前5行 / 共{datasetPreview.totalRows}行）
+                数据预览（前5行 / 共{datasetPreview!.totalRows}行）
               </h3>
               <button
                 onClick={() => setShowPreview(false)}
@@ -689,7 +701,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-[var(--border-subtle)]">
-                    {datasetPreview.columns.map(col => (
+                    {datasetPreview!.columns.map(col => (
                       <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
                         {col}
                         <span className="ml-1 text-[10px] opacity-60">
@@ -700,9 +712,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {datasetPreview.rows.map((row, idx) => (
+                  {datasetPreview!.rows.map((row, idx) => (
                     <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
-                      {datasetPreview.columns.map(col => (
+                      {datasetPreview!.columns.map(col => (
                         <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
                           {row[col] ?? '-'}
                         </td>
@@ -718,7 +730,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         {/* ========== AI 对话区域 ========== */}
         <div className={cn(
           "flex flex-col min-h-0 overflow-hidden",
-          mainLayout === 'horizontal' && showPreview && datasetPreview ? "w-[62%]" : "flex-1"
+          mainLayout === 'horizontal' ? "w-[62%]" : "flex-1"
         )}>
           {/* 头部 */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] pl-12 flex-shrink-0">
@@ -1242,7 +1254,18 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         </div>
 
         {/* ========== 左右布局：数据预览在右侧 ========== */}
-        {mainLayout === 'horizontal' && showPreview && datasetPreview && (
+        {mainLayout === 'horizontal' && (
+          <AIWorkbenchContextPanel
+            selectedDatasetId={selectedDataset ?? undefined}
+            selectedDatasetName={datasets.find((dataset) => dataset.id === selectedDataset)?.filename}
+            activeRelationshipSet={activeRelationshipSet}
+            datasets={datasets}
+            layoutMode={mainLayout}
+            onSelectDataset={(datasetId) => setSelectedDataset(datasetId)}
+          />
+        )}
+
+        {datasetPreview !== null && false && mainLayout === 'horizontal' && showPreview && (
           <div className="w-[38%] border-l border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex flex-col min-h-0 overflow-hidden">
             {/* 数据预览头部 */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
@@ -1250,7 +1273,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                 数据预览
               </h3>
               <span className="text-xs text-[var(--text-muted)]">
-                共{datasetPreview.totalRows}行
+                共{datasetPreview!.totalRows}行
               </span>
             </div>
             {/* 数据表格 */}
@@ -1258,7 +1281,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-[var(--bg-tertiary)]">
                   <tr className="border-b border-[var(--border-subtle)]">
-                    {datasetPreview.columns.map(col => (
+                    {datasetPreview!.columns.map(col => (
                       <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
                         {col}
                         <span className="ml-1 text-[10px] opacity-60">
@@ -1269,9 +1292,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {datasetPreview.rows.map((row, idx) => (
+                  {datasetPreview!.rows.map((row, idx) => (
                     <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
-                      {datasetPreview.columns.map(col => (
+                      {datasetPreview!.columns.map(col => (
                         <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
                           {row[col] ?? '-'}
                         </td>

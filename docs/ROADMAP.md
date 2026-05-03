@@ -430,3 +430,13 @@ Status: implemented.
 - Statistics consumes AI Workbench prefill payloads safely and does not auto-run analysis.
 - Dataset and relationship-set selectors now support search for larger workspaces.
 - Remaining future work: Semantic/DataWorkshop prefill and reusable prefill UI extraction.
+
+## Phase 4B-8F: AI Workbench Context Panel Redesign
+
+Status: implemented.
+
+- AI Workbench now has a reusable Context Panel instead of a preview-only side area.
+- Dataset context shows metadata, field summary, and sample rows.
+- Relationship set context shows connected tables, isolated/reference tables, confirmed edges, and high-risk edges.
+- Related table previews are lazy-loaded per table.
+- Remaining future work: analysis history context and optional relationship graph visualization.
