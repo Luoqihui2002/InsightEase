@@ -189,18 +189,31 @@ export function RelationshipReviewPanel({
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
-  // Filter confirmed relationships relevant to currently selected datasets
-  const relevantConfirmed = confirmedRelationships.filter((rel) => {
+  // Build unified list of effectively confirmed relationships for management UI
+  const locallyConfirmedRels = (result?.relationships || []).filter(
+    (rel) => getStatus(rel.id) === 'confirmed'
+  );
+  const controlledConfirmedRels = confirmedRelationships.filter((rel) =>
+    getStatus(rel.id) === 'confirmed'
+  );
+  // Merge controlled + local, deduplicated by id
+  const allConfirmedMap = new Map<string, TableRelationship>();
+  for (const rel of controlledConfirmedRels) allConfirmedMap.set(rel.id, rel);
+  for (const rel of locallyConfirmedRels) {
+    if (!allConfirmedMap.has(rel.id)) allConfirmedMap.set(rel.id, rel);
+  }
+  const allConfirmed = Array.from(allConfirmedMap.values());
+
+  // Filter by relevance to selected datasets
+  const relevantConfirmed = allConfirmed.filter((rel) => {
     if (selectedIds.size === 0) return true;
     return selectedIds.has(rel.source_dataset_id) || selectedIds.has(rel.target_dataset_id);
   });
 
-  const totalControlledConfirmed = confirmedRelationshipIds.length;
-  const totalLocalConfirmed = Object.values(localStatus).filter((s) => s === 'confirmed').length;
-  const totalConfirmed = onConfirmRelationship ? totalControlledConfirmed : totalLocalConfirmed;
-  const totalRejected = onRejectRelationship
-    ? rejectedRelationshipIds.length
-    : Object.values(localStatus).filter((s) => s === 'rejected').length;
+  // Count from effective status across current result (matches row badges)
+  const resultRelationships = result?.relationships || [];
+  const totalConfirmed = resultRelationships.filter((rel) => getStatus(rel.id) === 'confirmed').length;
+  const totalRejected = resultRelationships.filter((rel) => getStatus(rel.id) === 'rejected').length;
 
   /* ---------------------------- render ---------------------------- */
 
@@ -280,82 +293,88 @@ export function RelationshipReviewPanel({
 
       {/* 结果 + 已确认关系 */}
       <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4">
-        {/* 已确认关系管理区 */}
-        {confirmedRelationships.length > 0 && (
-          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 overflow-hidden">
-            <button
-              onClick={() => setShowConfirmedList((s) => !s)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left"
-            >
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm font-medium text-emerald-400">
-                  已确认关系（{confirmedRelationships.length} 条）
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {onClearAllConfirmed && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onClearAllConfirmed();
-                    }}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-red-400 hover:bg-red-400/10 transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    清空全部
-                  </button>
-                )}
-                {showConfirmedList ? (
-                  <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
-                )}
-              </div>
-            </button>
-
-            <AnimatePresence>
-              {showConfirmedList && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
+        {/* 已确认关系管理区 — 始终可见 */}
+        <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 overflow-hidden">
+          <button
+            onClick={() => setShowConfirmedList((s) => !s)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">
+                已确认关系（{allConfirmed.length} 条）
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {onClearAllConfirmed && allConfirmed.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClearAllConfirmed();
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-red-400 hover:bg-red-400/10 transition-colors"
                 >
-                  <div className="px-4 pb-4 space-y-2">
-                    <p className="text-xs text-[var(--text-muted)]">
-                      已确认关系会作为后续分析计划的上下文保存在本地。你可以随时取消确认。
-                    </p>
-                    {relevantConfirmed.length === 0 && selectedIds.size > 0 && (
-                      <p className="text-xs text-[var(--text-muted)]">
-                        当前所选数据集中暂无已确认关系。
-                      </p>
-                    )}
-                    {relevantConfirmed.map((rel) => (
-                      <div
-                        key={rel.id}
-                        className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-[var(--bg-secondary)]/50 border border-[var(--border-subtle)]"
-                      >
-                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] min-w-0">
-                          <span className="truncate">{rel.source_dataset_name}.{rel.source_column}</span>
-                          <ArrowRight className="w-3 h-3 text-[var(--text-muted)] shrink-0" />
-                          <span className="truncate">{rel.target_dataset_name}.{rel.target_column}</span>
-                        </div>
-                        <button
-                          onClick={() => handleReset(rel)}
-                          className="shrink-0 px-2 py-1 rounded-md text-[10px] text-[var(--text-muted)] hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                        >
-                          取消确认
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
+                  <Trash2 className="w-3 h-3" />
+                  清空全部
+                </button>
               )}
-            </AnimatePresence>
-          </div>
-        )}
+              {showConfirmedList ? (
+                <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+              )}
+            </div>
+          </button>
+
+          <AnimatePresence>
+            {showConfirmedList && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pb-4 space-y-2">
+                  <p className="text-xs text-[var(--text-muted)]">
+                    已确认关系会作为后续分析计划的上下文保存在本地。你可以随时取消确认。
+                  </p>
+                  {allConfirmed.length === 0 && (
+                    <p className="text-xs text-[var(--text-muted)] py-2">
+                      暂无已确认关系
+                    </p>
+                  )}
+                  {allConfirmed.length > 0 && relevantConfirmed.length === 0 && selectedIds.size > 0 && (
+                    <p className="text-xs text-[var(--text-muted)] py-2">
+                      当前所选数据集中暂无已确认关系。
+                    </p>
+                  )}
+                  {relevantConfirmed.map((rel) => (
+                    <div
+                      key={rel.id}
+                      className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-[var(--bg-secondary)]/50 border border-[var(--border-subtle)]"
+                    >
+                      <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] min-w-0">
+                        <span className="truncate">{rel.source_dataset_name}.{rel.source_column}</span>
+                        <ArrowRight className="w-3 h-3 text-[var(--text-muted)] shrink-0" />
+                        <span className="truncate">{rel.target_dataset_name}.{rel.target_column}</span>
+                      </div>
+                      <span className="text-[10px] text-[var(--text-muted)] shrink-0">
+                        {relationshipTypeLabel(rel.relationship_type)}
+                      </span>
+                      <button
+                        onClick={() => handleReset(rel)}
+                        className="shrink-0 px-2 py-1 rounded-md text-[10px] text-[var(--text-muted)] hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                      >
+                        取消确认
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* API 级警告 */}
         {result?.warnings && result.warnings.length > 0 && (

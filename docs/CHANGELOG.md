@@ -893,6 +893,13 @@
 - 安全边界：无后端持久化、无自动 join、无 SQL 生成
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 21.56s ✅
 
+## Hotfix 4B-8D-B.1: Confirmed Relationship Management UI Visibility
+
+- `RelationshipReviewPanel.tsx`: 管理区改为无条件渲染（始终可见），空状态显示「暂无已确认关系」
+- `RelationshipReviewPanel.tsx`: `totalConfirmed`/`totalRejected` 改为统计当前结果所有 effective confirmed/rejected 状态，与行徽章同源
+- `RelationshipReviewPanel.tsx`: 管理区列表合并 controlled + local 已确认关系并按 id 去重
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 16.64s ✅
+
 ## Phase 4B-8C: Hide Legacy SmartAnalysis Entry
 
 - 修改 `AppSidebar.tsx`

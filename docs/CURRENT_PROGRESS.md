@@ -1213,6 +1213,16 @@ Upload CSV/Excel
 - **安全边界**: 无后端持久化、无自动 join、无 SQL 生成
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 21.56s ✅
 
+## Hotfix 4B-8D-B.1: Confirmed Relationship Management UI Visibility
+
+- **问题**: 「已确认关系」管理区被条件隐藏导致不可见；行徽章与顶部统计不同步
+- **根因**: 管理区 gate 为 `confirmedRelationships.length > 0`，但本地模式确认只写 `localStatus`；`totalConfirmed` 只数 controlled OR local 之一
+- **修复** `RelationshipReviewPanel.tsx`:
+  - 管理区无条件渲染，空状态显示「暂无已确认关系」
+  - `totalConfirmed` 统计当前结果所有 effective confirmed 状态（与行徽章同源）
+  - 管理区列表合并 controlled + local 已确认关系并去重
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 16.64s ✅
+
 ## 下一步建议
 
 ### 立即执行

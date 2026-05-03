@@ -196,6 +196,28 @@ npm run build       # built in 21.56s ✅
 - Rule-based planner keywords are deterministic; novel phrasing may fall back to "描述统计".
 - Navigation does not yet prefill analysis page config (future phase).
 
+## Hotfix 4B-8D-B.1: Confirmed Relationship Management UI Not Visible
+
+**问题**: 手动 QA 发现「已确认关系」管理区不可见；行级「已确认」徽章存在但顶部统计为 0；无「清空已确认关系」按钮。
+
+**根因**:
+1. 管理区被 `confirmedRelationships.length > 0` 条件隐藏，但 `localStatus` 中可能存在已确认条目（本地模式）。
+2. `totalConfirmed` 只统计 controlled OR local 之一，导致 controlled prop 为空时 count 为 0，但行徽章仍通过 `localStatus` 显示「已确认」。
+3. 管理区列表只读取 `confirmedRelationships` prop，不读取 `localStatus`。
+
+**修复** `RelationshipReviewPanel.tsx`:
+1. 管理区改为**无条件渲染**（始终可见），空状态时显示「暂无已确认关系」。
+2. `totalConfirmed`/`totalRejected` 改为统计当前结果中所有 effective status 为 confirmed/rejected 的关系（与行徽章同源）。
+3. 管理区列表合并 controlled `confirmedRelationships` 和 `localStatus` 中的已确认关系，按 id 去重。
+4. 管理区计数使用合并后的 `allConfirmed.length`，与列表一致。
+5. 「清空全部」按钮在有已确认关系时才显示。
+
+**验证**:
+```bash
+npx tsc --noEmit    # 0 errors ✅
+npm run build       # built in 16.64s ✅
+```
+
 ## Next Recommended Phase
 
 1. **Prefill navigation payload** — When user clicks plan navigation, pass selected dataset ID and suggested column mappings to the target analysis page via URL query params or shared state.
