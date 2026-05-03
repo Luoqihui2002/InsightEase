@@ -3,12 +3,13 @@
  *
  * 功能：
  *   选择 2+ 数据集 → 调用后端推断 API → 展示关系建议 → 本地确认/忽略
+ *   已确认关系管理（取消确认、清空全部）
  *
  * 约束：
  *   仅基于元数据推断
  *   不自动 join
  *   不读取完整原始数据
- *   确认状态仅保存在组件内存中
+ *   确认状态仅保存在组件内存中（controlled 模式下由父级持久化）
  */
 
 import { useState, useCallback } from 'react';
@@ -23,6 +24,7 @@ import {
   ArrowRight,
   Info,
   Table2,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { assistantApi } from '@/api/assistant';
@@ -35,11 +37,13 @@ import type {
 
 interface RelationshipReviewPanelProps {
   datasets: Array<{ id: string; filename?: string; name?: string }>;
+  confirmedRelationships?: TableRelationship[];
   confirmedRelationshipIds?: string[];
   rejectedRelationshipIds?: string[];
   onConfirmRelationship?: (relationship: TableRelationship) => void;
   onRejectRelationship?: (relationship: TableRelationship) => void;
   onResetRelationship?: (relationship: TableRelationship) => void;
+  onClearAllConfirmed?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -77,11 +81,13 @@ function relationshipTypeLabel(type: string): string {
 
 export function RelationshipReviewPanel({
   datasets,
+  confirmedRelationships = [],
   confirmedRelationshipIds = [],
   rejectedRelationshipIds = [],
   onConfirmRelationship,
   onRejectRelationship,
   onResetRelationship,
+  onClearAllConfirmed,
 }: RelationshipReviewPanelProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -89,6 +95,7 @@ export function RelationshipReviewPanel({
   const [result, setResult] = useState<InferRelationshipsResponse | null>(null);
   const [localStatus, setLocalStatus] = useState<Record<string, RelationshipStatus>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showConfirmedList, setShowConfirmedList] = useState(false);
 
   // Determine effective status: controlled props take precedence, then local state
   const getStatus = useCallback(
@@ -182,6 +189,19 @@ export function RelationshipReviewPanel({
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
+  // Filter confirmed relationships relevant to currently selected datasets
+  const relevantConfirmed = confirmedRelationships.filter((rel) => {
+    if (selectedIds.size === 0) return true;
+    return selectedIds.has(rel.source_dataset_id) || selectedIds.has(rel.target_dataset_id);
+  });
+
+  const totalControlledConfirmed = confirmedRelationshipIds.length;
+  const totalLocalConfirmed = Object.values(localStatus).filter((s) => s === 'confirmed').length;
+  const totalConfirmed = onConfirmRelationship ? totalControlledConfirmed : totalLocalConfirmed;
+  const totalRejected = onRejectRelationship
+    ? rejectedRelationshipIds.length
+    : Object.values(localStatus).filter((s) => s === 'rejected').length;
+
   /* ---------------------------- render ---------------------------- */
 
   return (
@@ -258,11 +278,88 @@ export function RelationshipReviewPanel({
         </div>
       )}
 
-      {/* 结果 */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      {/* 结果 + 已确认关系 */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4">
+        {/* 已确认关系管理区 */}
+        {confirmedRelationships.length > 0 && (
+          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 overflow-hidden">
+            <button
+              onClick={() => setShowConfirmedList((s) => !s)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-400">
+                  已确认关系（{confirmedRelationships.length} 条）
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {onClearAllConfirmed && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClearAllConfirmed();
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-red-400 hover:bg-red-400/10 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    清空全部
+                  </button>
+                )}
+                {showConfirmedList ? (
+                  <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+                )}
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {showConfirmedList && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-4 space-y-2">
+                    <p className="text-xs text-[var(--text-muted)]">
+                      已确认关系会作为后续分析计划的上下文保存在本地。你可以随时取消确认。
+                    </p>
+                    {relevantConfirmed.length === 0 && selectedIds.size > 0 && (
+                      <p className="text-xs text-[var(--text-muted)]">
+                        当前所选数据集中暂无已确认关系。
+                      </p>
+                    )}
+                    {relevantConfirmed.map((rel) => (
+                      <div
+                        key={rel.id}
+                        className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-[var(--bg-secondary)]/50 border border-[var(--border-subtle)]"
+                      >
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] min-w-0">
+                          <span className="truncate">{rel.source_dataset_name}.{rel.source_column}</span>
+                          <ArrowRight className="w-3 h-3 text-[var(--text-muted)] shrink-0" />
+                          <span className="truncate">{rel.target_dataset_name}.{rel.target_column}</span>
+                        </div>
+                        <button
+                          onClick={() => handleReset(rel)}
+                          className="shrink-0 px-2 py-1 rounded-md text-[10px] text-[var(--text-muted)] hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                        >
+                          取消确认
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         {/* API 级警告 */}
         {result?.warnings && result.warnings.length > 0 && (
-          <div className="mb-3 space-y-1">
+          <div className="space-y-1">
             {result.warnings.map((w, i) => (
               <div
                 key={i}
@@ -290,13 +387,9 @@ export function RelationshipReviewPanel({
                 <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
                   <span>共 {result.relationships.length} 条关系建议</span>
                   <span className="text-[var(--border-subtle)]">|</span>
-                  <span>
-                    已确认 {Object.values(localStatus).filter((s) => s === 'confirmed').length} 条
-                  </span>
+                  <span>已确认 {totalConfirmed} 条</span>
                   <span className="text-[var(--border-subtle)]">|</span>
-                  <span>
-                    已忽略 {Object.values(localStatus).filter((s) => s === 'rejected').length} 条
-                  </span>
+                  <span>已忽略 {totalRejected} 条</span>
                 </div>
 
                 {result.relationships.map((rel) => (

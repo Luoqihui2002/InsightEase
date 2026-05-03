@@ -314,6 +314,13 @@ export function GuidedQuickAnalysisPanel({
     setIsPlanning(true);
     setGeneratedPlan(null);
 
+    // Scope confirmed relationships to the selected dataset
+    const scopedRelationships = confirmedRelationships.filter(
+      (rel) =>
+        rel.source_dataset_id === selectedDataset.id ||
+        rel.target_dataset_id === selectedDataset.id
+    );
+
     try {
       const runtime = getAssistantRuntime();
       const response = await runtime.generateAnalysisPlan({
@@ -321,7 +328,7 @@ export function GuidedQuickAnalysisPanel({
         context: {
           selected_dataset_ids: [selectedDataset.id],
           selected_dataset_id: selectedDataset.id,
-          confirmed_relationships: confirmedRelationships,
+          confirmed_relationships: scopedRelationships,
           datasets: [
             {
               id: selectedDataset.id,

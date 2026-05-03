@@ -813,11 +813,13 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <RelationshipReviewPanel
                         datasets={datasets}
+                        confirmedRelationships={assistantContext.confirmedRelationships}
                         confirmedRelationshipIds={assistantContext.confirmedRelationships.map((r) => r.id)}
                         rejectedRelationshipIds={assistantContext.rejectedRelationshipIds}
                         onConfirmRelationship={assistantContext.confirmRelationship}
                         onRejectRelationship={assistantContext.rejectRelationship}
                         onResetRelationship={assistantContext.resetRelationship}
+                        onClearAllConfirmed={assistantContext.clearConfirmedRelationships}
                       />
                     </div>
                   </div>
@@ -1011,6 +1013,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                     size="sm"
                     onClick={() => { createNewSession(); setActiveTab('chat'); }}
                     className="text-[var(--neon-cyan)]"
+                    title="新对话只会清空当前对话，不会清空你已确认的表关系"
                   >
                     新对话
                   </Button>

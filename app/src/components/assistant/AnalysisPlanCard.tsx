@@ -183,7 +183,7 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">
               <CheckCircle2 className="w-3 h-3" />
-              已确认的表关系
+              本计划使用的已确认表关系
             </div>
             <div className="space-y-1.5">
               {plan.required_relationships.map((rel) => (

@@ -1201,6 +1201,18 @@ Upload CSV/Excel
   - 错误状态增加「重新理解」和「返回选择数据」恢复按钮
 - **验证**: `tsc --noEmit` 0 errors, `npm run build` 16.64s ✅
 
+## Phase 4B-8D-B: Confirmed Relationship Scope & Management Fix
+
+- **问题**: 已确认关系全局持久化但无法管理；规划器可能传递无关关系；新对话行为不明确
+- **修复**:
+  - `useAssistantContext.ts`: 新增 `clearConfirmedRelationships`/`clearRejectedRelationships`/`clearAllRelationshipState`；收紧 `getConfirmedForDatasets` 过滤规则（0→[] / 1→OR / 2+→AND）
+  - `RelationshipReviewPanel.tsx`: 新增「已确认关系」可展开管理区，支持单条取消确认和全部清空
+  - `AIWorkspace.tsx`: 向面板传递完整已确认关系数组和清空回调；「新对话」按钮增加 tooltip 说明
+  - `GuidedQuickAnalysisPanel.tsx`: 生成计划前过滤为仅与选中数据集相关的关系
+  - `AnalysisPlanCard.tsx`: 标题改为「本计划使用的已确认表关系」
+- **安全边界**: 无后端持久化、无自动 join、无 SQL 生成
+- **验证**: `tsc --noEmit` 0 errors, `npm run build` 21.56s ✅
+
 ## 下一步建议
 
 ### 立即执行

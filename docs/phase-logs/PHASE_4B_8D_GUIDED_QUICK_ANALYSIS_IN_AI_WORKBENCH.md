@@ -131,6 +131,42 @@ npx tsc --noEmit    # 0 errors ✅
 npm run build       # built in 16.64s ✅
 ```
 
+## Phase 4B-8D-B: Confirmed Relationship Scope & Management Fix
+
+**问题**:
+1. 已确认关系全局持久化，但用户无法取消确认或清空。
+2. 规划器/快速分析向导可能传递所有全局已确认关系，即使与当前数据集无关。
+3. 新对话行为未明确：已确认关系作为数据集元数据应保留，但 UI 未告知用户。
+
+**根因**:
+- `useAssistantContext` 缺少批量清除操作（`clearConfirmed`, `clearRejected`, `clearAll`）。
+- `getConfirmedForDatasets` 使用宽松 OR 过滤，单数据集场景可能包含无关跨表关系。
+- `RelationshipReviewPanel` 不显示全局已确认关系列表，用户无处管理。
+- `GuidedQuickAnalysisPanel` 直接传递 `confirmedRelationships` 全局数组给运行时。
+
+**修复文件**:
+
+| 文件 | 变更 |
+|---|---|
+| `app/src/hooks/useAssistantContext.ts` | 新增 `clearConfirmedRelationships`, `clearRejectedRelationships`, `clearAllRelationshipState`；收紧 `getConfirmedForDatasets` 过滤规则（0→[] / 1→OR / 2+→AND）；添加 JSDoc 语义说明 |
+| `app/src/components/assistant/RelationshipReviewPanel.tsx` | 新增 `confirmedRelationships`/`onClearAllConfirmed` props；新增「已确认关系」可展开管理区，支持单条取消确认和全部清空；统计数同时显示 controlled + local confirmed |
+| `app/src/pages/AIWorkspace.tsx` | 向 `RelationshipReviewPanel` 传递完整已确认关系数组和清空回调；「新对话」按钮增加 tooltip 说明不清理已确认关系 |
+| `app/src/components/assistant/GuidedQuickAnalysisPanel.tsx` | Step 3 生成计划前，将 `confirmedRelationships` 过滤为仅与选中数据集相关的范围 |
+| `app/src/components/assistant/AnalysisPlanCard.tsx` | 关系展示标题改为「本计划使用的已确认表关系」，避免暗示显示全部全局关系 |
+
+**过滤规则**:
+- 0 个数据集 → `[]`
+- 1 个数据集 → 返回 touch 该数据集的关系（source OR target）
+- 2+ 个数据集 → 返回两端都在选中集合内的关系（source AND target）
+
+**单数据集快速分析向导**: 仅传递 source_dataset_id 或 target_dataset_id 等于选中数据集的关系。
+
+**验证**:
+```bash
+npx tsc --noEmit    # 0 errors ✅
+npm run build       # built in 21.56s ✅
+```
+
 ## Manual QA Checklist
 
 - [ ] SmartAnalysis remains hidden from sidebar.

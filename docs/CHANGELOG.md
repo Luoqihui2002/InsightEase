@@ -883,6 +883,16 @@
   - 错误状态增加「重新理解」和「返回选择数据」恢复按钮
 - 验证: `tsc --noEmit` 0 errors, `npm run build` 16.64s ✅
 
+## Phase 4B-8D-B: Confirmed Relationship Scope & Management Fix
+
+- `useAssistantContext.ts`: 新增 `clearConfirmedRelationships`/`clearRejectedRelationships`/`clearAllRelationshipState`；收紧 `getConfirmedForDatasets` 过滤规则（0 个→[] / 1 个→OR / 2+个→AND）；添加 JSDoc 语义说明
+- `RelationshipReviewPanel.tsx`: 新增 `confirmedRelationships`/`onClearAllConfirmed` props；新增「已确认关系」可展开管理区，支持单条取消确认和全部清空
+- `AIWorkspace.tsx`: 向 `RelationshipReviewPanel` 传递完整已确认关系数组和清空回调；「新对话」按钮增加 tooltip「新对话只会清空当前对话，不会清空你已确认的表关系」
+- `GuidedQuickAnalysisPanel.tsx`: Step 3 生成计划前，将 `confirmedRelationships` 过滤为仅与选中数据集相关的范围
+- `AnalysisPlanCard.tsx`: 关系展示标题改为「本计划使用的已确认表关系」
+- 安全边界：无后端持久化、无自动 join、无 SQL 生成
+- 验证: `tsc --noEmit` 0 errors, `npm run build` 21.56s ✅
+
 ## Phase 4B-8C: Hide Legacy SmartAnalysis Entry
 
 - 修改 `AppSidebar.tsx`
