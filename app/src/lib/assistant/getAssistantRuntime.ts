@@ -8,10 +8,16 @@
  */
 
 import type { AssistantRuntime } from './assistantRuntime';
+import { getAssistantRuntimeProvider } from './assistantRuntimeConfig';
+import { hermesAssistantRuntime } from './hermesAssistantRuntime';
 import { ruleBasedAssistantRuntime } from './ruleBasedAssistantRuntime';
 
 export function getAssistantRuntime(): AssistantRuntime {
-  // Future: check backend config / feature flag and return
-  // hermesAssistantRuntime when Hermes integration is implemented.
+  const provider = getAssistantRuntimeProvider();
+
+  if (provider === 'hermes_dry_run') {
+    return hermesAssistantRuntime;
+  }
+
   return ruleBasedAssistantRuntime;
 }

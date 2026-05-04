@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { assistantApi } from '@/api/assistant';
-import type { HermesMode, HermesProvider, HermesSupports } from '@/types/hermes';
+import type { ApiResponse } from '@/types/api';
+import type { HermesMode, HermesProvider, HermesStatusResponse, HermesSupports } from '@/types/hermes';
 
 const HERMES_STATUS_CACHE_KEY = 'insightease_hermes_status_cache';
 const HERMES_STATUS_TTL_MS = 5 * 60 * 1000;
@@ -66,8 +67,17 @@ function writeCachedStatus(status: HermesStatusState): void {
 }
 
 function normalizeStatusResponse(response: Awaited<ReturnType<typeof assistantApi.getHermesStatus>>): HermesStatusState {
-  const data = response.data.data;
+  const data = unwrapApiData<HermesStatusResponse>(response);
   const checkedAt = new Date().toISOString();
+
+  if (!data) {
+    return {
+      status: 'unavailable',
+      enabled: false,
+      checked_at: checkedAt,
+      error: 'Hermes status response was invalid',
+    };
+  }
 
   if (!data.enabled) {
     return {
@@ -90,6 +100,30 @@ function normalizeStatusResponse(response: Awaited<ReturnType<typeof assistantAp
     message: data.message,
     checked_at: checkedAt,
   };
+}
+
+function unwrapApiData<T>(response: unknown): T | undefined {
+  const maybeResponse = response as { data?: unknown };
+
+  if (isApiResponse<T>(maybeResponse?.data)) {
+    return maybeResponse.data.data;
+  }
+
+  if (isApiResponse<T>(response)) {
+    return response.data;
+  }
+
+  return undefined;
+}
+
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'code' in value &&
+      'message' in value &&
+      'data' in value
+  );
 }
 
 async function fetchHermesStatus(): Promise<HermesStatusState> {

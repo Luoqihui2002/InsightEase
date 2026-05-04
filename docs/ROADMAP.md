@@ -515,3 +515,13 @@ Status: implemented.
 - AI Workbench shows subtle diagnostic status while still using the rule-based runtime.
 - No Hermes explain/plan endpoint is called by AI Workbench.
 - Remaining future work: developer-only diagnostics panel or explicit Hermes runtime opt-in after approval.
+
+## Phase 4B-8O: HermesAssistantRuntime Dry-run Mode
+
+Status: implemented.
+
+- Runtime provider config now supports explicit development-only `hermes_dry_run` mode.
+- Default runtime remains rule-based.
+- Hermes dry-run runtime can call backend dry-run planning endpoint and falls back to rule-based behavior on any failure.
+- Result follow-up remains deterministic.
+- Remaining future work: richer developer diagnostics and separately approved live Hermes integration.

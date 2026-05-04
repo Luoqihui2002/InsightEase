@@ -24,6 +24,7 @@ import { AIWorkbenchContextPanel } from '@/components/assistant/AIWorkbenchConte
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import { GuidedQuickAnalysisPanel } from '@/components/assistant/GuidedQuickAnalysisPanel';
+import { getAssistantRuntimeProvider } from '@/lib/assistant/assistantRuntimeConfig';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
 import {
   AI_WORKBENCH_HANDOFF_EVENT,
@@ -91,7 +92,11 @@ interface AIWorkspaceProps {
 const STORAGE_KEY = 'ai_workspace_sessions';
 const ACTIVE_SESSION_STORAGE_KEY = 'insightease_ai_workbench_active_session';
 
-function getHermesDiagnosticLabel(status: ReturnType<typeof useHermesStatus>): string {
+function getHermesDiagnosticLabel(
+  status: ReturnType<typeof useHermesStatus>,
+  runtimeProvider: ReturnType<typeof getAssistantRuntimeProvider>
+): string {
+  if (runtimeProvider === 'hermes_dry_run') return 'Hermes dry-run runtime · fallback enabled';
   if (status.status === 'dry_run') return 'Hermes dry-run 可用 · 当前仍使用规则模式';
   if (status.status === 'live') return 'Hermes live 已配置 · 当前仍使用规则模式';
   if (status.status === 'disabled') return '本地规则模式 · Hermes disabled';
@@ -193,6 +198,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const restoredSessionRef = useRef<AIWorkbenchSessionSnapshot | null>(loadActiveWorkbenchSession());
   const restoredSession = restoredSessionRef.current;
   const hermesStatus = useHermesStatus(isOpen);
+  const runtimeProvider = getAssistantRuntimeProvider();
 
   // 当前会话消息
   const [messages, setMessages] = useState<Message[]>(restoredSession?.messages ?? [
@@ -848,7 +854,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                 className="text-[10px] text-[var(--text-muted)]"
                 title={hermesStatus.message || 'Hermes 状态仅用于诊断，不会改变当前运行时'}
               >
-                规则型分析规划 · 选择数据集可获得更具体的建议 · {getHermesDiagnosticLabel(hermesStatus)}
+                规则型分析规划 · 选择数据集可获得更具体的建议 · {getHermesDiagnosticLabel(hermesStatus, runtimeProvider)}
               </p>
             </div>
             

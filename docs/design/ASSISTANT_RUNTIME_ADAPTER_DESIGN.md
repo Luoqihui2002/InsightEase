@@ -187,6 +187,15 @@ Phase 4B-8N implementation note:
 - The probe is diagnostic only and must not change runtime selection.
 - AI Workbench must not call Hermes `explain-result` or `plan-analysis` endpoints in this phase.
 
+Phase 4B-8O implementation note:
+
+- `getAssistantRuntime()` now supports an explicit development-only provider switch.
+- Default remains `rule_based`.
+- `VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_dry_run` selects `hermesAssistantRuntime`.
+- `hermesAssistantRuntime.generateAnalysisPlan()` calls only `/assistant/hermes/plan-analysis`.
+- If the dry-run endpoint is disabled, unavailable, or returns an invalid plan, the runtime falls back to `ruleBasedAssistantRuntime`.
+- Result follow-up remains deterministic and does not call Hermes explain-result.
+
 ---
 
 ## Safe Tool Registry

@@ -1042,3 +1042,12 @@
 - Added a subtle AI Workbench header diagnostic showing local rule mode plus Hermes disabled/dry-run/unavailable status.
 - Runtime factory remains rule-based and AI Workbench does not call Hermes explain-result or plan-analysis endpoints.
 - No backend changes, Hermes/LLM call, auto-run, auto-join, SQL generation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8O: HermesAssistantRuntime Dry-run Mode
+
+- Added `app/src/lib/assistant/assistantRuntimeConfig.ts`.
+- `getAssistantRuntime()` now supports explicit opt-in `VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_dry_run`.
+- Implemented `hermesAssistantRuntime.generateAnalysisPlan()` using `assistantApi.planAnalysisWithHermesDryRun()`.
+- Added mandatory fallback to `ruleBasedAssistantRuntime` when dry-run endpoint is disabled, unavailable, fails, or returns an invalid plan.
+- Updated AI Workbench diagnostic to show `Hermes dry-run runtime · fallback enabled` when selected.
+- No live Hermes/LLM call, backend change, auto-run analysis, auto-join, SQL generation, dataset mutation, dependency, package-file, or SmartAnalysis changes.

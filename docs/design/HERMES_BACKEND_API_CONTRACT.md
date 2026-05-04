@@ -116,6 +116,14 @@ Phase 4B-8N frontend status probe:
 - It must not call `explain-result` or `plan-analysis`.
 - Status failure is treated as unavailable and should not block user workflow.
 
+Phase 4B-8O frontend runtime dry-run:
+
+- `VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_dry_run` can opt into `hermesAssistantRuntime`.
+- The runtime calls only `POST /assistant/hermes/plan-analysis`.
+- The runtime sends explicit no-raw-data/no-auto-run/no-SQL/no-mutation safety flags.
+- Any disabled, unavailable, failed, or invalid dry-run response falls back to the local rule-based planner.
+- Default frontend runtime remains rule-based.
+
 ## Result Explanation Endpoint
 
 ### POST /api/v1/assistant/hermes/explain-result
