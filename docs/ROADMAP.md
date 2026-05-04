@@ -477,3 +477,12 @@ Status: implemented.
 - Attached result context supports deterministic follow-up answers from `SafeResultSummary`.
 - Supported prompts cover explanation, risks, next steps, and report drafting.
 - Remaining future work: optional Hermes-backed deeper result explanation.
+
+## Phase 4B-8K: Hermes Result Explainer Boundary Design
+
+Status: design complete.
+
+- Defined the future Hermes result explanation boundary.
+- Hermes input is limited to `SafeResultSummary`, bounded metadata context, user question, and safety flags.
+- Deterministic result follow-up remains fallback.
+- Remaining future work: backend endpoint contract and opt-in Hermes runtime implementation.

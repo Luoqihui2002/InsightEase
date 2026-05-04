@@ -87,3 +87,19 @@ Supported intents:
 - draft report text.
 
 The responder must use only summary fields and must include a caveat that no analysis is rerun. Unsupported questions continue through the existing planning flow.
+
+## Phase 4B-8K Hermes Boundary
+
+Future Hermes result explanation must use `SafeResultSummary` as its result input boundary.
+
+Hermes may receive:
+
+- `SafeResultSummary`;
+- selected dataset metadata;
+- active relationship set metadata;
+- user question;
+- explicit safety flags.
+
+Hermes must not receive raw dataset rows, full result tables, unbounded `result_data`, credentials, storage paths, or unconfirmed relationship context.
+
+See `docs/design/HERMES_RESULT_EXPLAINER_BOUNDARY.md`.

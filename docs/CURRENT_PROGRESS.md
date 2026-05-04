@@ -1344,3 +1344,11 @@ cd app && npm run build        # built in 20.50s ✅
 - Result follow-up prompt chips now produce local responses for explanation, risks, next steps, and report drafting.
 - Unsupported result-context prompts continue through the existing planner.
 - Preserved safety constraints: no Hermes/LLM, no auto-run analysis, no SQL, and no raw result persistence.
+
+## Phase 4B-8K: Hermes Result Explainer Boundary Design
+
+- Added `docs/design/HERMES_RESULT_EXPLAINER_BOUNDARY.md`.
+- Defined future Hermes result explanation request/response contracts.
+- Restricted Hermes input to `SafeResultSummary`, metadata-only dataset/relationship context, user question, and safety flags.
+- Documented fallback to deterministic `resultFollowupResponder`.
+- No runtime code, backend endpoint, Hermes/LLM call, or app behavior change was added.

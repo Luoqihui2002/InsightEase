@@ -1006,3 +1006,10 @@
 - Added deterministic result follow-up responder for explanation, risks, next steps, and report-style summaries.
 - Wired result-context chat prompts to respond from `SafeResultSummary` before falling back to planner.
 - No backend API, Hermes/LLM, SQL generation, auto-run, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8K: Hermes Result Explainer Boundary Design
+
+- Added design contract for future Hermes result explanation.
+- Defined bounded request/response shape using `SafeResultSummary`.
+- Documented safety flags, forbidden raw inputs, confirmation requirements, UI flow, and deterministic fallback behavior.
+- No code runtime behavior, backend API, Hermes/LLM call, dependency, package-file, or SmartAnalysis changes.

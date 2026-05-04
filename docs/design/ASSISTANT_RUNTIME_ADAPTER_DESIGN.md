@@ -135,6 +135,24 @@ Hermes runtime may return:
 - Tool-call proposal (UI shows confirmation dialog)
 - Streaming explanation (UI shows streaming text)
 
+### Future Hermes Result Explainer Boundary
+
+Phase 4B-8K defines the result explanation boundary in:
+
+`docs/design/HERMES_RESULT_EXPLAINER_BOUNDARY.md`
+
+Hermes result explanation must accept only bounded safe context:
+
+- `SafeResultSummary`
+- selected dataset metadata
+- active relationship set metadata
+- user question
+- explicit safety flags
+
+Hermes result explanation must not receive raw dataset rows, full raw result tables, unbounded nested `result_data`, credentials, storage paths, or unrelated saved relationship sets.
+
+The deterministic `resultFollowupResponder` remains fallback when Hermes is disabled, fails, or the safe summary is too sparse.
+
 ---
 
 ## Safe Tool Registry
