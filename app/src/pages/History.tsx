@@ -40,6 +40,7 @@ import {
   EmptyMedia,
 } from '@/components/ui/empty';
 import { analysisApi } from '@/api/analysis';
+import { buildSafeResultSummary } from '@/lib/assistant/safeResultSummary';
 import { quickRequest } from '@/lib/request';
 import type { Analysis, Dataset } from '@/types/api';
 import gsap from 'gsap';
@@ -216,6 +217,18 @@ export function History() {
       setDetailLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (loading) return;
+
+    const analysisId = new URLSearchParams(window.location.search).get('analysis_id');
+    if (!analysisId || selectedAnalysis?.id === analysisId) return;
+
+    const matchedAnalysis = analyses.find((analysis) => analysis.id === analysisId);
+    if (matchedAnalysis) {
+      void handleViewResult(matchedAnalysis);
+    }
+  }, [analyses, loading, selectedAnalysis?.id]);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -432,6 +445,73 @@ export function History() {
       <pre className="text-xs text-[var(--text-secondary)] bg-[var(--bg-tertiary)] p-3 rounded-lg overflow-auto max-h-60">
         {JSON.stringify(result, null, 2)}
       </pre>
+    );
+  };
+
+  const renderSafeResultSummary = (analysis: Analysis) => {
+    const summary = buildSafeResultSummary(analysis, {
+      dataset_name: datasets[analysis.dataset_id]?.filename,
+    });
+    const firstTable = summary.tables[0];
+
+    return (
+      <div className="rounded-lg border border-[var(--neon-cyan)]/25 bg-[var(--bg-tertiary)]/40 p-4 space-y-3">
+        <div>
+          <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-[var(--neon-cyan)]" />
+            安全结果摘要
+          </h3>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
+            这里只展示摘要、关键指标和少量预览行；完整结果请使用下方详细结果或导出功能。
+          </p>
+        </div>
+
+        {(summary.ai_summary || summary.ai_interpretation) && (
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed line-clamp-4">
+            {summary.ai_summary || summary.ai_interpretation}
+          </p>
+        )}
+
+        {summary.result_keys.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {summary.result_keys.map((key) => (
+              <span
+                key={key}
+                className="rounded border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-2 py-1 text-xs text-[var(--text-secondary)]"
+              >
+                {key}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {summary.metrics.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {summary.metrics.map((metric) => (
+              <div key={metric.label} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-2">
+                <p className="text-[10px] text-[var(--text-muted)] truncate">{metric.label}</p>
+                <p className="mt-1 text-sm font-medium text-[var(--text-primary)] truncate">
+                  {metric.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {firstTable && (
+          <div className="space-y-1">
+            <p className="text-xs text-[var(--text-muted)]">
+              表格预览：{firstTable.title}（最多 5 行 / 共 {firstTable.total_rows ?? firstTable.rows.length} 行）
+            </p>
+            <DataTablePreview
+              columns={firstTable.columns}
+              data={firstTable.rows}
+              maxRows={5}
+              maxHeight="220px"
+            />
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -746,6 +826,8 @@ export function History() {
                 )}
 
                 {/* 分析结果 */}
+                {renderSafeResultSummary(selectedAnalysis)}
+
                 <div className="rounded-lg border border-[var(--border-subtle)] overflow-hidden">
                   <button
                     onClick={() => toggleSection('result')}

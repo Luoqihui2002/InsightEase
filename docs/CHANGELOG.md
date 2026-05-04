@@ -982,3 +982,11 @@
 - Added an initial analysis history context section that lists recent analyses, supports search, and displays compact safe summaries.
 - AI Workbench session snapshots now retain only `selected_analysis_history_id` for close/reopen continuity.
 - No backend API, Hermes/LLM, SQL generation, auto-run, auto-join, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8H: Safe Result Summary Contract
+
+- Added shared `SafeResultSummary` frontend contract and deterministic summary builder.
+- Centralized result key, metric, table, chart/config, and warning extraction with strict caps.
+- Refactored AI Workbench inline history result preview to use the shared helper.
+- Added a shared safe summary block to History result dialogs.
+- No backend API, Hermes/LLM, SQL generation, auto-run, dependency, package-file, or SmartAnalysis changes.

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { DataTablePreview } from '@/components/data-display/DataTablePreview';
 import { analysisApi } from '@/api/analysis';
 import { datasetApi } from '@/api/datasets';
+import { buildSafeResultSummary } from '@/lib/assistant/safeResultSummary';
 import { cn } from '@/lib/utils';
 import type {
   RelationshipSet,
@@ -24,6 +25,7 @@ import type {
   TableRelationship,
 } from '@/types/assistant';
 import type { Analysis, FieldSchema } from '@/types/api';
+import type { SafeResultSummary } from '@/types/resultSummary';
 
 const SECTION_STORAGE_KEY = 'insightease_ai_workbench_context_panel_sections';
 
@@ -351,7 +353,7 @@ export function AIWorkbenchContextPanel({
           />
         )}
 
-        <AnalysisHistoryContext
+        <AnalysisHistoryContextWithPreview
           historyItems={filteredHistoryItems}
           allHistoryCount={historyItems.length}
           selectedHistory={selectedHistory}
@@ -814,7 +816,7 @@ function RelationshipSection({
   );
 }
 
-function AnalysisHistoryContext({
+function AnalysisHistoryContextWithPreview({
   historyItems,
   allHistoryCount,
   selectedHistory,
@@ -839,13 +841,69 @@ function AnalysisHistoryContext({
   sectionOpenStates: Record<string, boolean>;
   onToggleSection: (id: string, defaultOpen: boolean) => void;
 }) {
+  const [inlinePreviewOpen, setInlinePreviewOpen] = useState(false);
+  const [inlinePreviewLoading, setInlinePreviewLoading] = useState(false);
+  const [inlinePreviewError, setInlinePreviewError] = useState<string | null>(null);
+  const [inlinePreviewAnalysis, setInlinePreviewAnalysis] = useState<Analysis | undefined>(selectedHistory);
+
   const datasetName = selectedHistory
     ? getDatasetLabel(datasets.find((dataset) => dataset.id === selectedHistory.dataset_id))
     : undefined;
+  const previewAnalysis =
+    inlinePreviewAnalysis?.id === selectedHistory?.id ? inlinePreviewAnalysis : selectedHistory;
+  const safePreview = useMemo(
+    () =>
+      previewAnalysis
+        ? buildSafeResultSummary(previewAnalysis, { dataset_name: datasetName })
+        : undefined,
+    [datasetName, previewAnalysis]
+  );
   const resultSummary =
     selectedHistory?.ai_interpretation ||
     summarizeResult(selectedHistory?.result_data) ||
     (selectedHistory ? '该历史结果暂无摘要。后续可接入 AI Result Explainer。' : undefined);
+
+  useEffect(() => {
+    setInlinePreviewOpen(false);
+    setInlinePreviewError(null);
+    setInlinePreviewAnalysis(selectedHistory);
+  }, [selectedHistory?.id, selectedHistory]);
+
+  const handleToggleInlinePreview = async () => {
+    if (!selectedHistory) return;
+
+    if (inlinePreviewOpen) {
+      setInlinePreviewOpen(false);
+      return;
+    }
+
+    setInlinePreviewOpen(true);
+    setInlinePreviewError(null);
+
+    if (selectedHistory.result_data || selectedHistory.status !== 'completed') return;
+
+    setInlinePreviewLoading(true);
+    try {
+      const resultRes = await analysisApi.getResult(selectedHistory.id) as unknown as {
+        data?: Partial<Analysis>;
+      } & Partial<Analysis>;
+      const fullData = resultRes?.data || resultRes;
+      setInlinePreviewAnalysis({ ...selectedHistory, ...fullData });
+    } catch (fetchError) {
+      setInlinePreviewError(fetchError instanceof Error ? fetchError.message : '历史结果预览加载失败');
+    } finally {
+      setInlinePreviewLoading(false);
+    }
+  };
+
+  const navigateToHistory = () => {
+    if (!selectedHistory) return;
+    window.dispatchEvent(
+      new CustomEvent('companion-navigate', {
+        detail: { path: `/app/history?analysis_id=${encodeURIComponent(selectedHistory.id)}` },
+      })
+    );
+  };
 
   return (
     <ContextPanelSection
@@ -880,7 +938,7 @@ function AnalysisHistoryContext({
             const itemDataset = datasets.find((dataset) => dataset.id === item.dataset_id);
             return (
               <option key={item.id} value={item.id}>
-                {getAnalysisTypeLabel(item.type)} · {getDatasetLabel(itemDataset)} · {formatDate(item.created_at)}
+                {getAnalysisTypeLabel(item.type)} / {getDatasetLabel(itemDataset)} / {formatDate(item.created_at)}
               </option>
             );
           })}
@@ -907,10 +965,10 @@ function AnalysisHistoryContext({
         <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/50 p-3">
           <div className="flex items-start gap-2">
             <BarChart3 className="w-4 h-4 text-[var(--neon-cyan)] mt-0.5 shrink-0" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-[var(--text-primary)]">当前分析历史</p>
               <p className="mt-1 text-[10px] text-[var(--text-muted)]">
-                {getAnalysisTypeLabel(selectedHistory.type)} · {datasetName} · {getStatusLabel(selectedHistory.status)}
+                {getAnalysisTypeLabel(selectedHistory.type)} / {datasetName} / {getStatusLabel(selectedHistory.status)}
               </p>
               <p className="mt-1 text-[10px] text-[var(--text-muted)]">
                 创建时间：{formatDate(selectedHistory.created_at)}
@@ -927,14 +985,10 @@ function AnalysisHistoryContext({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent('companion-navigate', { detail: { path: '/app/history' } })
-                    )
-                  }
+                  onClick={handleToggleInlinePreview}
                   className="h-7 px-2 text-[10px]"
                 >
-                  查看原结果
+                  {inlinePreviewOpen ? '收起原结果' : '查看原结果'}
                 </Button>
                 <Button
                   variant="ghost"
@@ -945,11 +999,140 @@ function AnalysisHistoryContext({
                   清除历史上下文
                 </Button>
               </div>
+
+              {inlinePreviewOpen && (
+                <OriginalResultPreview
+                  summary={safePreview}
+                  loading={inlinePreviewLoading}
+                  error={inlinePreviewError}
+                  onOpenFullResult={navigateToHistory}
+                />
+              )}
             </div>
           </div>
         </div>
       )}
     </ContextPanelSection>
+  );
+}
+
+function OriginalResultPreview({
+  summary,
+  loading,
+  error,
+  onOpenFullResult,
+}: {
+  summary?: SafeResultSummary;
+  loading: boolean;
+  error: string | null;
+  onOpenFullResult: () => void;
+}) {
+  const hasContent =
+    Boolean(summary?.ai_summary || summary?.ai_interpretation) ||
+    Boolean(summary?.result_keys.length) ||
+    Boolean(summary?.metrics.length) ||
+    Boolean(summary?.tables.length) ||
+    Boolean(summary?.charts.length);
+
+  return (
+    <div className="mt-3 rounded-lg border border-[var(--neon-cyan)]/25 bg-[var(--bg-secondary)]/70 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-[var(--text-primary)]">原结果预览</p>
+          <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+            这里只展示历史结果摘要，不会重新运行分析。
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onOpenFullResult} className="h-7 px-2 text-[10px]">
+          去历史页查看完整结果
+        </Button>
+      </div>
+
+      {loading && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-[var(--text-muted)]">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          正在加载原结果摘要...
+        </div>
+      )}
+
+      {error && <p className="mt-3 text-xs text-red-300">{error}</p>}
+
+      {!loading && !error && !hasContent && (
+        <p className="mt-3 text-xs text-[var(--text-muted)]">该历史结果暂无可预览摘要。</p>
+      )}
+
+      {!loading && !error && hasContent && (
+        <div className="mt-3 space-y-3">
+          {(summary?.ai_summary || summary?.ai_interpretation) && (
+            <div>
+              <p className="text-[10px] font-medium text-[var(--text-muted)]">摘要</p>
+              <p className="mt-1 text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-5">
+                {summary.ai_summary || summary.ai_interpretation}
+              </p>
+            </div>
+          )}
+
+          {summary?.result_keys.length ? (
+            <div>
+              <p className="text-[10px] font-medium text-[var(--text-muted)]">结果字段</p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {summary.result_keys.map((key) => (
+                  <span
+                    key={key}
+                    className="rounded border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
+                  >
+                    {key}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {summary?.metrics.length ? (
+            <div>
+              <p className="text-[10px] font-medium text-[var(--text-muted)]">关键指标</p>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                {summary.metrics.map((metric) => (
+                  <Metric key={metric.label} label={metric.label} value={String(metric.value)} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {summary?.tables[0] && (
+            <div>
+              <p className="text-[10px] font-medium text-[var(--text-muted)]">
+                表格预览：{summary.tables[0].title}（最多 5 行 / 共 {summary.tables[0].total_rows ?? summary.tables[0].rows.length} 行）
+              </p>
+              <div className="mt-1">
+                <DataTablePreview
+                  columns={summary.tables[0].columns}
+                  data={summary.tables[0].rows}
+                  maxRows={5}
+                  maxHeight="160px"
+                  emptyMessage="暂无可预览表格数据"
+                />
+              </div>
+            </div>
+          )}
+
+          {summary?.charts.length ? (
+            <div>
+              <p className="text-[10px] font-medium text-[var(--text-muted)]">图表 / 配置摘要</p>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                {summary.charts.map((chart) => (
+                  <Metric
+                    key={chart.title}
+                    label={chart.title}
+                    value={chart.chart_type || chart.description || 'chart'}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }
 

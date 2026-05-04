@@ -450,3 +450,12 @@ Status: implemented.
 - Initial analysis history context is available in the Context Panel with recent-history search and safe summaries.
 - AI Workbench restores the selected history context id across close/reopen.
 - Remaining future work: reusable result-summary contract and future AI result explanation.
+
+## Phase 4B-8H: Safe Result Summary Contract
+
+Status: implemented.
+
+- Added a reusable bounded result summary contract for History, AI Workbench, ResultView, and future Hermes/LLM result explanation.
+- Centralized summary extraction in `buildSafeResultSummary`.
+- AI Workbench and History now render compatible safe summaries.
+- Remaining future work: feed `SafeResultSummary` into a future result explainer boundary.

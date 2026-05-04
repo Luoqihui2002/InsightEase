@@ -1320,3 +1320,11 @@ cd app && npm run build        # built in 20.50s ✅
 - Added initial analysis history context selection in the Context Panel using the existing `analysisApi.list()` frontend API.
 - AI Workbench active-session persistence now stores `selected_analysis_history_id` only, preserving context across close/reopen without storing raw analysis output.
 - Preserved safety constraints: no Hermes/LLM, no auto-run analysis, no auto-join, no SQL generation, no backend persistence, and no SmartAnalysis changes.
+
+## Phase 4B-8H: Safe Result Summary Contract
+
+- Added `SafeResultSummary` types and `buildSafeResultSummary`.
+- AI Workbench history result preview now uses the shared bounded summary helper.
+- History result dialog now shows a compact safe summary while preserving existing detailed result access.
+- Added optional `AssistantContext.analysis_history_summary` for future runtime/Hermes use.
+- Preserved safety constraints: no Hermes/LLM, no auto-run analysis, no raw result sessionStorage persistence, and no SmartAnalysis changes.

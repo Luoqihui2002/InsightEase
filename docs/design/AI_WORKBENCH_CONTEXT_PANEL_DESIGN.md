@@ -61,3 +61,17 @@ The history context is display-only in this phase:
 - It does not rerun analysis.
 - It does not persist raw result data.
 - AI Workbench session persistence stores only `selected_analysis_history_id`.
+
+## Phase 4B-8H Update: Safe Result Summary Contract
+
+The inline history result preview now renders from the shared `SafeResultSummary` contract.
+
+Rules:
+
+- Build summaries with `buildSafeResultSummary`.
+- Show existing `ai_summary` or `ai_interpretation` only; do not generate explanations.
+- Cap table previews to 5 rows.
+- Summarize nested objects by keys/counts.
+- Do not store raw result data in sessionStorage.
+
+See `docs/design/SAFE_RESULT_SUMMARY_CONTRACT.md`.
