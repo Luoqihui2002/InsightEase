@@ -1024,3 +1024,13 @@
 - Documented request/response contracts, safety validation, size/privacy limits, normalized error codes, feature flags, fallback behavior, and action confirmation rules.
 - Updated API/runtime/Hermes boundary docs to reference the backend contract.
 - No backend endpoint, frontend runtime behavior, Hermes/LLM call, auto-run, auto-join, SQL generation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8M: Hermes Dry-run Backend Scaffold
+
+- Added `insightease-backend/app/api/v1/endpoints/hermes.py` with dry-run status, explain-result, and plan-analysis endpoints.
+- Added `insightease-backend/app/schemas/hermes.py` for contract-shaped Pydantic schemas.
+- Added `insightease-backend/app/services/hermes_validation_service.py` for safety and size validation.
+- Added safe Hermes config flags with disabled defaults.
+- Mounted Hermes dry-run routes at `/api/v1/assistant/hermes`.
+- Added frontend Hermes request/response types and `assistantApi` wrapper methods.
+- No frontend runtime switch, real Hermes/LLM call, provider credentials, auto-run analysis, auto-join, SQL generation, dataset mutation, dependency, package-file, or SmartAnalysis changes.

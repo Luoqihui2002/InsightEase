@@ -1360,3 +1360,12 @@ cd app && npm run build        # built in 20.50s ✅
 - Preserved existing API conventions: `/api/v1`, `/assistant` router prefix, `ResponseModel<T>` envelope, and authenticated backend endpoints.
 - Defined request/response contracts, safety validation, size/privacy limits, normalized errors, feature flags, fallback behavior, and tool action confirmation rules.
 - No backend endpoint, frontend runtime change, Hermes/LLM call, auto-run analysis, SQL generation, auto-join, or SmartAnalysis change was added.
+
+## Phase 4B-8M: Hermes Dry-run Backend Scaffold
+
+- Added dry-run backend endpoints under `/api/v1/assistant/hermes`.
+- Added Hermes config flags with safe disabled defaults.
+- Added Pydantic schemas and validation helpers for bounded result explanation and planning payloads.
+- Added frontend `assistantApi` wrapper methods and Hermes types for contract testing.
+- Frontend runtime behavior remains deterministic by default; `getAssistantRuntime()` still returns the rule-based runtime.
+- No real Hermes/LLM provider, provider credentials, auto-run analysis, SQL generation, auto-join, dataset mutation, or SmartAnalysis change was added.

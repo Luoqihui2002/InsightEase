@@ -173,6 +173,13 @@ The runtime must keep deterministic fallback behavior:
 
 The runtime must not send raw dataset rows, full result tables, storage paths, credentials, or unrelated relationship sets.
 
+Phase 4B-8M implementation note:
+
+- Backend dry-run endpoints now exist for status, result explanation, and plan analysis.
+- `assistantApi` has wrapper methods for exercising the contract.
+- `getAssistantRuntime()` still returns `ruleBasedAssistantRuntime`.
+- `hermesAssistantRuntime` remains a placeholder and must not be selected until a future explicit runtime integration phase.
+
 ---
 
 ## Safe Tool Registry

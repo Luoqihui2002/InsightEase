@@ -2,9 +2,11 @@
 
 ## Purpose
 
-This document defines the future backend API contract for Hermes assistant integration.
+This document defines the backend API contract for Hermes assistant integration.
 
-It is a design contract only. No endpoint, service, runtime switch, Hermes call, LLM call, SQL generation, automatic analysis execution, automatic join, or dataset mutation is implemented by this phase.
+Phase 4B-8M implements a dry-run backend scaffold for the contract endpoints. The scaffold validates bounded payloads and returns contract-shaped mock responses only.
+
+No real Hermes provider, LLM call, frontend runtime switch, SQL generation, automatic analysis execution, automatic join, or dataset mutation exists.
 
 The contract gives the future frontend `HermesAssistantRuntime` a stable backend boundary while preserving the current deterministic fallback behavior.
 
@@ -49,7 +51,13 @@ POST /api/v1/assistant/hermes/explain-result
 POST /api/v1/assistant/hermes/plan-analysis
 ```
 
-Optional future endpoints, not fully specified in this phase:
+Implemented status after Phase 4B-8M:
+
+- `status`: dry-run/disabled scaffold exists.
+- `explain-result`: validation-only dry-run scaffold exists.
+- `plan-analysis`: validation-only dry-run scaffold exists.
+
+Optional future endpoints, not fully specified:
 
 ```text
 POST /api/v1/assistant/hermes/explain-error
@@ -331,6 +339,13 @@ HERMES_ASSISTANT_MODE=disabled|dry_run|live
 HERMES_ASSISTANT_TIMEOUT_MS=10000
 ```
 
+Phase 4B-8M implementation note:
+
+- defaults are disabled;
+- `dry_run` is the only enabled scaffold mode;
+- `live` is reserved for a future phase and is treated as unavailable by the scaffold;
+- no provider credentials are required.
+
 Mode behavior:
 
 - `disabled`: status returns unavailable; explain/plan endpoints return `HERMES_DISABLED`.
@@ -420,11 +435,9 @@ Current deterministic behavior remains required fallback:
 
 ## Non-Goals
 
-This contract does not:
+This contract and dry-run scaffold do not:
 
-- implement backend endpoints;
-- add Pydantic schemas;
-- add frontend API wrappers;
+- implement live Hermes provider calls;
 - switch runtime mode;
 - add streaming;
 - add provider secrets;

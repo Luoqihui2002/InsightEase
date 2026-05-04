@@ -48,6 +48,20 @@ class Settings(BaseSettings):
     KIMI_API_KEY: str = ""
     KIMI_BASE_URL: str = "https://api.moonshot.cn/v1"
     KIMI_MODEL: str = "moonshot-v1-8k"
+
+    # Hermes assistant dry-run scaffold configuration.
+    # No provider credentials are required or supported in this phase.
+    HERMES_ASSISTANT_ENABLED: bool = False
+    HERMES_ASSISTANT_MODE: str = "disabled"  # disabled | dry_run | live
+    HERMES_ASSISTANT_TIMEOUT_MS: int = 10000
+
+    @property
+    def HERMES_ASSISTANT_MODE_SAFE(self) -> str:
+        """Return a supported Hermes mode, falling back safely to disabled."""
+        mode = (self.HERMES_ASSISTANT_MODE or "disabled").strip().lower()
+        if mode not in {"disabled", "dry_run", "live"}:
+            return "disabled"
+        return mode
     
     SECRET_KEY: str = "your-secret-key"
     

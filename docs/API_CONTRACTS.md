@@ -385,7 +385,7 @@ The payload carries dataset IDs and suggested field names only. It does not stor
 
 Phase 4B-8L defines a documentation-only contract for future Hermes assistant endpoints.
 
-No backend endpoint is implemented yet.
+Phase 4B-8M adds dry-run backend scaffolding for these endpoints. The scaffold validates payloads and returns bounded mock responses only; no real Hermes/LLM provider is connected.
 
 Design source:
 
@@ -408,6 +408,7 @@ Contract rules:
 - Hermes must not receive raw uploaded rows, full raw result tables, unbounded `result_data`, credentials, secrets, or storage paths.
 - Hermes must not auto-run analysis, auto-join datasets, generate executable SQL, create datasets, or mutate datasets.
 - Frontend must fallback to `ruleBasedAssistantRuntime` and deterministic `resultFollowupResponder` when Hermes is disabled, unavailable, or fails.
+- Default backend config keeps Hermes disabled; frontend runtime behavior remains deterministic by default.
 
 Feature flags planned for future backend implementation:
 

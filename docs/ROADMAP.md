@@ -495,3 +495,13 @@ Status: design complete.
 - Endpoint contract covers status, result explanation, and analysis planning.
 - Contract requires bounded context only, explicit safety flags, strict size/privacy limits, deterministic fallback, and confirmation before any execute/write action.
 - Remaining future work: optional dry-run backend scaffold, frontend Hermes API wrapper, and opt-in runtime selection after explicit approval.
+
+## Phase 4B-8M: Hermes Dry-run Backend Scaffold
+
+Status: implemented.
+
+- Backend dry-run routes now exist under `/api/v1/assistant/hermes`.
+- Dry-run endpoints validate safety flags, raw-data violations, Safe Result Summary caps, and planning context size limits.
+- Frontend has typed `assistantApi` wrappers for contract testing.
+- Runtime remains rule-based by default; live Hermes integration remains future work.
+- Remaining future work: optional status probing, `hermesAssistantRuntime` implementation, and live provider integration after explicit approval.
