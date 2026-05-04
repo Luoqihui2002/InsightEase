@@ -999,3 +999,10 @@
 - Added `带到 AI 工作台` action to Statistics results.
 - AI Workbench now attaches safe result context and shows result follow-up prompt chips without auto-generating explanations.
 - No backend API, Hermes/LLM, SQL generation, auto-run, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8J: Result Follow-up Mode and Default Horizontal Layout
+
+- Changed AI Workbench missing/invalid layout fallback to horizontal while preserving saved user layout choices.
+- Added deterministic result follow-up responder for explanation, risks, next steps, and report-style summaries.
+- Wired result-context chat prompts to respond from `SafeResultSummary` before falling back to planner.
+- No backend API, Hermes/LLM, SQL generation, auto-run, dependency, package-file, or SmartAnalysis changes.

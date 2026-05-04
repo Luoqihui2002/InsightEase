@@ -468,3 +468,12 @@ Status: implemented.
 - AI Workbench opens programmatically and attaches selected result context.
 - Result follow-up prompt chips are available without auto-generating explanations.
 - Remaining future work: add handoff actions to Forecast, PathAnalysis, and Attribution.
+
+## Phase 4B-8J: Result Follow-up Mode and Default Horizontal Layout
+
+Status: implemented.
+
+- Fresh AI Workbench sessions default to horizontal side-by-side layout.
+- Attached result context supports deterministic follow-up answers from `SafeResultSummary`.
+- Supported prompts cover explanation, risks, next steps, and report drafting.
+- Remaining future work: optional Hermes-backed deeper result explanation.

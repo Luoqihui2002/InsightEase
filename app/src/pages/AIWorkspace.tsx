@@ -31,6 +31,10 @@ import {
   clearAIWorkbenchHandoff,
   readAIWorkbenchHandoff,
 } from '@/lib/assistant/aiWorkbenchHandoff';
+import {
+  buildResultFollowupResponse,
+  detectResultFollowupIntent,
+} from '@/lib/assistant/resultFollowupResponder';
 import { useAssistantContext } from '@/hooks/useAssistantContext';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
@@ -159,7 +163,7 @@ function loadActiveWorkbenchSession(): AIWorkbenchSessionSnapshot | null {
       current_session_id:
         typeof parsed.current_session_id === 'string' ? parsed.current_session_id : undefined,
       plan_question: typeof parsed.plan_question === 'string' ? parsed.plan_question : '',
-      main_layout: parsed.main_layout === 'horizontal' ? 'horizontal' : 'vertical',
+      main_layout: parsed.main_layout === 'vertical' ? 'vertical' : 'horizontal',
       show_preview: typeof parsed.show_preview === 'boolean' ? parsed.show_preview : true,
       updated_at: typeof parsed.updated_at === 'string' ? parsed.updated_at : new Date().toISOString(),
     };
@@ -201,7 +205,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     restoredSession?.active_tab ?? 'chat'
   );
   const [mainLayout, setMainLayout] = useState<'vertical' | 'horizontal'>(
-    restoredSession?.main_layout ?? 'vertical'
+    restoredSession?.main_layout ?? 'horizontal'
   );
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>(
@@ -573,6 +577,26 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
     const userMsg = inputValue.trim();
     setInputValue('');
+    if (attachedResultSummary) {
+      const followupIntent = detectResultFollowupIntent(userMsg);
+      if (followupIntent !== 'unknown') {
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          role: 'user',
+          content: userMsg,
+          timestamp: new Date(),
+        };
+        const responseMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: buildResultFollowupResponse(attachedResultSummary, followupIntent),
+          type: 'text',
+          timestamp: new Date(),
+        };
+        updateCurrentSession([...messages, userMessage, responseMessage]);
+        return;
+      }
+    }
     generatePlanForQuestion(userMsg);
   };
 

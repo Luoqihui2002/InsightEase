@@ -1336,3 +1336,11 @@ cd app && npm run build        # built in 20.50s ✅
 - Statistics result page now has `带到 AI 工作台`.
 - AI Workbench consumes handoff payloads, attaches safe result context, and shows result follow-up prompt chips.
 - Preserved safety constraints: no Hermes/LLM, no automatic explanation, no analysis rerun, and no raw result persistence.
+
+## Phase 4B-8J: Result Follow-up Mode and Default Horizontal Layout
+
+- AI Workbench now defaults to horizontal layout when no valid saved preference exists.
+- Added deterministic `resultFollowupResponder` using only `SafeResultSummary`.
+- Result follow-up prompt chips now produce local responses for explanation, risks, next steps, and report drafting.
+- Unsupported result-context prompts continue through the existing planner.
+- Preserved safety constraints: no Hermes/LLM, no auto-run analysis, no SQL, and no raw result persistence.

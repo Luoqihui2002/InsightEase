@@ -74,3 +74,16 @@ The handoff payload may include:
 - suggested follow-up prompts.
 
 The payload must not include raw `result_data`.
+
+## Phase 4B-8J Result Follow-up Mode
+
+AI Workbench now uses `SafeResultSummary` for deterministic follow-up responses.
+
+Supported intents:
+
+- explain result;
+- identify risks/anomalies;
+- suggest next steps;
+- draft report text.
+
+The responder must use only summary fields and must include a caveat that no analysis is rerun. Unsupported questions continue through the existing planning flow.

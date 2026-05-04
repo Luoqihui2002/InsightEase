@@ -87,3 +87,9 @@ Behavior:
 - Show result context in the analysis history section.
 - Show follow-up prompt chips.
 - Do not auto-run analysis or auto-generate explanations.
+
+## Phase 4B-8J Update: Default Layout and Follow-up Responses
+
+AI Workbench now defaults to horizontal side-by-side layout when no saved preference exists. Saved user layout preference is still preserved.
+
+When a result context is attached, supported follow-up prompts are answered deterministically from `SafeResultSummary`; unsupported prompts continue to the normal planner path.
