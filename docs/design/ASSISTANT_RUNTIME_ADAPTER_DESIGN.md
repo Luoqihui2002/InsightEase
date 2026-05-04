@@ -180,6 +180,13 @@ Phase 4B-8M implementation note:
 - `getAssistantRuntime()` still returns `ruleBasedAssistantRuntime`.
 - `hermesAssistantRuntime` remains a placeholder and must not be selected until a future explicit runtime integration phase.
 
+Phase 4B-8N implementation note:
+
+- AI Workbench may lazily probe `GET /assistant/hermes/status` for diagnostics.
+- Probe results are cached in `sessionStorage` for 5 minutes.
+- The probe is diagnostic only and must not change runtime selection.
+- AI Workbench must not call Hermes `explain-result` or `plan-analysis` endpoints in this phase.
+
 ---
 
 ## Safe Tool Registry

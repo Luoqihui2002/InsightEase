@@ -1034,3 +1034,11 @@
 - Mounted Hermes dry-run routes at `/api/v1/assistant/hermes`.
 - Added frontend Hermes request/response types and `assistantApi` wrapper methods.
 - No frontend runtime switch, real Hermes/LLM call, provider credentials, auto-run analysis, auto-join, SQL generation, dataset mutation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8N: Hermes Runtime Status Probe and Developer Diagnostics
+
+- Added `app/src/hooks/useHermesStatus.ts` for lazy, cached Hermes status probing.
+- AI Workbench probes `/assistant/hermes/status` only when opened and caches status for 5 minutes in sessionStorage.
+- Added a subtle AI Workbench header diagnostic showing local rule mode plus Hermes disabled/dry-run/unavailable status.
+- Runtime factory remains rule-based and AI Workbench does not call Hermes explain-result or plan-analysis endpoints.
+- No backend changes, Hermes/LLM call, auto-run, auto-join, SQL generation, dependency, package-file, or SmartAnalysis changes.

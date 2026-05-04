@@ -36,6 +36,7 @@ import {
   detectResultFollowupIntent,
 } from '@/lib/assistant/resultFollowupResponder';
 import { useAssistantContext } from '@/hooks/useAssistantContext';
+import { useHermesStatus } from '@/hooks/useHermesStatus';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
 import type { DatasetPreview } from '@/types/api';
@@ -89,6 +90,14 @@ interface AIWorkspaceProps {
 
 const STORAGE_KEY = 'ai_workspace_sessions';
 const ACTIVE_SESSION_STORAGE_KEY = 'insightease_ai_workbench_active_session';
+
+function getHermesDiagnosticLabel(status: ReturnType<typeof useHermesStatus>): string {
+  if (status.status === 'dry_run') return 'Hermes dry-run 可用 · 当前仍使用规则模式';
+  if (status.status === 'live') return 'Hermes live 已配置 · 当前仍使用规则模式';
+  if (status.status === 'disabled') return '本地规则模式 · Hermes disabled';
+  if (status.status === 'unavailable') return '本地规则模式 · Hermes 状态不可用';
+  return '本地规则模式';
+}
 
 interface AIWorkbenchSessionSnapshot {
   messages: Message[];
@@ -183,6 +192,7 @@ function saveActiveWorkbenchSession(snapshot: AIWorkbenchSessionSnapshot): void 
 export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const restoredSessionRef = useRef<AIWorkbenchSessionSnapshot | null>(loadActiveWorkbenchSession());
   const restoredSession = restoredSessionRef.current;
+  const hermesStatus = useHermesStatus(isOpen);
 
   // 当前会话消息
   const [messages, setMessages] = useState<Message[]>(restoredSession?.messages ?? [
@@ -834,7 +844,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             <AssistantAvatar variant="default" size="sm" />
             <div className="flex-shrink-0">
               <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
-              <p className="text-[10px] text-[var(--text-muted)]">规则型分析规划 · 选择数据集可获得更具体的建议</p>
+              <p
+                className="text-[10px] text-[var(--text-muted)]"
+                title={hermesStatus.message || 'Hermes 状态仅用于诊断，不会改变当前运行时'}
+              >
+                规则型分析规划 · 选择数据集可获得更具体的建议 · {getHermesDiagnosticLabel(hermesStatus)}
+              </p>
             </div>
             
             <div className="flex-1"></div>

@@ -505,3 +505,13 @@ Status: implemented.
 - Frontend has typed `assistantApi` wrappers for contract testing.
 - Runtime remains rule-based by default; live Hermes integration remains future work.
 - Remaining future work: optional status probing, `hermesAssistantRuntime` implementation, and live provider integration after explicit approval.
+
+## Phase 4B-8N: Hermes Runtime Status Probe and Developer Diagnostics
+
+Status: implemented.
+
+- Frontend can lazily probe Hermes status when AI Workbench opens.
+- Probe state is cached for the current session with a 5-minute TTL.
+- AI Workbench shows subtle diagnostic status while still using the rule-based runtime.
+- No Hermes explain/plan endpoint is called by AI Workbench.
+- Remaining future work: developer-only diagnostics panel or explicit Hermes runtime opt-in after approval.

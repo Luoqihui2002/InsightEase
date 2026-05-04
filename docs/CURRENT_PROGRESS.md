@@ -1369,3 +1369,11 @@ cd app && npm run build        # built in 20.50s ✅
 - Added frontend `assistantApi` wrapper methods and Hermes types for contract testing.
 - Frontend runtime behavior remains deterministic by default; `getAssistantRuntime()` still returns the rule-based runtime.
 - No real Hermes/LLM provider, provider credentials, auto-run analysis, SQL generation, auto-join, dataset mutation, or SmartAnalysis change was added.
+
+## Phase 4B-8N: Hermes Runtime Status Probe and Developer Diagnostics
+
+- Added a non-invasive frontend Hermes status hook with 5-minute sessionStorage cache.
+- AI Workbench now probes `/assistant/hermes/status` lazily when opened.
+- Added a subtle header diagnostic that reports local rule mode plus Hermes disabled/dry-run/unavailable status.
+- Runtime selection remains rule-based; AI Workbench does not call Hermes explain-result or plan-analysis endpoints.
+- No backend changes, Hermes/LLM call, auto-run analysis, SQL generation, auto-join, dataset mutation, or SmartAnalysis change was added.

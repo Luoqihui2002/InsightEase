@@ -107,6 +107,15 @@ Frontend behavior:
 - `enabled: false` means use `ruleBasedAssistantRuntime` and deterministic `resultFollowupResponder`.
 - Request failure also means use deterministic fallback.
 
+Phase 4B-8N frontend status probe:
+
+- AI Workbench can lazily call `GET /assistant/hermes/status` when opened.
+- Status is cached in `sessionStorage.insightease_hermes_status_cache` for 5 minutes.
+- The status probe is diagnostic metadata only.
+- It must not switch runtime selection.
+- It must not call `explain-result` or `plan-analysis`.
+- Status failure is treated as unavailable and should not block user workflow.
+
 ## Result Explanation Endpoint
 
 ### POST /api/v1/assistant/hermes/explain-result
