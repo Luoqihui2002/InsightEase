@@ -459,3 +459,12 @@ Status: implemented.
 - Centralized summary extraction in `buildSafeResultSummary`.
 - AI Workbench and History now render compatible safe summaries.
 - Remaining future work: feed `SafeResultSummary` into a future result explainer boundary.
+
+## Phase 4B-8I: Analysis Result to AI Workbench Handoff
+
+Status: implemented.
+
+- History and Statistics can hand off a safe result summary into AI Workbench.
+- AI Workbench opens programmatically and attaches selected result context.
+- Result follow-up prompt chips are available without auto-generating explanations.
+- Remaining future work: add handoff actions to Forecast, PathAnalysis, and Attribution.

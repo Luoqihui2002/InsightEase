@@ -4,7 +4,8 @@ import { companionService } from '@/services';
 import { 
   Play, 
   Loader2,
-  Info
+  Info,
+  Brain
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { DatasetSelector } from '@/components/DatasetSelector';
 import { DataTypeValidation } from '@/components/DataTypeValidation';
 import { analysisApi } from '@/api/analysis';
 import { datasetApi } from '@/api/datasets';
-import type { Dataset } from '@/types/api';
+import type { Analysis, Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
@@ -24,6 +25,11 @@ import {
 } from '@/components/analysis';
 import { ResultView } from '@/components/results';
 import { toStatisticsAnalysisResult } from '@/lib/adapters/statisticsResultAdapter';
+import {
+  DEFAULT_RESULT_FOLLOWUP_PROMPTS,
+  dispatchAIWorkbenchHandoff,
+} from '@/lib/assistant/aiWorkbenchHandoff';
+import { buildSafeResultSummary } from '@/lib/assistant/safeResultSummary';
 import {
   clearAnalysisPrefill,
   getFirstExactSuggestedColumn,
@@ -52,6 +58,7 @@ export function Statistics() {
   const [columns, setColumns] = useState<ColumnInfo[]>([]);
   const [selectedColumn, setSelectedColumn] = useState<string>('all');
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [completedAnalysis, setCompletedAnalysis] = useState<Analysis | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [prefillPayload, setPrefillPayload] = useState<AnalysisPrefillPayload | null>(null);
   const [prefillFieldsApplied, setPrefillFieldsApplied] = useState(false);
@@ -163,6 +170,7 @@ export function Statistics() {
     setIsAnalyzing(true);
     setShowResult(false);
     setAnalysisResult(null);
+    setCompletedAnalysis(null);
 
     try {
       const params: any = {};
@@ -197,7 +205,9 @@ export function Statistics() {
         const res = await analysisApi.getResult(analysisId) as any;
         
         if (res.data?.status === 'completed') {
-          setAnalysisResult(res.data?.result_data);
+          const completed = res.data as Analysis;
+          setAnalysisResult(completed.result_data);
+          setCompletedAnalysis(completed);
           setShowResult(true);
           setIsAnalyzing(false);
           toast.success('分析完成');
@@ -307,6 +317,32 @@ export function Statistics() {
     window.URL.revokeObjectURL(url);
     
     toast.success('报告已导出为 CSV');
+  };
+
+  const handleSendToAIWorkbench = () => {
+    if (!analysisResult || !datasetInfo) return;
+
+    const analysisForSummary: Analysis =
+      completedAnalysis ?? ({
+        id: `statistics-${Date.now()}`,
+        dataset_id: selectedDataset,
+        type: 'statistics',
+        status: 'completed',
+        params: selectedColumn !== 'all' ? { column: selectedColumn } : {},
+        result_data: analysisResult,
+        created_at: new Date().toISOString(),
+      } as Analysis);
+
+    dispatchAIWorkbenchHandoff({
+      source: 'analysis_result',
+      analysis_id: completedAnalysis?.id,
+      safe_result_summary: buildSafeResultSummary(analysisForSummary, {
+        dataset_name: datasetInfo.filename,
+      }),
+      suggested_prompts: DEFAULT_RESULT_FOLLOWUP_PROMPTS,
+      created_at: new Date().toISOString(),
+    });
+    toast.success('已带到 AI 工作台，不会自动生成解释');
   };
 
   return (
@@ -436,7 +472,13 @@ export function Statistics() {
           emptyTitle="选择数据集和列并启动分析"
           emptyDescription="分析结果将在此显示"
           actions={showResult ? (
-            <AnalysisActionBar onExportCSV={handleExportCSV} />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleSendToAIWorkbench}>
+                <Brain className="w-4 h-4" />
+                带到 AI 工作台
+              </Button>
+              <AnalysisActionBar onExportCSV={handleExportCSV} />
+            </div>
           ) : undefined}
         >
           {showResult && (

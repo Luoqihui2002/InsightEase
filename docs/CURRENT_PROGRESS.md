@@ -1328,3 +1328,11 @@ cd app && npm run build        # built in 20.50s ✅
 - History result dialog now shows a compact safe summary while preserving existing detailed result access.
 - Added optional `AssistantContext.analysis_history_summary` for future runtime/Hermes use.
 - Preserved safety constraints: no Hermes/LLM, no auto-run analysis, no raw result sessionStorage persistence, and no SmartAnalysis changes.
+
+## Phase 4B-8I: Analysis Result to AI Workbench Handoff
+
+- Added temporary AI Workbench handoff payload and open events.
+- History result dialog now has `让 AI 解读这个结果`.
+- Statistics result page now has `带到 AI 工作台`.
+- AI Workbench consumes handoff payloads, attaches safe result context, and shows result follow-up prompt chips.
+- Preserved safety constraints: no Hermes/LLM, no automatic explanation, no analysis rerun, and no raw result persistence.

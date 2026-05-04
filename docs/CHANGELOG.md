@@ -990,3 +990,12 @@
 - Refactored AI Workbench inline history result preview to use the shared helper.
 - Added a shared safe summary block to History result dialogs.
 - No backend API, Hermes/LLM, SQL generation, auto-run, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8I: Analysis Result to AI Workbench Handoff
+
+- Added `aiWorkbenchHandoff` helper with a bounded temporary sessionStorage payload.
+- Added programmatic AI Workbench open and handoff events.
+- Added `让 AI 解读这个结果` action to History result dialogs.
+- Added `带到 AI 工作台` action to Statistics results.
+- AI Workbench now attaches safe result context and shows result follow-up prompt chips without auto-generating explanations.
+- No backend API, Hermes/LLM, SQL generation, auto-run, dependency, package-file, or SmartAnalysis changes.

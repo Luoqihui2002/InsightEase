@@ -25,10 +25,17 @@ import { RelationshipReviewPanel } from '@/components/assistant/RelationshipRevi
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import { GuidedQuickAnalysisPanel } from '@/components/assistant/GuidedQuickAnalysisPanel';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
+import {
+  AI_WORKBENCH_HANDOFF_EVENT,
+  DEFAULT_RESULT_FOLLOWUP_PROMPTS,
+  clearAIWorkbenchHandoff,
+  readAIWorkbenchHandoff,
+} from '@/lib/assistant/aiWorkbenchHandoff';
 import { useAssistantContext } from '@/hooks/useAssistantContext';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
 import type { DatasetPreview } from '@/types/api';
+import type { SafeResultSummary } from '@/types/resultSummary';
 import type { AnalysisType } from '@/services/intent-recognition.service';
 
 import type { Dataset } from '@/types/api';
@@ -85,6 +92,8 @@ interface AIWorkbenchSessionSnapshot {
   selected_dataset_id?: string;
   active_relationship_set_id?: string;
   selected_analysis_history_id?: string;
+  attached_result_summary?: SafeResultSummary;
+  result_followup_prompts?: string[];
   current_plan?: AssistantAnalysisPlan | null;
   current_session_id?: string;
   plan_question?: string;
@@ -142,6 +151,10 @@ function loadActiveWorkbenchSession(): AIWorkbenchSessionSnapshot | null {
         typeof parsed.selected_analysis_history_id === 'string'
           ? parsed.selected_analysis_history_id
           : undefined,
+      attached_result_summary: parsed.attached_result_summary,
+      result_followup_prompts: Array.isArray(parsed.result_followup_prompts)
+        ? parsed.result_followup_prompts.filter((item): item is string => typeof item === 'string').slice(0, 6)
+        : undefined,
       current_plan: parsed.current_plan ?? null,
       current_session_id:
         typeof parsed.current_session_id === 'string' ? parsed.current_session_id : undefined,
@@ -212,6 +225,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const [selectedAnalysisHistoryId, setSelectedAnalysisHistoryId] = useState<string | undefined>(
     restoredSession?.selected_analysis_history_id
   );
+  const [attachedResultSummary, setAttachedResultSummary] = useState<SafeResultSummary | undefined>(
+    restoredSession?.attached_result_summary
+  );
+  const [resultFollowupPrompts, setResultFollowupPrompts] = useState<string[]>(
+    restoredSession?.result_followup_prompts ?? []
+  );
   const [datasetSearch, setDatasetSearch] = useState('');
   const [relationshipSetSearch, setRelationshipSetSearch] = useState('');
 
@@ -253,6 +272,8 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       selected_dataset_id: selectedDataset ?? undefined,
       active_relationship_set_id: assistantContext.activeRelationshipSetId,
       selected_analysis_history_id: selectedAnalysisHistoryId,
+      attached_result_summary: attachedResultSummary,
+      result_followup_prompts: resultFollowupPrompts,
       current_plan: generatedPlan,
       current_session_id: currentSessionId,
       plan_question: planQuestion,
@@ -263,11 +284,13 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   }, [
     activeTab,
     assistantContext.activeRelationshipSetId,
+    attachedResultSummary,
     currentSessionId,
     generatedPlan,
     mainLayout,
     messages,
     planQuestion,
+    resultFollowupPrompts,
     selectedAnalysisHistoryId,
     selectedDataset,
     showPreview,
@@ -436,6 +459,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           confirmed_relationships: activeSetRelationships,
           relationship_set: activeRelationshipSet,
           available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
+          analysis_history_summary: attachedResultSummary,
           datasets: datasets.map((d) => ({
             id: d.id,
             filename: d.filename,
@@ -513,6 +537,37 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   };
 
   // 发送消息 — 路由到规则型规划器，不直接调用后端分析
+  const consumeWorkbenchHandoff = () => {
+    const payload = readAIWorkbenchHandoff();
+    if (!payload) return;
+
+    if (payload.analysis_id) {
+      setSelectedAnalysisHistoryId(payload.analysis_id);
+    }
+    if (payload.safe_result_summary) {
+      setAttachedResultSummary(payload.safe_result_summary);
+    }
+    setResultFollowupPrompts(
+      payload.suggested_prompts?.length ? payload.suggested_prompts : DEFAULT_RESULT_FOLLOWUP_PROMPTS
+    );
+    setActiveTab('chat');
+    setShowPreview(true);
+    addMessage({
+      role: 'assistant',
+      content:
+        '当前结果已作为上下文加入 AI 工作台。系统不会自动重新运行分析，也不会自动生成解释。你可以继续问我：“帮我解释这个结果”或“下一步该怎么分析？”',
+      type: 'text',
+    });
+    clearAIWorkbenchHandoff();
+  };
+
+  useEffect(() => {
+    const handleHandoff = () => consumeWorkbenchHandoff();
+    window.addEventListener(AI_WORKBENCH_HANDOFF_EVENT, handleHandoff);
+    if (isOpen) consumeWorkbenchHandoff();
+    return () => window.removeEventListener(AI_WORKBENCH_HANDOFF_EVENT, handleHandoff);
+  }, [isOpen, messages]);
+
   const handleSend = () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -569,6 +624,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           confirmed_relationships: activeSetRelationships,
           relationship_set: activeRelationshipSet,
           available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
+          analysis_history_summary: attachedResultSummary,
           datasets: datasets.map((d) => ({
             id: d.id,
             filename: d.filename,
@@ -690,7 +746,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             layoutMode={mainLayout}
             onSelectDataset={(datasetId) => setSelectedDataset(datasetId)}
             selectedAnalysisHistoryId={selectedAnalysisHistoryId}
+            attachedResultSummary={attachedResultSummary}
             onSelectAnalysisHistory={setSelectedAnalysisHistoryId}
+            onClearAttachedResultSummary={() => {
+              setAttachedResultSummary(undefined);
+              setResultFollowupPrompts([]);
+            }}
           />
         )}
 
@@ -951,13 +1012,13 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                 {!isLoading && (
                   <div className="px-4 pt-3 pb-0 flex-shrink-0">
                     <div className="flex flex-wrap gap-2">
-                      {[
+                      {(resultFollowupPrompts.length > 0 ? resultFollowupPrompts : [
                         '预测未来销售额趋势',
                         '分析各渠道转化率',
                         '找出数据中的异常值',
                         '统计各列描述性指标',
                         '分析用户行为路径',
-                      ].map((prompt) => (
+                      ]).map((prompt) => (
                         <button
                           key={prompt}
                           onClick={() => {
@@ -1275,7 +1336,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             layoutMode={mainLayout}
             onSelectDataset={(datasetId) => setSelectedDataset(datasetId)}
             selectedAnalysisHistoryId={selectedAnalysisHistoryId}
+            attachedResultSummary={attachedResultSummary}
             onSelectAnalysisHistory={setSelectedAnalysisHistoryId}
+            onClearAttachedResultSummary={() => {
+              setAttachedResultSummary(undefined);
+              setResultFollowupPrompts([]);
+            }}
           />
         )}
 

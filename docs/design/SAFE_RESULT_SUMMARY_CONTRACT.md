@@ -62,3 +62,15 @@ It is not an AI explanation and does not run analysis.
 
 - ResultView can optionally expose a compact summary header from this contract.
 - Hermes/LLM result explanation should receive this bounded summary instead of raw `result_data`.
+
+## Phase 4B-8I Handoff Use
+
+Analysis result handoff stores `SafeResultSummary` in the temporary AI Workbench handoff payload when needed.
+
+The handoff payload may include:
+
+- `analysis_id` for API-backed History results;
+- `safe_result_summary` for immediate bounded display;
+- suggested follow-up prompts.
+
+The payload must not include raw `result_data`.

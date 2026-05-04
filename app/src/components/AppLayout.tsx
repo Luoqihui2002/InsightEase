@@ -4,6 +4,7 @@ import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
 import { AIWorkspace } from '@/pages/AIWorkspace';
 import { AICompanion } from './AICompanion';
+import { AI_WORKBENCH_OPEN_EVENT } from '@/lib/assistant/aiWorkbenchHandoff';
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -16,9 +17,14 @@ export function AppLayout() {
         setIsAIAssistantOpen(true);
       }
     };
+    const handleOpenWorkbench = () => setIsAIAssistantOpen(true);
 
     window.addEventListener('companion-action', handleCompanionAction as EventListener);
-    return () => window.removeEventListener('companion-action', handleCompanionAction as EventListener);
+    window.addEventListener(AI_WORKBENCH_OPEN_EVENT, handleOpenWorkbench);
+    return () => {
+      window.removeEventListener('companion-action', handleCompanionAction as EventListener);
+      window.removeEventListener(AI_WORKBENCH_OPEN_EVENT, handleOpenWorkbench);
+    };
   }, []);
 
   // 监听 AI Companion 的导航事件（替代 window.location.href 整页刷新）

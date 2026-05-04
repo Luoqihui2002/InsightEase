@@ -75,3 +75,15 @@ Rules:
 - Do not store raw result data in sessionStorage.
 
 See `docs/design/SAFE_RESULT_SUMMARY_CONTRACT.md`.
+
+## Phase 4B-8I Update: Result Handoff
+
+AI Workbench can now receive result context from History and supported analysis pages through a temporary handoff payload.
+
+Behavior:
+
+- Open AI Workbench programmatically.
+- Attach selected `analysis_id` and/or `SafeResultSummary`.
+- Show result context in the analysis history section.
+- Show follow-up prompt chips.
+- Do not auto-run analysis or auto-generate explanations.

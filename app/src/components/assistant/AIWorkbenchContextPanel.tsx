@@ -54,8 +54,10 @@ interface AIWorkbenchContextPanelProps {
   datasets: ContextDataset[];
   layoutMode: 'horizontal' | 'vertical';
   selectedAnalysisHistoryId?: string;
+  attachedResultSummary?: SafeResultSummary;
   onSelectDataset?: (datasetId: string) => void;
   onSelectAnalysisHistory?: (analysisId?: string) => void;
+  onClearAttachedResultSummary?: () => void;
 }
 
 interface ContextPanelSectionProps {
@@ -169,8 +171,10 @@ export function AIWorkbenchContextPanel({
   datasets,
   layoutMode,
   selectedAnalysisHistoryId,
+  attachedResultSummary,
   onSelectDataset,
   onSelectAnalysisHistory,
+  onClearAttachedResultSummary,
 }: AIWorkbenchContextPanelProps) {
   const [previewCache, setPreviewCache] = useState<Record<string, PreviewState>>({});
   const [expandedPreviews, setExpandedPreviews] = useState<Set<string>>(new Set());
@@ -298,7 +302,7 @@ export function AIWorkbenchContextPanel({
     void loadPreview(datasetId);
   };
 
-  const hasContext = Boolean(selectedDatasetId || activeRelationshipSet || selectedAnalysisHistoryId);
+  const hasContext = Boolean(selectedDatasetId || activeRelationshipSet || selectedAnalysisHistoryId || attachedResultSummary);
 
   return (
     <aside
@@ -357,12 +361,14 @@ export function AIWorkbenchContextPanel({
           historyItems={filteredHistoryItems}
           allHistoryCount={historyItems.length}
           selectedHistory={selectedHistory}
+          attachedResultSummary={attachedResultSummary}
           datasets={datasets}
           loading={historyLoading}
           error={historyError}
           search={historySearch}
           onSearchChange={setHistorySearch}
           onSelect={onSelectAnalysisHistory}
+          onClearAttachedResultSummary={onClearAttachedResultSummary}
           sectionOpenStates={sectionOpenStates}
           onToggleSection={toggleSection}
         />
@@ -820,24 +826,28 @@ function AnalysisHistoryContextWithPreview({
   historyItems,
   allHistoryCount,
   selectedHistory,
+  attachedResultSummary,
   datasets,
   loading,
   error,
   search,
   onSearchChange,
   onSelect,
+  onClearAttachedResultSummary,
   sectionOpenStates,
   onToggleSection,
 }: {
   historyItems: Analysis[];
   allHistoryCount: number;
   selectedHistory?: Analysis;
+  attachedResultSummary?: SafeResultSummary;
   datasets: ContextDataset[];
   loading: boolean;
   error: string | null;
   search: string;
   onSearchChange: (value: string) => void;
   onSelect?: (analysisId?: string) => void;
+  onClearAttachedResultSummary?: () => void;
   sectionOpenStates: Record<string, boolean>;
   onToggleSection: (id: string, defaultOpen: boolean) => void;
 }) {
@@ -848,29 +858,62 @@ function AnalysisHistoryContextWithPreview({
 
   const datasetName = selectedHistory
     ? getDatasetLabel(datasets.find((dataset) => dataset.id === selectedHistory.dataset_id))
-    : undefined;
+    : attachedResultSummary?.dataset_name || attachedResultSummary?.dataset_id;
+  const hasResultContext = Boolean(selectedHistory || attachedResultSummary);
+  const selectedContextId = selectedHistory?.id || attachedResultSummary?.analysis_id;
+  const contextTitle = selectedHistory
+    ? getAnalysisTypeLabel(selectedHistory.type)
+    : attachedResultSummary?.title || attachedResultSummary?.analysis_type || '分析结果';
+  const contextStatus = selectedHistory
+    ? getStatusLabel(selectedHistory.status)
+    : attachedResultSummary?.status || '-';
+  const contextCreatedAt = selectedHistory?.created_at || attachedResultSummary?.created_at;
+  const contextRecommendationCount = selectedHistory?.ai_recommendations?.length ?? 0;
+  const directSummaryAnalysis: Analysis | undefined = useMemo(
+    () =>
+      attachedResultSummary
+        ? {
+            id: attachedResultSummary.analysis_id,
+            dataset_id: attachedResultSummary.dataset_id || '',
+            type: attachedResultSummary.analysis_type as Analysis['type'],
+            status: attachedResultSummary.status as Analysis['status'],
+            params: {},
+            result_data: undefined,
+            ai_interpretation: attachedResultSummary.ai_interpretation || attachedResultSummary.ai_summary,
+            created_at: attachedResultSummary.created_at || new Date().toISOString(),
+            completed_at: attachedResultSummary.completed_at,
+          }
+        : undefined,
+    [attachedResultSummary]
+  );
   const previewAnalysis =
-    inlinePreviewAnalysis?.id === selectedHistory?.id ? inlinePreviewAnalysis : selectedHistory;
+    inlinePreviewAnalysis?.id === selectedContextId
+      ? inlinePreviewAnalysis
+      : selectedHistory || directSummaryAnalysis;
   const safePreview = useMemo(
     () =>
-      previewAnalysis
+      attachedResultSummary && !selectedHistory
+        ? attachedResultSummary
+        : previewAnalysis
         ? buildSafeResultSummary(previewAnalysis, { dataset_name: datasetName })
         : undefined,
-    [datasetName, previewAnalysis]
+    [attachedResultSummary, datasetName, previewAnalysis, selectedHistory]
   );
   const resultSummary =
     selectedHistory?.ai_interpretation ||
+    attachedResultSummary?.ai_summary ||
+    attachedResultSummary?.ai_interpretation ||
     summarizeResult(selectedHistory?.result_data) ||
-    (selectedHistory ? '该历史结果暂无摘要。后续可接入 AI Result Explainer。' : undefined);
+    (hasResultContext ? '该历史结果暂无摘要。后续可接入 AI Result Explainer。' : undefined);
 
   useEffect(() => {
     setInlinePreviewOpen(false);
     setInlinePreviewError(null);
-    setInlinePreviewAnalysis(selectedHistory);
-  }, [selectedHistory?.id, selectedHistory]);
+    setInlinePreviewAnalysis(selectedHistory || directSummaryAnalysis);
+  }, [selectedContextId, selectedHistory, directSummaryAnalysis]);
 
   const handleToggleInlinePreview = async () => {
-    if (!selectedHistory) return;
+    if (!selectedHistory && !attachedResultSummary) return;
 
     if (inlinePreviewOpen) {
       setInlinePreviewOpen(false);
@@ -880,7 +923,7 @@ function AnalysisHistoryContextWithPreview({
     setInlinePreviewOpen(true);
     setInlinePreviewError(null);
 
-    if (selectedHistory.result_data || selectedHistory.status !== 'completed') return;
+    if (!selectedHistory || selectedHistory.result_data || selectedHistory.status !== 'completed') return;
 
     setInlinePreviewLoading(true);
     try {
@@ -897,10 +940,11 @@ function AnalysisHistoryContextWithPreview({
   };
 
   const navigateToHistory = () => {
-    if (!selectedHistory) return;
+    const targetId = selectedHistory?.id || attachedResultSummary?.analysis_id;
+    if (!targetId) return;
     window.dispatchEvent(
       new CustomEvent('companion-navigate', {
-        detail: { path: `/app/history?analysis_id=${encodeURIComponent(selectedHistory.id)}` },
+        detail: { path: `/app/history?analysis_id=${encodeURIComponent(targetId)}` },
       })
     );
   };
@@ -911,7 +955,7 @@ function AnalysisHistoryContextWithPreview({
       title="分析历史上下文"
       subtitle="用于后续解释和追问，不会自动重新运行分析"
       icon={<History className="w-4 h-4" />}
-      defaultOpen={Boolean(selectedHistory)}
+      defaultOpen={hasResultContext}
       badge={allHistoryCount}
       openStates={sectionOpenStates}
       onToggle={onToggleSection}
@@ -929,7 +973,10 @@ function AnalysisHistoryContextWithPreview({
         />
         <select
           value={selectedHistory?.id ?? ''}
-          onChange={(event) => onSelect?.(event.target.value || undefined)}
+          onChange={(event) => {
+            onClearAttachedResultSummary?.();
+            onSelect?.(event.target.value || undefined);
+          }}
           className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-primary)]"
           disabled={loading || !onSelect}
         >
@@ -961,24 +1008,24 @@ function AnalysisHistoryContextWithPreview({
         <p className="mt-3 text-xs text-[var(--text-muted)]">未找到匹配的分析历史。</p>
       )}
 
-      {selectedHistory && (
+      {hasResultContext && (
         <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/50 p-3">
           <div className="flex items-start gap-2">
             <BarChart3 className="w-4 h-4 text-[var(--neon-cyan)] mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-[var(--text-primary)]">当前分析历史</p>
               <p className="mt-1 text-[10px] text-[var(--text-muted)]">
-                {getAnalysisTypeLabel(selectedHistory.type)} / {datasetName} / {getStatusLabel(selectedHistory.status)}
+                {contextTitle} / {datasetName || '未知数据集'} / {contextStatus}
               </p>
               <p className="mt-1 text-[10px] text-[var(--text-muted)]">
-                创建时间：{formatDate(selectedHistory.created_at)}
+                创建时间：{formatDate(contextCreatedAt)}
               </p>
               <p className="mt-2 text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-4">
                 {resultSummary}
               </p>
-              {selectedHistory.ai_recommendations && selectedHistory.ai_recommendations.length > 0 && (
+              {contextRecommendationCount > 0 && (
                 <p className="mt-2 text-[10px] text-[var(--text-muted)]">
-                  包含 {selectedHistory.ai_recommendations.length} 条行动建议。
+                  包含 {contextRecommendationCount} 条行动建议。
                 </p>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -993,7 +1040,10 @@ function AnalysisHistoryContextWithPreview({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onSelect?.(undefined)}
+                  onClick={() => {
+                    onSelect?.(undefined);
+                    onClearAttachedResultSummary?.();
+                  }}
                   className="h-7 px-2 text-[10px]"
                 >
                   清除历史上下文

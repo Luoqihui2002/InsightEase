@@ -40,6 +40,10 @@ import {
   EmptyMedia,
 } from '@/components/ui/empty';
 import { analysisApi } from '@/api/analysis';
+import {
+  DEFAULT_RESULT_FOLLOWUP_PROMPTS,
+  dispatchAIWorkbenchHandoff,
+} from '@/lib/assistant/aiWorkbenchHandoff';
 import { buildSafeResultSummary } from '@/lib/assistant/safeResultSummary';
 import { quickRequest } from '@/lib/request';
 import type { Analysis, Dataset } from '@/types/api';
@@ -515,6 +519,21 @@ export function History() {
     );
   };
 
+  const handleSendToAIWorkbench = (analysis: Analysis) => {
+    const safeSummary = buildSafeResultSummary(analysis, {
+      dataset_name: datasets[analysis.dataset_id]?.filename,
+    });
+
+    dispatchAIWorkbenchHandoff({
+      source: 'history',
+      analysis_id: analysis.id,
+      safe_result_summary: safeSummary,
+      suggested_prompts: DEFAULT_RESULT_FOLLOWUP_PROMPTS,
+      created_at: new Date().toISOString(),
+    });
+    toast.success('已将结果加入 AI 工作台上下文，不会自动生成解释');
+  };
+
   if (loading) {
     return (
       <PageShell>
@@ -716,6 +735,16 @@ export function History() {
             <div className="flex items-center gap-2">
               {/* 导出按钮组 */}
               <div className="flex items-center gap-1 mr-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleSendToAIWorkbench(selectedAnalysis)}
+                  className="text-xs text-[var(--text-secondary)] hover:text-[var(--neon-cyan)]"
+                  title="不会自动生成解释，打开 AI 工作台后你可以继续提问。"
+                >
+                  <Brain className="w-4 h-4 mr-1" />
+                  让 AI 解读这个结果
+                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
