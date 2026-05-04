@@ -1013,3 +1013,14 @@
 - Defined bounded request/response shape using `SafeResultSummary`.
 - Documented safety flags, forbidden raw inputs, confirmation requirements, UI flow, and deterministic fallback behavior.
 - No code runtime behavior, backend API, Hermes/LLM call, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-8L: Hermes Backend API Endpoint Contract
+
+- Added `docs/design/HERMES_BACKEND_API_CONTRACT.md`.
+- Defined future endpoints:
+  - `GET /api/v1/assistant/hermes/status`
+  - `POST /api/v1/assistant/hermes/explain-result`
+  - `POST /api/v1/assistant/hermes/plan-analysis`
+- Documented request/response contracts, safety validation, size/privacy limits, normalized error codes, feature flags, fallback behavior, and action confirmation rules.
+- Updated API/runtime/Hermes boundary docs to reference the backend contract.
+- No backend endpoint, frontend runtime behavior, Hermes/LLM call, auto-run, auto-join, SQL generation, dependency, package-file, or SmartAnalysis changes.

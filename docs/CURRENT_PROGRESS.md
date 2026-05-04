@@ -1352,3 +1352,11 @@ cd app && npm run build        # built in 20.50s ✅
 - Restricted Hermes input to `SafeResultSummary`, metadata-only dataset/relationship context, user question, and safety flags.
 - Documented fallback to deterministic `resultFollowupResponder`.
 - No runtime code, backend endpoint, Hermes/LLM call, or app behavior change was added.
+
+## Phase 4B-8L: Hermes Backend API Endpoint Contract
+
+- Added `docs/design/HERMES_BACKEND_API_CONTRACT.md`.
+- Defined future Hermes assistant endpoints for status, result explanation, and analysis planning.
+- Preserved existing API conventions: `/api/v1`, `/assistant` router prefix, `ResponseModel<T>` envelope, and authenticated backend endpoints.
+- Defined request/response contracts, safety validation, size/privacy limits, normalized errors, feature flags, fallback behavior, and tool action confirmation rules.
+- No backend endpoint, frontend runtime change, Hermes/LLM call, auto-run analysis, SQL generation, auto-join, or SmartAnalysis change was added.

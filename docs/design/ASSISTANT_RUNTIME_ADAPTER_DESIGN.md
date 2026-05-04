@@ -124,7 +124,7 @@ Placeholder exists at `app/src/lib/assistant/hermesAssistantRuntime.ts`.
 When backend Hermes adapter is ready:
 
 1. Implement `hermesAssistantRuntime.generateAnalysisPlan()`
-   - POST to backend `/assistant/hermes/plan`
+   - POST to backend `/assistant/hermes/plan-analysis`
    - Send `AssistantContext` as JSON
    - Receive structured plan or tool-call proposal
 2. Update `getAssistantRuntime()` to return Hermes runtime when enabled
@@ -152,6 +152,26 @@ Hermes result explanation must accept only bounded safe context:
 Hermes result explanation must not receive raw dataset rows, full raw result tables, unbounded nested `result_data`, credentials, storage paths, or unrelated saved relationship sets.
 
 The deterministic `resultFollowupResponder` remains fallback when Hermes is disabled, fails, or the safe summary is too sparse.
+
+### Future Hermes Backend API Contract
+
+Phase 4B-8L defines the backend endpoint contract in:
+
+`docs/design/HERMES_BACKEND_API_CONTRACT.md`
+
+Future runtime calls should use:
+
+- `GET /api/v1/assistant/hermes/status`
+- `POST /api/v1/assistant/hermes/explain-result`
+- `POST /api/v1/assistant/hermes/plan-analysis`
+
+The runtime must keep deterministic fallback behavior:
+
+- disabled/unavailable Hermes -> `ruleBasedAssistantRuntime` for planning;
+- failed result explanation -> deterministic `resultFollowupResponder`;
+- safety validation error -> no retry with raw data.
+
+The runtime must not send raw dataset rows, full result tables, storage paths, credentials, or unrelated relationship sets.
 
 ---
 

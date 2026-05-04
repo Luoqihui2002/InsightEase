@@ -486,3 +486,12 @@ Status: design complete.
 - Hermes input is limited to `SafeResultSummary`, bounded metadata context, user question, and safety flags.
 - Deterministic result follow-up remains fallback.
 - Remaining future work: backend endpoint contract and opt-in Hermes runtime implementation.
+
+## Phase 4B-8L: Hermes Backend API Endpoint Contract
+
+Status: design complete.
+
+- Defined future backend API contract for Hermes assistant integration.
+- Endpoint contract covers status, result explanation, and analysis planning.
+- Contract requires bounded context only, explicit safety flags, strict size/privacy limits, deterministic fallback, and confirmation before any execute/write action.
+- Remaining future work: optional dry-run backend scaffold, frontend Hermes API wrapper, and opt-in runtime selection after explicit approval.

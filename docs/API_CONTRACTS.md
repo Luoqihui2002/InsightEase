@@ -378,3 +378,41 @@ There is no backend API change.
 - TTL: 24 hours
 
 The payload carries dataset IDs and suggested field names only. It does not store raw dataset values, does not create backend analysis tasks, and does not auto-run analysis.
+
+---
+
+## Future Contract: Hermes Assistant Backend API
+
+Phase 4B-8L defines a documentation-only contract for future Hermes assistant endpoints.
+
+No backend endpoint is implemented yet.
+
+Design source:
+
+- `docs/design/HERMES_BACKEND_API_CONTRACT.md`
+
+Future endpoints:
+
+```text
+GET  /api/v1/assistant/hermes/status
+POST /api/v1/assistant/hermes/explain-result
+POST /api/v1/assistant/hermes/plan-analysis
+```
+
+Contract rules:
+
+- All successful responses should use existing `ResponseModel<T>` envelope.
+- The endpoints must use bounded context only.
+- `explain-result` may receive `SafeResultSummary`, metadata-only assistant context, user question, and explicit safety flags.
+- `plan-analysis` may receive dataset metadata, active relationship-set metadata, optional safe result summary, user question, and explicit safety flags.
+- Hermes must not receive raw uploaded rows, full raw result tables, unbounded `result_data`, credentials, secrets, or storage paths.
+- Hermes must not auto-run analysis, auto-join datasets, generate executable SQL, create datasets, or mutate datasets.
+- Frontend must fallback to `ruleBasedAssistantRuntime` and deterministic `resultFollowupResponder` when Hermes is disabled, unavailable, or fails.
+
+Feature flags planned for future backend implementation:
+
+```text
+HERMES_ASSISTANT_ENABLED=false
+HERMES_ASSISTANT_MODE=disabled|dry_run|live
+HERMES_ASSISTANT_TIMEOUT_MS=10000
+```

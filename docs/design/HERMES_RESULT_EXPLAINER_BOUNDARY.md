@@ -193,13 +193,27 @@ Current UI behavior should remain:
 
 When Hermes is introduced, `getAssistantRuntime()` may select Hermes runtime by configuration. UI should still call the runtime interface and not know the concrete backend.
 
+## Related Backend API Contract
+
+Phase 4B-8L defines the future backend API endpoint contract separately:
+
+`docs/design/HERMES_BACKEND_API_CONTRACT.md`
+
+The backend contract maps this result explainer boundary to:
+
+- `GET /api/v1/assistant/hermes/status`
+- `POST /api/v1/assistant/hermes/explain-result`
+- `POST /api/v1/assistant/hermes/plan-analysis`
+
+The endpoint contract preserves this document's safety boundary: Hermes receives only `SafeResultSummary`, bounded metadata context, user question, and explicit safety flags.
+
 ## Non-Goals
 
-This boundary does not:
+This boundary document does not:
 
-- define a backend endpoint;
+- implement a backend endpoint;
 - implement Hermes;
 - implement streaming;
-- add authentication rules;
+- add runtime authentication behavior;
 - replace deterministic follow-up mode;
 - change existing result pages.
