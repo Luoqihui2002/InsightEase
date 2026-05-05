@@ -556,3 +556,12 @@ Status: implemented.
 - Selected-dataset priority now warns when the selected dataset weakly matches a specific question intent.
 - Plan card copy more clearly separates required datasets and candidate datasets.
 - Remaining future work: browser-based QA recipes with seeded demo data, reusable prefill banner extraction, Semantic/DataWorkshop prefill, and separately approved live Hermes integration.
+
+## Phase 4B-9D: Workbench QA Recipes & Demo Scenario Seeds
+
+Status: implemented.
+
+- Added reusable manual QA recipes under `docs/qa/`.
+- Added demo scenario scripts for Dataset Catalog to forecast planning, Relationship Set to channel conversion planning, result follow-up, and safety regression.
+- Documented recommended demo datasets and expected deterministic catalog labels.
+- Remaining future work: optional browser-based smoke scripts, automated seed-data generation after explicit approval, reusable prefill banner extraction, Semantic/DataWorkshop prefill, and separately approved live Hermes integration.

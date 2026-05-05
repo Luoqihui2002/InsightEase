@@ -1413,3 +1413,11 @@ cd app && npm run build        # built in 20.50s ✅
 - Added a selected-dataset mismatch warning when a specific analysis question does not match the selected dataset's catalog signals.
 - Documented known limitations and manual QA coverage in the Phase 4B-9C log.
 - No Hermes/LLM call, backend persistence, dataset mutation, auto-run analysis, auto-join, SQL generation, package change, or SmartAnalysis change was added.
+
+## Phase 4B-9D: Workbench QA Recipes & Demo Scenario Seeds
+
+- Added `docs/qa/AI_WORKBENCH_QA_RECIPES.md` as a reusable manual QA playbook for Dataset Catalog, Relationship Sets, planner narrowing, prefill navigation, Context Panel, result handoff, result follow-up, and Hermes dry-run safety.
+- Added `docs/qa/AI_WORKBENCH_DEMO_SCENARIOS.md` with concise demo scripts for forecast planning, channel conversion planning, result follow-up, and safety regression checks.
+- Documented the recommended 10-dataset demo set and expected catalog classification targets.
+- Updated the docs index to make `docs/qa/` discoverable for future phases.
+- No product behavior, runtime behavior, backend fixture, dependency, package-file, dataset mutation, Hermes/LLM, or SmartAnalysis change was added.

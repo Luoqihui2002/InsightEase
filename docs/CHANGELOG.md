@@ -1080,3 +1080,13 @@
 - Added a selected-dataset mismatch warning when a specific analysis intent has weak catalog support in the selected dataset.
 - Added `docs/phase-logs/PHASE_4B_9C_AI_WORKBENCH_E2E_QA_AND_POLISH.md`.
 - No Hermes/LLM call, backend persistence, dataset mutation, auto-run analysis, auto-join, SQL generation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-9D: Workbench QA Recipes & Demo Scenario Seeds
+
+- Added `docs/qa/AI_WORKBENCH_QA_RECIPES.md`.
+- Added `docs/qa/AI_WORKBENCH_DEMO_SCENARIOS.md`.
+- Documented reusable manual QA coverage for Dataset Catalog, Relationship Set topic graphs, planner candidate narrowing, prefill navigation, Context Panel, result handoff, deterministic follow-up, and Hermes dry-run safety.
+- Documented recommended demo dataset names, schema hints, and expected catalog classification targets.
+- Added `docs/phase-logs/PHASE_4B_9D_WORKBENCH_QA_RECIPES_AND_DEMO_SCENARIOS.md`.
+- Updated README/progress/roadmap docs to reference `docs/qa/`.
+- No source code, backend fixture, runtime behavior, Hermes/LLM call, dependency, package-file, dataset mutation, or SmartAnalysis changes.

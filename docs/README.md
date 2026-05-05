@@ -1,5 +1,12 @@
 # InsightEase 文档中心
 
+## QA Recipes
+
+Reusable manual QA recipes and demo scenario scripts live in `docs/qa/`:
+
+- `AI_WORKBENCH_QA_RECIPES.md` covers Dataset Catalog, Relationship Sets, planner narrowing, prefill navigation, Context Panel, result handoff, deterministic follow-up, and Hermes dry-run safety.
+- `AI_WORKBENCH_DEMO_SCENARIOS.md` provides concise demo scripts for forecast planning, channel conversion planning, result follow-up, and safety regression checks.
+
 本文档中心是 InsightEase 项目的唯一事实来源。
 
 **重要**: `archive/` 目录下的历史材料可能包含旧结论，不代表当前架构。
