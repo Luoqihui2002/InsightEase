@@ -55,12 +55,14 @@ interface AssistantContext {
   available_dataset_nodes?: RelationshipSetDatasetNode[];
   dataset_profiles?: DatasetProfile[];
   datasets?: Array<{ id; filename; name; schema? }>;
+  dataset_catalog?: DatasetCatalogMetadata[];
 }
 ```
 
 This context is built by AIWorkspace from:
 - `useAssistantContext()` (active relationship set relationships)
 - `datasetApi.list()` (dataset list)
+- `inferDatasetCatalogMetadata()` (frontend-only deterministic catalog metadata)
 - `selectedDataset` state (primary dataset)
 
 Relationship context contract after Phase 4B-8D-C:
@@ -77,6 +79,15 @@ Relationship context contract after Phase 4B-8D-D:
 - `confirmed_relationships` remains a compatibility edge list derived from the active graph only.
 - The planner treats the graph as allowed context; it must infer a question-specific subset for `required_datasets`.
 - Isolated/reference nodes are not joinable and must not trigger automatic joins.
+
+Dataset catalog context contract after Phase 4B-9B:
+
+- `dataset_catalog` is deterministic frontend-only metadata inferred from the loaded dataset list.
+- The rule-based planner uses catalog metadata only for candidate narrowing.
+- Candidate datasets are advisory and are distinct from `required_datasets`.
+- Selected dataset remains first priority.
+- Active Relationship Set nodes constrain the candidate pool; they are not all required.
+- Full-library matching is used only for bounded candidate hints when no selected dataset or active graph gives a high-confidence match.
 
 ### Factory
 
@@ -109,6 +120,7 @@ const ruleBasedAssistantRuntime: AssistantRuntime = {
       relationshipSet: request.context.relationship_set,
       availableDatasetNodes: request.context.available_dataset_nodes,
       confirmedRelationships: request.context.confirmed_relationships, // active set only
+      datasetCatalog: request.context.dataset_catalog,
     });
     return { plan, runtime_mode: "rule_based", warnings: [] };
   },

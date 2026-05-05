@@ -534,4 +534,15 @@ Status: implemented.
 - Dataset Catalog metadata is deterministic and frontend-only in this phase.
 - Catalog helpers are exported for future AI-safe dataset candidate narrowing.
 - Search now covers dataset names, schema fields, category/type labels, analysis tags, and upload day.
-- Remaining future work: optionally pass bounded catalog metadata into AI Workbench planner context after preserving selected-dataset and active-relationship-set priority.
+- Remaining future work: planner candidate search is handled in Phase 4B-9B; manual catalog curation remains future work.
+
+## Phase 4B-9B: Dataset Catalog Planner Candidate Search
+
+Status: implemented.
+
+- AI Workbench planner context now includes deterministic frontend-only Dataset Catalog metadata.
+- Rule-based planning uses catalog metadata to narrow dataset candidates by question intent.
+- Selected dataset remains first priority.
+- Active Relationship Set constrains candidate search without making all nodes required.
+- Candidate datasets are visually distinct from required datasets.
+- Remaining future work: manual catalog overrides, persisted user curation, and separately approved Hermes/live AI dataset search.

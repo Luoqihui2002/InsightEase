@@ -4,7 +4,7 @@
 
 Dataset Catalog classification gives the dataset library a deterministic metadata layer for browsing and future AI-safe candidate narrowing.
 
-This design is frontend-only in Phase 4B-9A. It does not persist catalog metadata, modify uploaded data, call Hermes/LLM, or change AI Workbench runtime behavior.
+This design is frontend-only. It does not persist catalog metadata, modify uploaded data, call Hermes/LLM, or classify through an external service.
 
 ## Current Contract
 
@@ -51,9 +51,9 @@ Datasets page supports grouping by:
 
 Search applies before grouping and can match dataset names, schema columns, category labels, data type labels, analysis tag labels, and upload day.
 
-## Future AI Candidate Narrowing
+## AI Candidate Narrowing
 
-Future Hermes/dataset search should use this priority:
+Planner and future Hermes/dataset search should use this priority:
 
 1. Current selected dataset.
 2. Active Relationship Set dataset nodes.
@@ -61,7 +61,17 @@ Future Hermes/dataset search should use this priority:
 4. Analysis usage tags.
 5. Full dataset library as last resort.
 
-Phase 4B-9A exports helper functions only. No planner or runtime behavior is changed.
+Phase 4B-9B wires the deterministic catalog metadata into the rule-based AI Workbench planner.
+
+Planner rules:
+
+- selected dataset is always the primary required dataset;
+- active Relationship Set is an allowed graph, not an automatic required dataset list;
+- catalog matches can become required datasets only when they are high-confidence and query-specific;
+- lower-confidence catalog matches are surfaced as candidate datasets, assumptions, or warnings;
+- descriptive/statistics requests without a selected dataset ask the user to choose one dataset instead of requiring the full library.
+
+Catalog candidate ranking remains advisory. It does not execute analysis, join tables, generate SQL, or mutate datasets.
 
 ## Safety Rules
 

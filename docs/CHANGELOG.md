@@ -1061,3 +1061,13 @@
 - Added compact category/type/analysis badges to dataset rows.
 - Added `docs/design/DATASET_CATALOG_CLASSIFICATION_DESIGN.md`.
 - No Hermes/LLM call, backend persistence, dataset mutation, runtime behavior change, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-9B: Dataset Catalog Planner Candidate Search
+
+- Extended `AssistantContext` with optional deterministic `dataset_catalog` metadata.
+- AI Workbench and Guided Quick Analysis now build catalog metadata from loaded frontend dataset metadata and pass it to the assistant runtime.
+- Updated the rule-based planner to rank candidates by selected dataset, active Relationship Set scope, catalog metadata, and deterministic schema/name keywords.
+- Added distinct `candidate_datasets` to analysis plans and rendered them separately in `AnalysisPlanCard`.
+- Prevented broad full-library fallback from becoming `required_datasets`; low-confidence matches are advisory only.
+- Updated catalog and runtime adapter docs plus the Phase 4B-9B phase log.
+- No Hermes/LLM call, backend persistence, dataset mutation, auto-run analysis, auto-join, SQL generation, dependency, package-file, or SmartAnalysis changes.

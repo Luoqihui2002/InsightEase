@@ -17,6 +17,7 @@ import type {
   RelationshipSet,
   RelationshipSetDatasetNode,
 } from '@/types/assistant';
+import type { DatasetCatalogMetadata } from '@/types/datasetCatalog';
 import type { SafeResultSummary } from '@/types/resultSummary';
 
 export type AssistantRuntimeMode = 'rule_based' | 'hermes' | 'llm';
@@ -57,6 +58,8 @@ export interface AssistantContext {
     name?: string;
     schema?: Array<{ name: string; semantic_type?: string }>;
   }>;
+  /** Optional deterministic frontend-only catalog metadata for candidate narrowing */
+  dataset_catalog?: DatasetCatalogMetadata[];
   /** Optional bounded summary of selected analysis history context; no raw result tables */
   analysis_history_summary?: SafeResultSummary;
 }

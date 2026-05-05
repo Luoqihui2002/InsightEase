@@ -28,6 +28,7 @@ export const ruleBasedAssistantRuntime: AssistantRuntime = {
       relationshipSet: request.context.relationship_set,
       availableDatasetNodes: request.context.available_dataset_nodes,
       confirmedRelationships: request.context.confirmed_relationships,
+      datasetCatalog: request.context.dataset_catalog,
     });
 
     return {

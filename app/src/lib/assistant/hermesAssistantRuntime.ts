@@ -32,6 +32,7 @@ export const hermesAssistantRuntime: AssistantRuntime = {
           selected_dataset_ids: request.context.selected_dataset_ids,
           selected_dataset_id: request.context.selected_dataset_id,
           datasets: request.context.datasets,
+          dataset_catalog: request.context.dataset_catalog,
           relationship_set: request.context.relationship_set
             ? {
                 id: request.context.relationship_set.id,

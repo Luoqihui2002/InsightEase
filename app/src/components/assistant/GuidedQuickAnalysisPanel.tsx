@@ -15,7 +15,7 @@
  *   - No Hermes/LLM calls
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { assistantApi } from '@/api/assistant';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
+import { inferDatasetCatalogMetadata } from '@/lib/datasetCatalog';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import type {
   DatasetProfile,
@@ -271,6 +272,20 @@ export function GuidedQuickAnalysisPanel({
   const [relationshipScopeHint, setRelationshipScopeHint] = useState('');
 
   const selectedDataset = datasets.find((d) => d.id === selectedDatasetId);
+  const datasetCatalog = useMemo(
+    () =>
+      datasets.map((dataset) =>
+        inferDatasetCatalogMetadata({
+          ...dataset,
+          schema: (dataset.schema || []).map((col: any) => ({
+            name: col?.name || '',
+            dtype: col?.dtype || col?.type || '',
+            semantic_type: col?.semantic_type || col?.type || '',
+          })),
+        })
+      ),
+    [datasets]
+  );
 
   /* Load profile when entering step 2 */
   const loadProfile = useCallback(async () => {
@@ -352,17 +367,16 @@ export function GuidedQuickAnalysisPanel({
           confirmed_relationships: scopedRelationships,
           relationship_set: activeSetContainsSelected ? activeRelationshipSet : undefined,
           available_dataset_nodes: scopedNodes,
-          datasets: [
-            {
-              id: selectedDataset.id,
-              filename: selectedDataset.filename,
-              name: selectedDataset.filename,
-              schema: (selectedDataset.schema || []).map((col: any) => ({
-                name: col?.name || '',
-                semantic_type: col?.semantic_type || col?.type || '',
-              })),
-            },
-          ],
+          dataset_catalog: datasetCatalog,
+          datasets: datasets.map((dataset) => ({
+            id: dataset.id,
+            filename: dataset.filename,
+            name: dataset.name ?? dataset.filename,
+            schema: (dataset.schema || []).map((col: any) => ({
+              name: col?.name || '',
+              semantic_type: col?.semantic_type || col?.type || '',
+            })),
+          })),
           dataset_profiles: profile ? [profile] : undefined,
         },
       });

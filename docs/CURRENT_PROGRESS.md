@@ -1395,3 +1395,12 @@ cd app && npm run build        # built in 20.50s ✅
 - Dataset rows show business category, data type, and analysis-use badges.
 - The catalog layer is exported for future AI-safe dataset candidate narrowing.
 - No Hermes/LLM call, backend persistence, dataset mutation, runtime behavior change, package change, or SmartAnalysis change was added.
+
+## Phase 4B-9B: Dataset Catalog Planner Candidate Search
+
+- AI Workbench now passes deterministic frontend-only Dataset Catalog metadata into assistant runtime context.
+- The rule-based planner ranks dataset candidates by selected dataset, active Relationship Set scope, catalog analysis tags, business category, data type, and name/schema keywords.
+- `required_datasets` now includes only selected datasets or high-confidence query-specific catalog matches.
+- Lower-confidence catalog matches render as distinct candidate datasets, warnings, or assumptions.
+- Descriptive/statistics prompts without a selected dataset ask the user to choose one dataset instead of requiring the whole library.
+- No Hermes/LLM call, backend persistence, dataset mutation, auto-run analysis, auto-join, SQL generation, package change, or SmartAnalysis change was added.

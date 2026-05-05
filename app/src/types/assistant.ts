@@ -241,6 +241,13 @@ export interface AssistantNextAction {
   payload?: Record<string, unknown>;
 }
 
+export interface AssistantCandidateDataset {
+  dataset_id: string;
+  dataset_name?: string;
+  reasons: string[];
+  confidence: "low" | "medium" | "high";
+}
+
 export interface AssistantAnalysisPlan {
   id: string;
   user_question: string;
@@ -248,6 +255,7 @@ export interface AssistantAnalysisPlan {
   recommended_analysis_type: RecommendedAnalysisType;
   required_datasets: string[];
   required_dataset_ids?: string[];
+  candidate_datasets?: AssistantCandidateDataset[];
   required_fields: AnalysisFieldRequirement[];
   required_relationships?: TableRelationship[];
   relationship_set_id?: string;

@@ -26,6 +26,7 @@ import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import { GuidedQuickAnalysisPanel } from '@/components/assistant/GuidedQuickAnalysisPanel';
 import { getAssistantRuntimeProvider } from '@/lib/assistant/assistantRuntimeConfig';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
+import { inferDatasetCatalogMetadata } from '@/lib/datasetCatalog';
 import {
   AI_WORKBENCH_HANDOFF_EVENT,
   DEFAULT_RESULT_FOLLOWUP_PROMPTS,
@@ -256,6 +257,10 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
   const assistantContext = useAssistantContext();
   const activeRelationshipSet = assistantContext.getActiveRelationshipSet();
+  const datasetCatalog = useMemo(
+    () => datasets.map((dataset) => inferDatasetCatalogMetadata(dataset)),
+    [datasets]
+  );
   const filteredDatasets = useMemo(() => {
     const query = datasetSearch.trim().toLowerCase();
     if (!query) return datasets;
@@ -480,6 +485,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           relationship_set: activeRelationshipSet,
           available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
           analysis_history_summary: attachedResultSummary,
+          dataset_catalog: datasetCatalog,
           datasets: datasets.map((d) => ({
             id: d.id,
             filename: d.filename,
@@ -665,6 +671,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           relationship_set: activeRelationshipSet,
           available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
           analysis_history_summary: attachedResultSummary,
+          dataset_catalog: datasetCatalog,
           datasets: datasets.map((d) => ({
             id: d.id,
             filename: d.filename,
