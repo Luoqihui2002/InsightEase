@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   FileSpreadsheet,
   MoreVertical,
@@ -44,6 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from '@/components/ui/empty';
 import { toast } from 'sonner';
 import gsap from 'gsap';
@@ -61,6 +62,60 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { StatCard } from '@/components/data-display/StatCard';
 import { DataTablePreview } from '@/components/data-display/DataTablePreview';
 import { DatasetUnderstandingCard } from '@/components/assistant/DatasetUnderstandingCard';
+import {
+  ANALYSIS_TAG_LABELS,
+  BUSINESS_CATEGORY_LABELS,
+  DATA_TYPE_LABELS,
+  filterDatasetsBySearch,
+  groupDatasetsByAnalysisTag,
+  groupDatasetsByBusinessCategory,
+  groupDatasetsByDataType,
+  groupDatasetsByUploadDay,
+  groupDatasetsByUploadWeek,
+  inferDatasetCatalogMetadata,
+} from '@/lib/datasetCatalog';
+import type { DatasetCatalogMetadata, GroupedDatasets } from '@/types/datasetCatalog';
+
+type DatasetCatalogGroupMode =
+  | 'none'
+  | 'upload_day'
+  | 'upload_week'
+  | 'business_category'
+  | 'data_type'
+  | 'analysis_tag';
+
+const GROUP_MODE_LABELS: Record<DatasetCatalogGroupMode, string> = {
+  none: '默认排序',
+  upload_day: '按上传日',
+  upload_week: '按上传周',
+  business_category: '按业务主题',
+  data_type: '按数据类型',
+  analysis_tag: '按分析用途',
+};
+
+function DatasetCatalogBadges({ catalog }: { catalog?: DatasetCatalogMetadata }) {
+  if (!catalog) return null;
+  const tags = catalog.analysis_tags.slice(0, 3);
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="rounded-full border border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan)]/10 px-2 py-0.5 text-[10px] text-[var(--neon-cyan)]">
+        {BUSINESS_CATEGORY_LABELS[catalog.business_category]}
+      </span>
+      <span className="rounded-full border border-[var(--neon-green)]/30 bg-[var(--neon-green)]/10 px-2 py-0.5 text-[10px] text-[var(--neon-green)]">
+        {DATA_TYPE_LABELS[catalog.data_type]}
+      </span>
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]"
+        >
+          可用于{ANALYSIS_TAG_LABELS[tag]}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export function Datasets() {
   const navigate = useNavigate();
@@ -68,6 +123,7 @@ export function Datasets() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [catalogGroupMode, setCatalogGroupMode] = useState<DatasetCatalogGroupMode>('none');
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -366,9 +422,28 @@ export function Datasets() {
   };
 
   // 过滤数据集
-  const filteredDatasets = datasets.filter(d =>
-    d.filename.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDatasets = useMemo(
+    () => filterDatasetsBySearch(datasets, searchQuery),
+    [datasets, searchQuery]
   );
+
+  const catalogByDatasetId = useMemo(() => {
+    return new Map(
+      filteredDatasets.map((dataset) => [
+        dataset.id,
+        inferDatasetCatalogMetadata(dataset),
+      ])
+    );
+  }, [filteredDatasets]);
+
+  const groupedDatasets = useMemo<GroupedDatasets<Dataset>[]>(() => {
+    if (catalogGroupMode === 'upload_day') return groupDatasetsByUploadDay(filteredDatasets);
+    if (catalogGroupMode === 'upload_week') return groupDatasetsByUploadWeek(filteredDatasets);
+    if (catalogGroupMode === 'business_category') return groupDatasetsByBusinessCategory(filteredDatasets);
+    if (catalogGroupMode === 'data_type') return groupDatasetsByDataType(filteredDatasets);
+    if (catalogGroupMode === 'analysis_tag') return groupDatasetsByAnalysisTag(filteredDatasets);
+    return [{ key: 'default', label: GROUP_MODE_LABELS.none, datasets: filteredDatasets, sort_order: 0 }];
+  }, [catalogGroupMode, filteredDatasets]);
 
   // 统计数据
   const totalSize = datasets.reduce((acc, d) => acc + (d.file_size || 0), 0);
@@ -496,16 +571,31 @@ export function Datasets() {
         }
       >
         {/* 搜索栏 */}
-        <div className="flex gap-4 items-center mb-4">
+        <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-center">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索数据集..."
+              placeholder="搜索数据集、字段、主题或用途..."
               className="pl-10 bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--neon-cyan)]"
             />
           </div>
+          <Select
+            value={catalogGroupMode}
+            onValueChange={(value) => setCatalogGroupMode(value as DatasetCatalogGroupMode)}
+          >
+            <SelectTrigger className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
+              <SelectValue placeholder="默认排序" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(GROUP_MODE_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div ref={tableRef}>
@@ -557,8 +647,24 @@ export function Datasets() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDatasets.map((dataset) => (
-                    <React.Fragment key={dataset.id}>
+                  {groupedDatasets.map((group) => (
+                    <React.Fragment key={group.key}>
+                      {catalogGroupMode !== 'none' && (
+                        <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/70">
+                          <td colSpan={9} className="px-3 py-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-xs font-semibold text-[var(--text-primary)]">
+                                {group.label}
+                              </span>
+                              <span className="text-[10px] text-[var(--text-muted)]">
+                                {group.datasets.length} 个数据集
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      {group.datasets.map((dataset) => (
+                    <React.Fragment key={`${group.key}-${dataset.id}`}>
                       <tr
                         className={`border-b border-[var(--border-subtle)] hover:bg-[var(--bg-tertiary)]/50 transition-colors ${
                           selectedRows.has(dataset.id) ? 'bg-[var(--neon-cyan)]/5' : ''
@@ -622,9 +728,12 @@ export function Datasets() {
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-3">
-                              <FileSpreadsheet className="w-5 h-5 text-[var(--neon-cyan)]" />
-                              <span className="text-[var(--text-primary)]">{dataset.filename}</span>
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <FileSpreadsheet className="w-5 h-5 text-[var(--neon-cyan)] shrink-0" />
+                                <span className="break-all text-[var(--text-primary)]">{dataset.filename}</span>
+                              </div>
+                              <DatasetCatalogBadges catalog={catalogByDatasetId.get(dataset.id)} />
                             </div>
                           )}
                         </td>
@@ -710,6 +819,8 @@ export function Datasets() {
                           </td>
                         </tr>
                       )}
+                    </React.Fragment>
+                      ))}
                     </React.Fragment>
                   ))}
                 </tbody>

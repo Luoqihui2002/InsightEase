@@ -1386,3 +1386,12 @@ cd app && npm run build        # built in 20.50s ✅
 - Dry-run failures or invalid responses fallback to `ruleBasedAssistantRuntime`.
 - AI Workbench diagnostic now shows when Hermes dry-run runtime is explicitly selected.
 - Result follow-up remains deterministic; no live Hermes/LLM call, auto-run analysis, SQL generation, auto-join, dataset mutation, or SmartAnalysis change was added.
+
+## Phase 4B-9A: Dataset Catalog Classification & Grouped Views
+
+- Added deterministic frontend-only dataset catalog metadata helpers.
+- Datasets page now supports search across dataset names, schema fields, catalog labels, analysis tags, and upload day.
+- Datasets page can group by upload day, upload week, business topic, data type, and analysis usage.
+- Dataset rows show business category, data type, and analysis-use badges.
+- The catalog layer is exported for future AI-safe dataset candidate narrowing.
+- No Hermes/LLM call, backend persistence, dataset mutation, runtime behavior change, package change, or SmartAnalysis change was added.

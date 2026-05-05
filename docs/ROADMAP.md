@@ -525,3 +525,13 @@ Status: implemented.
 - Hermes dry-run runtime can call backend dry-run planning endpoint and falls back to rule-based behavior on any failure.
 - Result follow-up remains deterministic.
 - Remaining future work: richer developer diagnostics and separately approved live Hermes integration.
+
+## Phase 4B-9A: Dataset Catalog Classification & Grouped Views
+
+Status: implemented.
+
+- Datasets page now supports grouped catalog views by upload day, upload week, business topic, data type, and analysis usage.
+- Dataset Catalog metadata is deterministic and frontend-only in this phase.
+- Catalog helpers are exported for future AI-safe dataset candidate narrowing.
+- Search now covers dataset names, schema fields, category/type labels, analysis tags, and upload day.
+- Remaining future work: optionally pass bounded catalog metadata into AI Workbench planner context after preserving selected-dataset and active-relationship-set priority.

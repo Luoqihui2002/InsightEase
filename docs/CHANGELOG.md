@@ -1051,3 +1051,13 @@
 - Added mandatory fallback to `ruleBasedAssistantRuntime` when dry-run endpoint is disabled, unavailable, fails, or returns an invalid plan.
 - Updated AI Workbench diagnostic to show `Hermes dry-run runtime · fallback enabled` when selected.
 - No live Hermes/LLM call, backend change, auto-run analysis, auto-join, SQL generation, dataset mutation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-9A: Dataset Catalog Classification & Grouped Views
+
+- Added `app/src/types/datasetCatalog.ts` and `app/src/lib/datasetCatalog.ts`.
+- Added deterministic business category, data type, analysis tag, upload day, and upload week inference.
+- Updated Datasets page with grouped views for upload day, upload week, business topic, data type, and analysis usage.
+- Expanded Datasets page search to include schema fields and catalog labels.
+- Added compact category/type/analysis badges to dataset rows.
+- Added `docs/design/DATASET_CATALOG_CLASSIFICATION_DESIGN.md`.
+- No Hermes/LLM call, backend persistence, dataset mutation, runtime behavior change, dependency, package-file, or SmartAnalysis changes.
