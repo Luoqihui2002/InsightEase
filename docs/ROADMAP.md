@@ -546,3 +546,13 @@ Status: implemented.
 - Active Relationship Set constrains candidate search without making all nodes required.
 - Candidate datasets are visually distinct from required datasets.
 - Remaining future work: manual catalog overrides, persisted user curation, and separately approved Hermes/live AI dataset search.
+
+## Phase 4B-9C: AI Workbench End-to-End QA & Polish
+
+Status: implemented.
+
+- End-to-end AI Workbench flow has been audited after Dataset Catalog planner integration.
+- Plans with no confirmed required dataset now ask for dataset confirmation instead of navigating with an empty prefill.
+- Selected-dataset priority now warns when the selected dataset weakly matches a specific question intent.
+- Plan card copy more clearly separates required datasets and candidate datasets.
+- Remaining future work: browser-based QA recipes with seeded demo data, reusable prefill banner extraction, Semantic/DataWorkshop prefill, and separately approved live Hermes integration.

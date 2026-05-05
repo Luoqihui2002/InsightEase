@@ -498,6 +498,19 @@ function formatCandidateNames(
     .join('、');
 }
 
+function hasQuerySpecificCandidateReason(candidate?: RankedDatasetCandidate): boolean {
+  if (!candidate) return false;
+  return candidate.reasons.some((reason) =>
+    [
+      '分析用途匹配',
+      '业务主题匹配',
+      '数据类型匹配',
+      '名称/字段命中',
+      '问题直接提到',
+    ].some((signal) => reason.includes(signal))
+  );
+}
+
 export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysisPlan {
   const {
     question,
@@ -605,6 +618,15 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
     }
   }
 
+  if (selectedDataset && !intent.descriptive_like) {
+    const selectedCandidate = rankedAll.find((candidate) => candidate.dataset_id === selectedDataset.id);
+    if (!hasQuerySpecificCandidateReason(selectedCandidate)) {
+      warnings.push(
+        '当前选中的数据集已按优先级作为本次计划输入，但目录信号与问题意图不强；请确认是否需要切换到候选数据集。'
+      );
+    }
+  }
+
   if (relationshipSet && !selectedDataset && planningDatasets.length === 0) {
     warnings.push('当前关系组中没有明显匹配该问题的数据集，请手动选择数据集或更换关系组。');
   }
@@ -637,19 +659,27 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
     planningDatasetIds
   );
 
-  const nextActions: AssistantNextAction[] = [
-    {
+  const nextActions: AssistantNextAction[] = [];
+
+  if (planningDatasets.length > 0) {
+    nextActions.push({
       type: 'navigate',
       label: matchedRule.nextActionLabel,
       target: matchedRule.nextActionTarget,
-    },
-    {
-      type: 'explain',
-      label: '解释字段选择',
-    },
-  ];
+    });
+  } else {
+    nextActions.push({
+      type: 'warning',
+      label: '先确认所需数据集',
+    });
+  }
 
-  if (warnings.length > 0) {
+  nextActions.push({
+    type: 'explain',
+    label: '解释字段选择',
+  });
+
+  if (warnings.length > 0 && planningDatasets.length > 0) {
     nextActions.push({
       type: 'warning',
       label: '先确认数据集和字段',

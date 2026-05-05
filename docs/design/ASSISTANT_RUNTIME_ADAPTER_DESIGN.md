@@ -88,6 +88,7 @@ Dataset catalog context contract after Phase 4B-9B:
 - Selected dataset remains first priority.
 - Active Relationship Set nodes constrain the candidate pool; they are not all required.
 - Full-library matching is used only for bounded candidate hints when no selected dataset or active graph gives a high-confidence match.
+- When no required dataset is confirmed, the planner/card should ask the user to confirm a dataset instead of creating empty analysis-page prefill navigation.
 
 ### Factory
 

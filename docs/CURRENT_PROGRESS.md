@@ -1404,3 +1404,12 @@ cd app && npm run build        # built in 20.50s ✅
 - Lower-confidence catalog matches render as distinct candidate datasets, warnings, or assumptions.
 - Descriptive/statistics prompts without a selected dataset ask the user to choose one dataset instead of requiring the whole library.
 - No Hermes/LLM call, backend persistence, dataset mutation, auto-run analysis, auto-join, SQL generation, package change, or SmartAnalysis change was added.
+
+## Phase 4B-9C: AI Workbench End-to-End QA & Polish
+
+- Audited the full AI Workbench flow from Dataset Catalog and Relationship Sets through planner narrowing, plan cards, prefill navigation, result handoff, safe summaries, deterministic follow-up, and Hermes dry-run opt-in safety.
+- Hardened plan navigation so plans with no confirmed required dataset no longer create empty prefill navigation.
+- Added plan-card copy clarifying required datasets vs candidate datasets.
+- Added a selected-dataset mismatch warning when a specific analysis question does not match the selected dataset's catalog signals.
+- Documented known limitations and manual QA coverage in the Phase 4B-9C log.
+- No Hermes/LLM call, backend persistence, dataset mutation, auto-run analysis, auto-join, SQL generation, package change, or SmartAnalysis change was added.

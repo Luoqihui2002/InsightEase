@@ -77,10 +77,11 @@ const FIELD_ROLE_LABELS: Record<string, string> = {
 
 export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
   const navigate = useNavigate();
+  const datasetIds = plan.required_dataset_ids ?? plan.required_datasets;
+  const hasRequiredDatasets = datasetIds.length > 0;
 
   const handleNavigate = (target?: string) => {
-    if (target) {
-      const datasetIds = plan.required_dataset_ids ?? plan.required_datasets;
+    if (target && hasRequiredDatasets) {
       const prefillKey = saveAnalysisPrefill({
         source: 'ai_workbench',
         plan_id: plan.id,
@@ -136,6 +137,9 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
               <ListChecks className="w-3 h-3" />
               所需数据集
             </div>
+            <p className="text-[11px] text-[var(--text-muted)] mb-2">
+              本次计划所需数据集是建议优先使用的输入，不会自动运行分析。
+            </p>
             <div className="flex flex-wrap gap-2">
               {plan.required_datasets.map((name) => (
                 <span
@@ -150,12 +154,27 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
         )}
 
         {/* 所需字段 */}
+        {plan.required_datasets.length === 0 && (
+          <div className="rounded-lg border border-amber-400/15 bg-amber-400/5 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-amber-400">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              尚未确认所需数据集
+            </div>
+            <p className="text-[11px] text-amber-400/80 mt-1">
+              请先从候选数据集或当前数据集选择一个明确输入，再进入分析页配置字段。
+            </p>
+          </div>
+        )}
+
         {plan.candidate_datasets && plan.candidate_datasets.length > 0 && (
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">
               <Info className="w-3 h-3" />
               候选数据集
             </div>
+            <p className="text-[11px] text-[var(--text-muted)] mb-2">
+              候选数据集由目录分类推荐，仍需用户确认；不会自动作为必需输入。
+            </p>
             <div className="space-y-1.5">
               {plan.candidate_datasets.map((candidate) => (
                 <div
@@ -347,11 +366,14 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
                 <button
                   key={i}
                   onClick={() => handleNavigate(action.target)}
+                  disabled={!hasRequiredDatasets}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                    'bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)] border border-[var(--neon-cyan)]/25',
-                    'hover:bg-[var(--neon-cyan)]/20'
+                    hasRequiredDatasets
+                      ? 'bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)] border border-[var(--neon-cyan)]/25 hover:bg-[var(--neon-cyan)]/20'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-not-allowed opacity-70'
                   )}
+                  title={hasRequiredDatasets ? undefined : '请先确认所需数据集，再进入分析页'}
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   {action.label}

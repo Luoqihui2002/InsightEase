@@ -1071,3 +1071,12 @@
 - Prevented broad full-library fallback from becoming `required_datasets`; low-confidence matches are advisory only.
 - Updated catalog and runtime adapter docs plus the Phase 4B-9B phase log.
 - No Hermes/LLM call, backend persistence, dataset mutation, auto-run analysis, auto-join, SQL generation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-9C: AI Workbench End-to-End QA & Polish
+
+- Audited Dataset Catalog, Relationship Set, planner, plan card, prefill, result handoff, safe summary, result follow-up, and Hermes dry-run opt-in paths.
+- Disabled plan-card navigation when the planner has no confirmed required dataset, preventing empty prefill payloads from descriptive/statistics prompts that need dataset confirmation.
+- Added clearer plan-card copy for required datasets and candidate datasets.
+- Added a selected-dataset mismatch warning when a specific analysis intent has weak catalog support in the selected dataset.
+- Added `docs/phase-logs/PHASE_4B_9C_AI_WORKBENCH_E2E_QA_AND_POLISH.md`.
+- No Hermes/LLM call, backend persistence, dataset mutation, auto-run analysis, auto-join, SQL generation, dependency, package-file, or SmartAnalysis changes.

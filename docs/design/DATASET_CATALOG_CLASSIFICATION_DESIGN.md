@@ -70,6 +70,8 @@ Planner rules:
 - catalog matches can become required datasets only when they are high-confidence and query-specific;
 - lower-confidence catalog matches are surfaced as candidate datasets, assumptions, or warnings;
 - descriptive/statistics requests without a selected dataset ask the user to choose one dataset instead of requiring the full library.
+- if a selected dataset has weak catalog support for a specific analysis intent, the planner keeps selected-dataset priority but warns the user to confirm or switch to a candidate.
+- plans without a confirmed required dataset should not create analysis-page prefill navigation.
 
 Catalog candidate ranking remains advisory. It does not execute analysis, join tables, generate SQL, or mutate datasets.
 
