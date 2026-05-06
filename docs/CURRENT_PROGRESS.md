@@ -1431,3 +1431,13 @@ cd app && npm run build        # built in 20.50s ✅
 - Existing result dialog, export/download, delete, deep-link opening for loaded items, and AI Workbench handoff are preserved.
 - Search/grouping operate over the currently loaded backend page only; no backend persistence or schema change was added.
 - No Hermes/LLM call, analysis rerun, SQL generation, dataset mutation, package-file, dependency, or SmartAnalysis change was added.
+
+## Phase 4B-10B: Workbench History Selector Alignment & Unified Searchable Selectors
+
+- Added a dependency-free `SearchableSelect` component for single-value searchable dropdowns.
+- Replaced split search+select controls in AI Workbench dataset and relationship set selectors.
+- Replaced the AI Workbench Context Panel history selector with a searchable dropdown using Analysis History Catalog metadata.
+- Updated Relationship Set management's active-set selector to the same searchable dropdown pattern.
+- Updated shared `DatasetSelector`, so SmartProcess/preprocessing-style dataset selection now uses one searchable control.
+- Preserved Datasets and History catalog page search/filter/grouping controls.
+- No Hermes/LLM call, backend behavior, analysis auto-run, dataset mutation, dependency, package-file, or SmartAnalysis change was added.

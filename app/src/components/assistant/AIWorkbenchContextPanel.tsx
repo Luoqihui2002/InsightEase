@@ -14,10 +14,17 @@ import {
   Table2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { DataTablePreview } from '@/components/data-display/DataTablePreview';
 import { analysisApi } from '@/api/analysis';
 import { datasetApi } from '@/api/datasets';
 import { buildSafeResultSummary } from '@/lib/assistant/safeResultSummary';
+import {
+  HISTORY_AI_READY_LABELS,
+  getAnalysisStatusLabel,
+  getAnalysisTypeLabel as getCatalogAnalysisTypeLabel,
+  inferAnalysisHistoryCatalogMetadata,
+} from '@/lib/historyCatalog';
 import { cn } from '@/lib/utils';
 import type {
   RelationshipSet,
@@ -184,7 +191,6 @@ export function AIWorkbenchContextPanel({
   const [historyItems, setHistoryItems] = useState<Analysis[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [historySearch, setHistorySearch] = useState('');
 
   const selectedDataset = useMemo(
     () => datasets.find((dataset) => dataset.id === selectedDatasetId),
@@ -202,18 +208,45 @@ export function AIWorkbenchContextPanel({
     ? getDatasetLabel(datasets.find((dataset) => dataset.id === selectedHistory.dataset_id))
     : undefined;
 
-  const filteredHistoryItems = useMemo(() => {
-    const query = historySearch.trim().toLowerCase();
-    if (!query) return historyItems;
-    return historyItems.filter((item) => {
-      const datasetName = datasets.find((dataset) => dataset.id === item.dataset_id)?.filename ?? '';
-      return (
-        getAnalysisTypeLabel(item.type).toLowerCase().includes(query) ||
-        datasetName.toLowerCase().includes(query) ||
-        item.status.toLowerCase().includes(query)
-      );
-    });
-  }, [datasets, historyItems, historySearch]);
+  const historySelectOptions = useMemo(
+    () =>
+      historyItems.map((item) => {
+        const datasetName = getDatasetLabel(datasets.find((dataset) => dataset.id === item.dataset_id));
+        const metadata = inferAnalysisHistoryCatalogMetadata(item, {
+          datasetsById: Object.fromEntries(
+            datasets.map((dataset) => [
+              dataset.id,
+              { id: dataset.id, filename: dataset.filename || dataset.name || dataset.id },
+            ])
+          ),
+        });
+        const typeLabel = getCatalogAnalysisTypeLabel(item.type);
+        const statusLabel = getAnalysisStatusLabel(item.status);
+        const aiReadyLabel = HISTORY_AI_READY_LABELS[metadata.ai_ready_status];
+        return {
+          value: item.id,
+          label: `${typeLabel} / ${datasetName}`,
+          description: `${statusLabel} · ${formatDate(item.created_at)}`,
+          badges: [statusLabel, aiReadyLabel],
+          keywords: [
+            item.id,
+            item.dataset_id,
+            item.type,
+            item.status,
+            datasetName,
+            typeLabel,
+            statusLabel,
+            aiReadyLabel,
+            item.created_at,
+            item.completed_at,
+            item.ai_interpretation,
+            ...(item.ai_recommendations ?? []),
+            ...metadata.labels,
+          ].filter((value): value is string => Boolean(value)),
+        };
+      }),
+    [datasets, historyItems]
+  );
 
   useEffect(() => {
     saveSectionState(sectionOpenStates);
@@ -374,15 +407,14 @@ export function AIWorkbenchContextPanel({
         )}
 
         <AnalysisHistoryContextWithPreview
-          historyItems={filteredHistoryItems}
+          historyItems={historyItems}
           allHistoryCount={historyItems.length}
           selectedHistory={selectedHistory}
           attachedResultSummary={attachedResultSummary}
           datasets={datasets}
           loading={historyLoading}
           error={historyError}
-          search={historySearch}
-          onSearchChange={setHistorySearch}
+          historyOptions={historySelectOptions}
           onSelect={onSelectAnalysisHistory}
           onClearAttachedResultSummary={onClearAttachedResultSummary}
           sectionOpenStates={sectionOpenStates}
@@ -846,8 +878,7 @@ function AnalysisHistoryContextWithPreview({
   datasets,
   loading,
   error,
-  search,
-  onSearchChange,
+  historyOptions,
   onSelect,
   onClearAttachedResultSummary,
   sectionOpenStates,
@@ -860,8 +891,13 @@ function AnalysisHistoryContextWithPreview({
   datasets: ContextDataset[];
   loading: boolean;
   error: string | null;
-  search: string;
-  onSearchChange: (value: string) => void;
+  historyOptions: Array<{
+    value: string;
+    label: string;
+    description?: string;
+    badges?: string[];
+    keywords?: string[];
+  }>;
   onSelect?: (analysisId?: string) => void;
   onClearAttachedResultSummary?: () => void;
   sectionOpenStates: Record<string, boolean>;
@@ -981,31 +1017,19 @@ function AnalysisHistoryContextWithPreview({
       </p>
 
       <div className="mt-3 space-y-2">
-        <input
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="搜索历史分析"
-          className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
-        />
-        <select
+        <SearchableSelect
           value={selectedHistory?.id ?? ''}
-          onChange={(event) => {
+          onChange={(value) => {
             onClearAttachedResultSummary?.();
-            onSelect?.(event.target.value || undefined);
+            onSelect?.(value || undefined);
           }}
-          className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-primary)]"
           disabled={loading || !onSelect}
-        >
-          <option value="">选择分析历史...</option>
-          {historyItems.map((item) => {
-            const itemDataset = datasets.find((dataset) => dataset.id === item.dataset_id);
-            return (
-              <option key={item.id} value={item.id}>
-                {getAnalysisTypeLabel(item.type)} / {getDatasetLabel(itemDataset)} / {formatDate(item.created_at)}
-              </option>
-            );
-          })}
-        </select>
+          options={historyOptions}
+          placeholder="选择或搜索分析历史..."
+          searchPlaceholder="选择或搜索分析历史..."
+          emptyText="未找到匹配的分析历史"
+          allowClear
+        />
       </div>
 
       {loading && (

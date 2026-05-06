@@ -257,6 +257,42 @@ Expected:
 - selected history shows `SafeResultSummary`;
 - raw `result_data` is not persisted in session storage.
 
+## Searchable Selector QA
+
+AI Workbench dataset selector:
+
+- click `选择或搜索数据集...`;
+- type `orders`, `user_id`, or a catalog label;
+- select a matching dataset;
+- clear the selection if the clear action is visible.
+
+AI Workbench relationship set selector:
+
+- click `选择或搜索关系组...`;
+- search by relationship set name, description, or included dataset name;
+- confirm `不使用关系组` remains available;
+- select a relationship set and verify the Context Panel updates.
+
+AI Workbench history selector:
+
+- open the Context Panel history section;
+- click `选择或搜索分析历史...`;
+- search by analysis type, dataset name/id, status, or AI-ready label;
+- select a history item and confirm `SafeResultSummary` appears;
+- ask a result follow-up prompt and confirm it stays deterministic.
+
+SmartProcess / preprocessing selector:
+
+- click the dataset selector;
+- type a dataset keyword;
+- select the dataset;
+- confirm existing preprocessing controls remain unchanged.
+
+Expected:
+
+- single-selection tasks use one searchable dropdown, not separate search and select controls;
+- Datasets and History catalog page searches are unchanged.
+
 ## History Catalog QA
 
 Open History and verify the analysis catalog controls:

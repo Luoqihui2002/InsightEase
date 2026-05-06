@@ -25,13 +25,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import {
   Dialog,
   DialogContent,
@@ -915,12 +909,29 @@ function RelationshipSetManagement({
   );
   const highRiskRelationships =
     activeSet?.relationships.filter((rel) => rel.risk_level === 'high') ?? [];
-  const [relationshipSetSearch, setRelationshipSetSearch] = useState('');
-  const filteredRelationshipSets = useMemo(() => {
-    const query = relationshipSetSearch.trim().toLowerCase();
-    if (!query) return relationshipSets;
-    return relationshipSets.filter((set) => set.name.toLowerCase().includes(query));
-  }, [relationshipSetSearch, relationshipSets]);
+  const relationshipSetOptions = useMemo(
+    () => [
+      {
+        value: NO_ACTIVE_SET_VALUE,
+        label: '不使用关系组',
+        description: '清空当前关系组上下文。',
+        keywords: ['不使用关系组', 'none'],
+      },
+      ...relationshipSets.map((set) => ({
+        value: set.id,
+        label: set.name,
+        description: `${set.dataset_nodes.filter((node) => node.included_in_context).length} 张表 · ${set.relationships.length} 条关系${set.description ? ` · ${set.description}` : ''}`,
+        badges: [`${set.relationships.length} 条关系`],
+        keywords: [
+          set.id,
+          set.name,
+          set.description,
+          ...set.dataset_nodes.map((node) => getNodeLabel(node)),
+        ].filter((item): item is string => Boolean(item)),
+      })),
+    ],
+    [relationshipSets]
+  );
 
   return (
     <section
@@ -958,33 +969,17 @@ function RelationshipSetManagement({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              value={relationshipSetSearch}
-              onChange={(event) => setRelationshipSetSearch(event.target.value)}
-              placeholder="搜索关系组"
-              className="w-[180px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
-            />
-            <Select
+            <SearchableSelect
+              className="w-[260px]"
               value={activeRelationshipSetId ?? NO_ACTIVE_SET_VALUE}
-              onValueChange={(value) =>
+              onChange={(value) =>
                 onSetActiveRelationshipSet(value === NO_ACTIVE_SET_VALUE ? undefined : value)
               }
-            >
-              <SelectTrigger className="w-[220px] bg-[var(--bg-secondary)] border-[var(--border-subtle)] text-[var(--text-primary)]">
-                <SelectValue placeholder="切换关系组" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_ACTIVE_SET_VALUE}>不使用关系组</SelectItem>
-                {filteredRelationshipSets.map((set) => (
-                  <SelectItem key={set.id} value={set.id}>
-                    {set.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {filteredRelationshipSets.length === 0 && (
-              <span className="text-xs text-[var(--text-muted)]">未找到匹配的关系组</span>
-            )}
+              options={relationshipSetOptions}
+              placeholder="选择或搜索关系组..."
+              searchPlaceholder="选择或搜索关系组..."
+              emptyText="未找到匹配的关系组"
+            />
 
             <Button
               variant="outline"
@@ -1020,7 +1015,7 @@ function RelationshipSetManagement({
 
         {relationshipSets.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {filteredRelationshipSets.map((set) => {
+                  {relationshipSets.map((set) => {
               const nodeCount =
                 set.dataset_nodes?.filter((node) => node.included_in_context).length ??
                 set.dataset_ids.length;

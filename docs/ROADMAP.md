@@ -574,3 +574,12 @@ Status: implemented.
 - Search and grouping help users find prior results by time, type, status, dataset, and AI-ready status.
 - Existing result dialog and AI Workbench handoff remain bounded by `SafeResultSummary`.
 - Remaining future work: server-side history search/pagination, reusable history selector for AI Workbench, and separately approved live Hermes result explanation.
+
+## Phase 4B-10B: Workbench History Selector Alignment & Unified Searchable Selectors
+
+Status: implemented.
+
+- Single-value selector UX now uses a shared searchable dropdown in AI Workbench and shared dataset selection.
+- AI Workbench history selection now reuses Analysis History Catalog metadata for searchable option labels, badges, and keywords.
+- Catalog pages keep their standalone search/filter/grouping controls.
+- Remaining future work: fuller combobox keyboard/a11y behavior, grouped selector options, and server-side history search after backend approval.

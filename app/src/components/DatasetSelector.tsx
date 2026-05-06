@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { datasetApi } from '@/api/datasets';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import type { Dataset } from '@/types/api';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface DatasetSelectorProps {
   value: string;
@@ -12,7 +13,6 @@ interface DatasetSelectorProps {
 export function DatasetSelector({ value, onChange, placeholder = "选择数据集" }: DatasetSelectorProps) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
 
   // 调试：监听 value 变化
   useEffect(() => {
@@ -49,18 +49,6 @@ export function DatasetSelector({ value, onChange, placeholder = "选择数据�
     };
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newValue = e.target.value;
-    console.log('DatasetSelector handleChange:', newValue);
-    onChange(newValue);
-  };
-
-  const filteredDatasets = datasets.filter((dataset) => {
-    const query = searchTerm.trim().toLowerCase();
-    if (!query) return true;
-    return dataset.filename.toLowerCase().includes(query);
-  });
-
   return (
     <div className="relative">
       {loading ? (
@@ -73,59 +61,24 @@ export function DatasetSelector({ value, onChange, placeholder = "选择数据�
           <span className="text-sm">加载中...</span>
         </div>
       ) : (
-        <div className="space-y-2">
-          <input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="搜索数据集"
-            className="w-full focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/50"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '0.375rem',
-              padding: '0.5rem 0.75rem',
-              fontSize: '0.875rem'
-            }}
-          />
-          <div className="relative">
-          <select
-            value={value}
-            onChange={handleChange}
-            className="w-full appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/50"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              color: value ? 'var(--text-primary)' : 'var(--text-muted)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '0.375rem',
-              padding: '0.5rem 2rem 0.5rem 0.75rem',
-              fontSize: '0.875rem'
-            }}
-          >
-            <option value="" disabled style={{ color: 'var(--text-muted)' }}>
-              {placeholder}
-            </option>
-            {filteredDatasets.map((dataset) => (
-              <option 
-                key={dataset.id} 
-                value={dataset.id}
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {dataset.filename} ({dataset.row_count}行)
-              </option>
-            ))}
-            {filteredDatasets.length === 0 && (
-              <option value="" disabled style={{ color: 'var(--text-muted)' }}>
-                未找到匹配的数据集
-              </option>
-            )}
-          </select>
-          <ChevronDown 
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" 
-            style={{ color: 'var(--text-muted)' }}
-          />
-          </div>
-        </div>
+        <SearchableSelect
+          value={value || undefined}
+          onChange={(nextValue) => onChange(nextValue ?? '')}
+          options={datasets.map((dataset) => ({
+            value: dataset.id,
+            label: dataset.filename,
+            description: `${dataset.row_count?.toLocaleString() ?? '-'} 行 · ${dataset.col_count ?? '-'} 列`,
+            keywords: [
+              dataset.id,
+              dataset.filename,
+              ...(dataset.schema ?? []).map((field) => field.name),
+            ],
+          }))}
+          placeholder={placeholder || '选择或搜索数据集...'}
+          searchPlaceholder="选择或搜索数据集..."
+          emptyText="未找到匹配的数据集"
+          allowClear
+        />
       )}
     </div>
   );

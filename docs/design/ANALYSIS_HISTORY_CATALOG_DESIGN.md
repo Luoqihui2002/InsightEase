@@ -53,6 +53,14 @@ History currently loads one backend page of analysis records. Grouping and searc
 
 This avoids new backend behavior and keeps the phase low risk. A future phase can add server-side search or full-history pagination if needed.
 
+## AI Workbench Selector Use
+
+Phase 4B-10B reuses Analysis History Catalog metadata in the AI Workbench Context Panel history selector.
+
+The selector is a single searchable dropdown. It can match analysis type, status, dataset id/name, created time, AI-ready label, and bounded safe-summary labels/result keys.
+
+The History page itself keeps its standalone catalog search/filter/grouping controls because it is a list browsing surface, not a single-value selector.
+
 ## Safety Rules
 
 - No Hermes/LLM call.

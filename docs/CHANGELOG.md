@@ -1101,3 +1101,13 @@
 - Added `docs/phase-logs/PHASE_4B_10A_ANALYSIS_HISTORY_CATALOG_GROUPED_VIEWS.md`.
 - Updated AI Workbench QA recipes and demo scenarios with History Catalog checks.
 - No Hermes/LLM call, backend persistence, analysis rerun, SQL generation, dataset mutation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-10B: Workbench History Selector Alignment & Unified Searchable Selectors
+
+- Added `app/src/components/ui/SearchableSelect.tsx`.
+- Replaced split search+select controls in AI Workbench dataset and relationship set selectors.
+- Replaced AI Workbench history selection with a searchable dropdown backed by Analysis History Catalog metadata.
+- Updated Relationship Set management active-set selector to use the same searchable selector.
+- Updated shared `DatasetSelector` so SmartProcess/preprocessing-style dataset selection uses one searchable control.
+- Added `docs/phase-logs/PHASE_4B_10B_WORKBENCH_HISTORY_SELECTOR_AND_SEARCHABLE_SELECTORS.md`.
+- No Hermes/LLM call, backend change, analysis auto-run, dataset mutation, dependency, package-file, or SmartAnalysis changes.

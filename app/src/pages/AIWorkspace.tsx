@@ -24,9 +24,15 @@ import { AIWorkbenchContextPanel } from '@/components/assistant/AIWorkbenchConte
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import { GuidedQuickAnalysisPanel } from '@/components/assistant/GuidedQuickAnalysisPanel';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { getAssistantRuntimeProvider } from '@/lib/assistant/assistantRuntimeConfig';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
-import { inferDatasetCatalogMetadata } from '@/lib/datasetCatalog';
+import {
+  ANALYSIS_TAG_LABELS,
+  BUSINESS_CATEGORY_LABELS,
+  DATA_TYPE_LABELS,
+  inferDatasetCatalogMetadata,
+} from '@/lib/datasetCatalog';
 import {
   AI_WORKBENCH_HANDOFF_EVENT,
   DEFAULT_RESULT_FOLLOWUP_PROMPTS,
@@ -255,8 +261,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const [resultFollowupPrompts, setResultFollowupPrompts] = useState<string[]>(
     restoredSession?.result_followup_prompts ?? []
   );
-  const [datasetSearch, setDatasetSearch] = useState('');
-  const [relationshipSetSearch, setRelationshipSetSearch] = useState('');
 
   const assistantContext = useAssistantContext();
   const activeRelationshipSet = assistantContext.getActiveRelationshipSet();
@@ -264,16 +268,53 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     () => datasets.map((dataset) => inferDatasetCatalogMetadata(dataset)),
     [datasets]
   );
-  const filteredDatasets = useMemo(() => {
-    const query = datasetSearch.trim().toLowerCase();
-    if (!query) return datasets;
-    return datasets.filter((dataset) => dataset.filename.toLowerCase().includes(query));
-  }, [datasetSearch, datasets]);
-  const filteredRelationshipSets = useMemo(() => {
-    const query = relationshipSetSearch.trim().toLowerCase();
-    if (!query) return assistantContext.relationshipSets;
-    return assistantContext.relationshipSets.filter((set) => set.name.toLowerCase().includes(query));
-  }, [assistantContext.relationshipSets, relationshipSetSearch]);
+  const datasetSelectOptions = useMemo(
+    () =>
+      datasets.map((dataset) => {
+        const catalog = inferDatasetCatalogMetadata(dataset);
+        const categoryLabel = BUSINESS_CATEGORY_LABELS[catalog.business_category];
+        const typeLabel = DATA_TYPE_LABELS[catalog.data_type];
+        const analysisLabels = catalog.analysis_tags.map((tag) => ANALYSIS_TAG_LABELS[tag]);
+        return {
+          value: dataset.id,
+          label: dataset.filename,
+          description: `${dataset.row_count?.toLocaleString() ?? '-'} 行 · ${dataset.col_count ?? '-'} 列`,
+          badges: [categoryLabel, typeLabel],
+          keywords: [
+            dataset.id,
+            dataset.filename,
+            categoryLabel,
+            typeLabel,
+            ...analysisLabels,
+            ...(dataset.schema ?? []).map((field) => field.name),
+          ],
+        };
+      }),
+    [datasets]
+  );
+  const relationshipSetOptions = useMemo(
+    () => [
+      {
+        value: '__none__',
+        label: '不使用关系组',
+        description: '仅使用当前数据集或目录候选，不附加关系组上下文。',
+        keywords: ['不使用关系组', 'none'],
+      },
+      ...assistantContext.relationshipSets.map((set) => ({
+        value: set.id,
+        label: set.name,
+        description: `${set.dataset_nodes.filter((node) => node.included_in_context).length} 张表 · ${set.relationships.length} 条关系${set.description ? ` · ${set.description}` : ''}`,
+        badges: [`${set.relationships.length} 条关系`],
+        keywords: [
+          set.id,
+          set.name,
+          set.description,
+          ...set.dataset_nodes.map((node) => node.dataset_name || node.filename || node.dataset_id),
+        ].filter((item): item is string => Boolean(item)),
+      })),
+    ],
+    [assistantContext.relationshipSets]
+  );
   const activeResultSummary = useMemo(
     () => attachedResultSummary ?? selectedAnalysisHistorySummary ?? null,
     [attachedResultSummary, selectedAnalysisHistorySummary]
@@ -890,53 +931,32 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             {/* 数据集选择 */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Database className="w-4 h-4 text-[var(--text-muted)]" />
-              <div className="flex flex-col gap-1">
-                <input
-                  value={datasetSearch}
-                  onChange={(e) => setDatasetSearch(e.target.value)}
-                  placeholder="搜索数据集"
-                  className="px-2 py-1 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-primary)] w-[150px] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
-                />
-                <select
-                  value={selectedDataset || ''}
-                  onChange={(e) => setSelectedDataset(e.target.value || null)}
-                  className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] w-[150px]"
-                >
-                <option value="">选择数据集...</option>
-                {filteredDatasets.map(d => (
-                  <option key={d.id} value={d.id}>{d.filename}</option>
-                ))}
-                {filteredDatasets.length === 0 && (
-                  <option value="" disabled>未找到匹配的数据集</option>
-                )}
-              </select>
-              </div>
+              <SearchableSelect
+                className="w-[190px]"
+                value={selectedDataset ?? undefined}
+                options={datasetSelectOptions}
+                placeholder="选择或搜索数据集..."
+                searchPlaceholder="选择或搜索数据集..."
+                emptyText="未找到匹配的数据集"
+                allowClear
+                onChange={(value) => setSelectedDataset(value ?? null)}
+              />
             </div>
 
             {/* 关系组选择 */}
             <div className="flex items-center gap-2 flex-shrink-0" title="关系组用于告诉助手哪些表关系可以作为分析上下文；不会自动 join。">
               <GitBranch className="w-4 h-4 text-[var(--text-muted)]" />
-              <div className="flex flex-col gap-1">
-                <input
-                  value={relationshipSetSearch}
-                  onChange={(e) => setRelationshipSetSearch(e.target.value)}
-                  placeholder="搜索关系组"
-                  className="px-2 py-1 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-primary)] w-[180px] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
-                />
-                <select
-                  value={assistantContext.activeRelationshipSetId || ''}
-                  onChange={(e) => assistantContext.setActiveRelationshipSet(e.target.value || undefined)}
-                  className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] w-[180px]"
-                >
-                <option value="">不使用关系组</option>
-                {filteredRelationshipSets.map((set) => (
-                  <option key={set.id} value={set.id}>{set.name}</option>
-                ))}
-                {filteredRelationshipSets.length === 0 && (
-                  <option value="" disabled>未找到匹配的关系组</option>
-                )}
-              </select>
-              </div>
+              <SearchableSelect
+                className="w-[220px]"
+                value={assistantContext.activeRelationshipSetId || '__none__'}
+                options={relationshipSetOptions}
+                placeholder="选择或搜索关系组..."
+                searchPlaceholder="选择或搜索关系组..."
+                emptyText="未找到匹配的关系组"
+                onChange={(value) =>
+                  assistantContext.setActiveRelationshipSet(!value || value === '__none__' ? undefined : value)
+                }
+              />
             </div>
 
             {/* 布局切换 - 左右排版 | 上下排版 */}

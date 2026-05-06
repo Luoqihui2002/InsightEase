@@ -93,3 +93,18 @@ Behavior:
 AI Workbench now defaults to horizontal side-by-side layout when no saved preference exists. Saved user layout preference is still preserved.
 
 When a result context is attached, supported follow-up prompts are answered deterministically from `SafeResultSummary`; unsupported prompts continue to the normal planner path.
+
+## Phase 4B-10B Update: Searchable History Selector
+
+The analysis history selector in the Context Panel now uses a single searchable dropdown instead of a separate search input and native select.
+
+History options use deterministic Analysis History Catalog metadata:
+
+- analysis type label;
+- status label;
+- dataset id/name;
+- created time;
+- AI-ready label;
+- bounded safe-summary labels and result keys.
+
+Selecting a history item still only prepares bounded result context. It does not rerun analysis or generate an AI explanation.
