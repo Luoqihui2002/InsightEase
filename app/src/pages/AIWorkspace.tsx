@@ -6,7 +6,7 @@
  * - 左右布局(horizontal)：AI工作台在左(62%)，数据预览在右(38%)
  */
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   X, Send, Sparkles, BarChart3, TrendingUp, 
@@ -249,6 +249,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const [attachedResultSummary, setAttachedResultSummary] = useState<SafeResultSummary | undefined>(
     restoredSession?.attached_result_summary
   );
+  const [selectedAnalysisHistorySummary, setSelectedAnalysisHistorySummary] = useState<SafeResultSummary | undefined>(
+    undefined
+  );
   const [resultFollowupPrompts, setResultFollowupPrompts] = useState<string[]>(
     restoredSession?.result_followup_prompts ?? []
   );
@@ -271,6 +274,22 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     if (!query) return assistantContext.relationshipSets;
     return assistantContext.relationshipSets.filter((set) => set.name.toLowerCase().includes(query));
   }, [assistantContext.relationshipSets, relationshipSetSearch]);
+  const activeResultSummary = useMemo(
+    () => attachedResultSummary ?? selectedAnalysisHistorySummary ?? null,
+    [attachedResultSummary, selectedAnalysisHistorySummary]
+  );
+  const handleSelectAnalysisHistory = useCallback((analysisId?: string) => {
+    setSelectedAnalysisHistoryId(analysisId);
+    if (analysisId) {
+      setResultFollowupPrompts(DEFAULT_RESULT_FOLLOWUP_PROMPTS);
+      return;
+    }
+    setSelectedAnalysisHistorySummary(undefined);
+    setResultFollowupPrompts([]);
+  }, []);
+  const handleActiveResultSummaryChange = useCallback((summary?: SafeResultSummary) => {
+    setSelectedAnalysisHistorySummary(summary);
+  }, []);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -484,7 +503,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           confirmed_relationships: activeSetRelationships,
           relationship_set: activeRelationshipSet,
           available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
-          analysis_history_summary: attachedResultSummary,
+          analysis_history_summary: activeResultSummary ?? undefined,
           dataset_catalog: datasetCatalog,
           datasets: datasets.map((d) => ({
             id: d.id,
@@ -599,25 +618,25 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
     const userMsg = inputValue.trim();
     setInputValue('');
-    if (attachedResultSummary) {
-      const followupIntent = detectResultFollowupIntent(userMsg);
-      if (followupIntent !== 'unknown') {
-        const userMessage: Message = {
-          id: Date.now().toString(),
-          role: 'user',
-          content: userMsg,
-          timestamp: new Date(),
-        };
-        const responseMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: buildResultFollowupResponse(attachedResultSummary, followupIntent),
-          type: 'text',
-          timestamp: new Date(),
-        };
-        updateCurrentSession([...messages, userMessage, responseMessage]);
-        return;
-      }
+    const followupIntent = detectResultFollowupIntent(userMsg);
+    if (followupIntent !== 'unknown') {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: userMsg,
+        timestamp: new Date(),
+      };
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: activeResultSummary
+          ? buildResultFollowupResponse(activeResultSummary, followupIntent)
+          : '我还没有看到需要解释的分析结果。请先从历史结果中选择一条，或从结果页点击「带到 AI 工作台 / 让 AI 解读这个结果」。',
+        type: 'text',
+        timestamp: new Date(),
+      };
+      updateCurrentSession([...messages, userMessage, responseMessage]);
+      return;
     }
     generatePlanForQuestion(userMsg);
   };
@@ -670,7 +689,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           confirmed_relationships: activeSetRelationships,
           relationship_set: activeRelationshipSet,
           available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
-          analysis_history_summary: attachedResultSummary,
+          analysis_history_summary: activeResultSummary ?? undefined,
           dataset_catalog: datasetCatalog,
           datasets: datasets.map((d) => ({
             id: d.id,
@@ -794,10 +813,11 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             onSelectDataset={(datasetId) => setSelectedDataset(datasetId)}
             selectedAnalysisHistoryId={selectedAnalysisHistoryId}
             attachedResultSummary={attachedResultSummary}
-            onSelectAnalysisHistory={setSelectedAnalysisHistoryId}
+            onSelectAnalysisHistory={handleSelectAnalysisHistory}
+            onActiveResultSummaryChange={handleActiveResultSummaryChange}
             onClearAttachedResultSummary={() => {
               setAttachedResultSummary(undefined);
-              setResultFollowupPrompts([]);
+              if (!selectedAnalysisHistorySummary) setResultFollowupPrompts([]);
             }}
           />
         )}
@@ -1064,13 +1084,18 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                 {!isLoading && (
                   <div className="px-4 pt-3 pb-0 flex-shrink-0">
                     <div className="flex flex-wrap gap-2">
-                      {(resultFollowupPrompts.length > 0 ? resultFollowupPrompts : [
-                        '预测未来销售额趋势',
-                        '分析各渠道转化率',
-                        '找出数据中的异常值',
-                        '统计各列描述性指标',
-                        '分析用户行为路径',
-                      ]).map((prompt) => (
+                      {(activeResultSummary
+                        ? resultFollowupPrompts.length > 0
+                          ? resultFollowupPrompts
+                          : DEFAULT_RESULT_FOLLOWUP_PROMPTS
+                        : [
+                            '预测未来销售额趋势',
+                            '分析各渠道转化率',
+                            '生成数据质量检查计划',
+                            '统计各列描述性指标',
+                            '分析用户行为路径',
+                          ]
+                      ).map((prompt) => (
                         <button
                           key={prompt}
                           onClick={() => {
@@ -1389,10 +1414,11 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             onSelectDataset={(datasetId) => setSelectedDataset(datasetId)}
             selectedAnalysisHistoryId={selectedAnalysisHistoryId}
             attachedResultSummary={attachedResultSummary}
-            onSelectAnalysisHistory={setSelectedAnalysisHistoryId}
+            onSelectAnalysisHistory={handleSelectAnalysisHistory}
+            onActiveResultSummaryChange={handleActiveResultSummaryChange}
             onClearAttachedResultSummary={() => {
               setAttachedResultSummary(undefined);
-              setResultFollowupPrompts([]);
+              if (!selectedAnalysisHistorySummary) setResultFollowupPrompts([]);
             }}
           />
         )}

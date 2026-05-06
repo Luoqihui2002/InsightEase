@@ -57,6 +57,7 @@ interface AIWorkbenchContextPanelProps {
   attachedResultSummary?: SafeResultSummary;
   onSelectDataset?: (datasetId: string) => void;
   onSelectAnalysisHistory?: (analysisId?: string) => void;
+  onActiveResultSummaryChange?: (summary?: SafeResultSummary) => void;
   onClearAttachedResultSummary?: () => void;
 }
 
@@ -174,6 +175,7 @@ export function AIWorkbenchContextPanel({
   attachedResultSummary,
   onSelectDataset,
   onSelectAnalysisHistory,
+  onActiveResultSummaryChange,
   onClearAttachedResultSummary,
 }: AIWorkbenchContextPanelProps) {
   const [previewCache, setPreviewCache] = useState<Record<string, PreviewState>>({});
@@ -196,6 +198,9 @@ export function AIWorkbenchContextPanel({
   const relationships = activeRelationshipSet?.relationships ?? [];
   const highRiskRelationships = relationships.filter((rel) => rel.risk_level === 'high');
   const selectedHistory = historyItems.find((item) => item.id === selectedAnalysisHistoryId);
+  const selectedHistoryDatasetName = selectedHistory
+    ? getDatasetLabel(datasets.find((dataset) => dataset.id === selectedHistory.dataset_id))
+    : undefined;
 
   const filteredHistoryItems = useMemo(() => {
     const query = historySearch.trim().toLowerCase();
@@ -213,6 +218,17 @@ export function AIWorkbenchContextPanel({
   useEffect(() => {
     saveSectionState(sectionOpenStates);
   }, [sectionOpenStates]);
+
+  useEffect(() => {
+    if (!onActiveResultSummaryChange) return;
+    if (!selectedHistory) {
+      onActiveResultSummaryChange(undefined);
+      return;
+    }
+    onActiveResultSummaryChange(
+      buildSafeResultSummary(selectedHistory, { dataset_name: selectedHistoryDatasetName })
+    );
+  }, [onActiveResultSummaryChange, selectedHistory, selectedHistoryDatasetName]);
 
   useEffect(() => {
     let mounted = true;
