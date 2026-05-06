@@ -361,9 +361,44 @@ Expected:
 - no analysis reruns;
 - follow-up prompts are available.
 
-Known current limitation:
+### From Forecast
 
-- Forecast, PathAnalysis, and Attribution direct result-to-Workbench buttons are not yet wired. Use History for those result types.
+1. Run or open a Forecast result in the normal way.
+2. Click `带到 AI 工作台`.
+
+Expected:
+
+- AI Workbench opens;
+- right Context Panel shows forecast result context;
+- no forecast analysis reruns;
+- no explanation is auto-generated;
+- follow-up prompts are available.
+
+### From PathAnalysis
+
+1. Run a path, funnel, clustering, key-path, or sequence-mining analysis.
+2. Click `带到 AI 工作台`.
+
+Expected:
+
+- AI Workbench opens;
+- right Context Panel shows path-analysis result context;
+- no path analysis reruns;
+- no explanation is auto-generated;
+- follow-up prompts are available.
+
+### From Attribution
+
+1. Run or open an Attribution result in the normal way.
+2. Click `带到 AI 工作台`.
+
+Expected:
+
+- AI Workbench opens;
+- right Context Panel shows attribution result context;
+- no attribution analysis reruns;
+- no explanation is auto-generated;
+- follow-up prompts are available.
 
 ## Result Follow-up QA
 
@@ -463,6 +498,6 @@ Regression:
 - Relationship Sets are local assistant context and do not execute joins.
 - Browser-local session state can still become stale after schema changes or deleted datasets; start a new conversation if context looks confusing.
 - Result follow-up is summary-based, not live AI interpretation.
-- Forecast, PathAnalysis, and Attribution direct result-to-Workbench buttons are not yet wired.
+- PathAnalysis direct handoff uses a local summary id when quick endpoint results do not expose a backend history id.
 - Semantic/DataWorkshop prefill remains future work.
 - Hermes live integration remains a separate future phase.

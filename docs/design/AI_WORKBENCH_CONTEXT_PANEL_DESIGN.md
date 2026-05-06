@@ -121,3 +121,15 @@ The shared selector used by the Context Panel history picker now has lightweight
 - Trigger, listbox, and options expose basic ARIA attributes.
 
 This remains a local, dependency-free selector. It is not yet a full portal-based design-system combobox.
+
+## Phase 4B-10D Update: Result Page Handoff Coverage
+
+AI Workbench can now receive direct safe result handoffs from:
+
+- History result dialogs;
+- Statistics result pages;
+- Forecast result pages;
+- PathAnalysis result pages;
+- Attribution result pages.
+
+The Context Panel continues to render only bounded `SafeResultSummary` context. Opening AI Workbench from a result page does not rerun analysis and does not generate an explanation until the user asks a follow-up prompt.

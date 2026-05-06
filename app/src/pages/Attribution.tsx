@@ -10,6 +10,7 @@ import {
   BarChart3,
   GitBranch,
   Loader2,
+  Brain,
   Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import { DatasetSelector } from '@/components/DatasetSelector';
 import { DataTypeValidation } from '@/components/DataTypeValidation';
 import { analysisApi } from '@/api/analysis';
 import { datasetApi } from '@/api/datasets';
-import type { Dataset } from '@/types/api';
+import type { Analysis, Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from "@/components/ui/select";
@@ -29,6 +30,7 @@ import {
 } from '@/components/analysis';
 import { ResultView } from '@/components/results';
 import { toAttributionAnalysisResult } from '@/lib/adapters/attributionResultAdapter';
+import { handoffAnalysisResultToWorkbench } from '@/lib/assistant/resultHandoffActions';
 import {
   clearAnalysisPrefill,
   getFirstExactSuggestedColumn,
@@ -154,6 +156,7 @@ export function Attribution() {
   const [datasetInfo, setDatasetInfo] = useState<Dataset | null>(null);
   const [columns, setColumns] = useState<ColumnInfo[]>([]);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [completedAnalysis, setCompletedAnalysis] = useState<Analysis | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   // 归因分析配置
@@ -306,6 +309,7 @@ export function Attribution() {
     setIsAnalyzing(true);
     setShowResult(false);
     setAnalysisResult(null);
+    setCompletedAnalysis(null);
 
     try {
       const params: any = {
@@ -346,6 +350,7 @@ export function Attribution() {
         const res = await analysisApi.getResult(analysisId) as any;
         
         if (res.data?.status === 'completed') {
+          setCompletedAnalysis(res.data as Analysis);
           setAnalysisResult(res.data?.result_data);
           setShowResult(true);
           setIsAnalyzing(false);
@@ -368,6 +373,28 @@ export function Attribution() {
     };
 
     setTimeout(checkResult, 1000);
+  };
+
+  const handleSendToAIWorkbench = () => {
+    if (!analysisResult || !selectedDataset) return;
+
+    handoffAnalysisResultToWorkbench({
+      analysis: completedAnalysis,
+      analysisId: completedAnalysis?.id,
+      analysisType: 'attribution',
+      datasetId: selectedDataset,
+      datasetName: datasetInfo?.filename,
+      resultData: analysisResult,
+      params: {
+        user_id_col: userIdCol,
+        touchpoint_col: touchpointCol,
+        timestamp_col: timestampCol,
+        conversion_col: conversionCol,
+        conversion_value_col: conversionValueCol,
+        models: selectedModels,
+      },
+    });
+    toast.success('已带到 AI 工作台，不会自动生成解释');
   };
 
   const handleExportCSV = () => {
@@ -759,7 +786,18 @@ export function Attribution() {
           emptyTitle="配置分析参数并启动"
           emptyDescription="归因分析结果将在此显示"
           actions={showResult ? (
-            <AnalysisActionBar onExportCSV={handleExportCSV} />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSendToAIWorkbench}
+                title="将安全结果摘要带入 AI 工作台，不会重新运行分析。"
+              >
+                <Brain className="w-4 h-4" />
+                带到 AI 工作台
+              </Button>
+              <AnalysisActionBar onExportCSV={handleExportCSV} />
+            </div>
           ) : undefined}
         >
           {showResult && (

@@ -1119,3 +1119,12 @@
 - Improved close/reset consistency, click-outside handling, dropdown z-index, scroll bounds, highlighted styling, and long option badge truncation.
 - Added `docs/phase-logs/PHASE_4B_10C_SEARCHABLE_SELECT_QA_ACCESSIBILITY_POLISH.md`.
 - No Hermes/LLM call, backend change, assistant planning change, dataset mutation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-10D: Forecast / Path / Attribution Result-to-Workbench Handoff
+
+- Added `app/src/lib/assistant/resultHandoffActions.ts` for shared page-local result handoff.
+- Added direct `带到 AI 工作台` actions to Forecast, PathAnalysis, and Attribution result pages.
+- Forecast and Attribution now preserve completed backend `Analysis` metadata after polling for safer summaries.
+- PathAnalysis uses bounded local summary metadata because quick endpoint results do not expose a history analysis id in the current page flow.
+- Updated QA/design/progress documentation and added `docs/phase-logs/PHASE_4B_10D_RESULT_PAGE_AI_WORKBENCH_HANDOFF.md`.
+- No Hermes/LLM call, automatic explanation, analysis rerun, backend change, dataset mutation, dependency, package-file, or SmartAnalysis changes.

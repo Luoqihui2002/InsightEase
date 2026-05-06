@@ -75,6 +75,18 @@ The handoff payload may include:
 
 The payload must not include raw `result_data`.
 
+## Phase 4B-10D Result Page Handoff
+
+Forecast, PathAnalysis, and Attribution result pages can now create direct AI Workbench handoff payloads.
+
+Rules:
+
+- Use completed backend `Analysis` metadata when available.
+- Use a minimal Analysis-like object for page-local results when no backend analysis id is exposed.
+- Build and persist only `SafeResultSummary`.
+- Do not persist raw result payloads to AI Workbench storage.
+- Do not rerun analysis or auto-generate explanations during handoff.
+
 ## Phase 4B-8J Result Follow-up Mode
 
 AI Workbench now uses `SafeResultSummary` for deterministic follow-up responses.

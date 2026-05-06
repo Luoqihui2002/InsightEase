@@ -12,6 +12,7 @@ import {
   Download,
   RotateCcw,
   AlertCircle,
+  Brain,
   Info,
   Target,
   Layers,
@@ -33,6 +34,7 @@ import { toast } from 'sonner';
 import * as echarts from 'echarts';
 import { ResultView } from '@/components/results';
 import { toPathAnalysisResult } from '@/lib/adapters/pathAnalysisResultAdapter';
+import { handoffAnalysisResultToWorkbench } from '@/lib/assistant/resultHandoffActions';
 import { getChartColors, withAlpha } from '@/hooks/useChartColors';
 import {
   clearAnalysisPrefill,
@@ -827,6 +829,24 @@ export function PathAnalysis() {
       setFunnelSteps(funnelSteps.filter((_, i) => i !== index));
     }
   };
+
+  const handleSendToAIWorkbench = () => {
+    if (!result || !selectedDataset) return;
+
+    handoffAnalysisResultToWorkbench({
+      analysisType: 'path_analysis',
+      datasetId: selectedDataset,
+      datasetName: datasetInfo?.filename,
+      resultData: result,
+      params: {
+        path_type: pathType,
+        user_id_col: userIdCol,
+        event_col: eventCol,
+        timestamp_col: timestampCol,
+      },
+    });
+    toast.success('已带到 AI 工作台，不会自动生成解释');
+  };
   
   return (
     <AnalysisPageShell
@@ -1518,6 +1538,16 @@ export function PathAnalysis() {
 
               {/* 下载工具栏 */}
               <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-[var(--neon-cyan)] text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/10"
+                  title="将安全结果摘要带入 AI 工作台，不会重新运行分析。"
+                  onClick={handleSendToAIWorkbench}
+                >
+                  <Brain className="w-4 h-4 mr-2" />
+                  带到 AI 工作台
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"

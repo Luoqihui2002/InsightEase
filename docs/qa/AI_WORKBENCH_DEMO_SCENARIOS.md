@@ -88,6 +88,28 @@ Expected:
 - response copy says no analysis is rerun;
 - no Hermes/LLM endpoint is called in default mode.
 
+## Scenario C2: Result Page -> AI Workbench Follow-up
+
+Goal: show direct result-page handoff without going through History.
+
+Steps:
+
+1. Open Forecast, PathAnalysis, or Attribution.
+2. Run a normal local analysis until a result is visible.
+3. Click `带到 AI 工作台`.
+4. Confirm AI Workbench opens with result context in the right panel.
+5. Ask: `帮我解释这个结果`.
+6. Ask: `有哪些异常或风险？`.
+
+Expected:
+
+- the result page does not rerun analysis;
+- AI Workbench attaches only `SafeResultSummary`;
+- no raw result payload is persisted in the handoff storage;
+- no explanation is generated until the user asks;
+- follow-up responses are deterministic and summary-based;
+- no Hermes/LLM endpoint is called in default mode.
+
 ## Scenario D: Safety Regression
 
 Goal: quickly confirm the safest failure paths after future planner or runtime work.

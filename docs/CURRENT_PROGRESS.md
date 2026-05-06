@@ -1450,3 +1450,12 @@ cd app && npm run build        # built in 20.50s ✅
 - Improved dropdown layering, scroll bounds, highlighted option styling, and long badge/label truncation.
 - Preserved all current selector usages and kept Datasets/History catalog page search controls unchanged.
 - No Hermes/LLM call, backend behavior, assistant planning logic, dataset mutation, dependency, package-file, or SmartAnalysis change was added.
+
+## Phase 4B-10D: Forecast / Path / Attribution Result-to-Workbench Handoff
+
+- Added a shared page-level result handoff helper that builds `SafeResultSummary` and dispatches the existing AI Workbench handoff payload.
+- Forecast results now expose `带到 AI 工作台` when a completed forecast or batch forecast result exists.
+- PathAnalysis results now expose `带到 AI 工作台` beside CSV export and use a local Analysis-like summary source when no backend analysis id is available.
+- Attribution results now preserve completed backend analysis metadata and expose `带到 AI 工作台` beside export.
+- Existing History and Statistics handoff behavior remains unchanged.
+- No Hermes/LLM call, automatic explanation, analysis rerun, backend change, dataset mutation, dependency, package-file, or SmartAnalysis change was added.

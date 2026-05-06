@@ -592,3 +592,12 @@ Status: implemented.
 - Basic combobox/listbox ARIA semantics and accessible search input labeling are in place.
 - Dropdown close/reset behavior, click-outside handling, layering, scrolling, and long option rendering have been polished across current usages.
 - Remaining future work: optional portal rendering, grouped options, async/server-side selector search, and automated browser accessibility smoke tests.
+
+## Phase 4B-10D: Forecast / Path / Attribution Result-to-Workbench Handoff
+
+Status: implemented.
+
+- Forecast, PathAnalysis, and Attribution result pages now support direct handoff to AI Workbench.
+- Handoff uses the existing `SafeResultSummary` boundary and AI Workbench handoff payload.
+- No explanation is generated automatically and no analysis reruns.
+- Remaining future work: browser smoke tests for result handoff flows and handoff coverage for any remaining normalized result surfaces.

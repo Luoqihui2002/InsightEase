@@ -25,11 +25,12 @@ import { DatasetSelector } from '@/components/DatasetSelector';
 import { DataTypeValidation } from '@/components/DataTypeValidation';
 import { analysisApi } from '@/api/analysis';
 import { datasetApi } from '@/api/datasets';
-import type { Dataset } from '@/types/api';
+import type { Analysis, Dataset } from '@/types/api';
 import { toast } from 'sonner';
 import gsap from 'gsap';
 import { ResultView } from '@/components/results';
 import { toForecastAnalysisResult } from '@/lib/adapters/forecastResultAdapter';
+import { handoffAnalysisResultToWorkbench } from '@/lib/assistant/resultHandoffActions';
 import {
   clearAnalysisPrefill,
   getFirstExactSuggestedColumn,
@@ -166,6 +167,7 @@ export function Forecast() {
   const [batchResult, setBatchResult] = useState<any>(null);
   
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [completedAnalysis, setCompletedAnalysis] = useState<Analysis | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -295,6 +297,7 @@ export function Forecast() {
       setIsAnalyzing(true);
       setShowResult(false);
       setBatchResult(null);
+      setCompletedAnalysis(null);
       
       try {
         const params: any = { 
@@ -327,6 +330,7 @@ export function Forecast() {
     setIsAnalyzing(true);
     setShowResult(false);
     setAnalysisResult(null);
+    setCompletedAnalysis(null);
 
     try {
       const allPromotions = [...DEFAULT_PROMOTIONS, ...customPromotions];
@@ -425,6 +429,7 @@ export function Forecast() {
         const res = await analysisApi.getResult(analysisId) as any;
         
         if (res.data?.status === 'completed') {
+          setCompletedAnalysis(res.data as Analysis);
           setBatchResult(res.data?.result_data);
           setShowResult(true);
           setIsAnalyzing(false);
@@ -459,6 +464,7 @@ export function Forecast() {
         
         if (res.data?.status === 'completed') {
           const resultData = res.data?.result_data;
+          setCompletedAnalysis(res.data as Analysis);
           setAnalysisResult(resultData);
           setShowResult(true);
           setIsAnalyzing(false);
@@ -559,6 +565,31 @@ export function Forecast() {
       setIsAnalyzing(false);
     }
   };
+
+  const handleSendToAIWorkbench = () => {
+    const currentResult = batchResult ?? analysisResult;
+    if (!currentResult || currentResult?.error || !selectedDataset) return;
+
+    handoffAnalysisResultToWorkbench({
+      analysis: completedAnalysis,
+      analysisId: completedAnalysis?.id,
+      analysisType: 'forecast',
+      datasetId: selectedDataset,
+      datasetName: datasetInfo?.filename,
+      resultData: currentResult,
+      params: {
+        periods: parseInt(forecastDays),
+        model: selectedModel,
+        date_column: dateColumn,
+        value_column: valueColumn,
+        batch: Boolean(batchResult),
+      },
+    });
+    toast.success('已带到 AI 工作台，不会自动生成解释');
+  };
+
+  const canSendToAIWorkbench =
+    showResult && Boolean(batchResult ?? analysisResult) && !analysisResult?.error && Boolean(selectedDataset);
 
   return (
     <AnalysisPageShell
@@ -1063,6 +1094,20 @@ export function Forecast() {
         </AnalysisConfigPanel>
 
         <div className="flex-1 space-y-6 min-w-0">
+          {canSendToAIWorkbench && (
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSendToAIWorkbench}
+                title="将安全结果摘要带入 AI 工作台，不会重新运行分析。"
+                className="border-[var(--neon-cyan)] text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/10"
+              >
+                <Brain className="w-4 h-4 mr-2" />
+                带到 AI 工作台
+              </Button>
+            </div>
+          )}
           {!showResult ? (
             <Card className="border-[var(--border-subtle)] h-96 flex items-center justify-center">
               <div className="text-center">
