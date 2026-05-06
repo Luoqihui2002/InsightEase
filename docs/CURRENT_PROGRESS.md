@@ -1441,3 +1441,12 @@ cd app && npm run build        # built in 20.50s ✅
 - Updated shared `DatasetSelector`, so SmartProcess/preprocessing-style dataset selection now uses one searchable control.
 - Preserved Datasets and History catalog page search/filter/grouping controls.
 - No Hermes/LLM call, backend behavior, analysis auto-run, dataset mutation, dependency, package-file, or SmartAnalysis change was added.
+
+## Phase 4B-10C: SearchableSelect QA & Accessibility Polish
+
+- Hardened the shared `SearchableSelect` with Escape close, Tab close, ArrowUp/ArrowDown highlighting, and Enter selection for the highlighted option.
+- Added basic combobox/listbox ARIA semantics, accessible search labeling, and `aria-selected` option state.
+- Centralized dropdown close behavior so outside click, clear, selection, Escape, Tab, and trigger close reset search/highlight state.
+- Improved dropdown layering, scroll bounds, highlighted option styling, and long badge/label truncation.
+- Preserved all current selector usages and kept Datasets/History catalog page search controls unchanged.
+- No Hermes/LLM call, backend behavior, assistant planning logic, dataset mutation, dependency, package-file, or SmartAnalysis change was added.

@@ -1111,3 +1111,11 @@
 - Updated shared `DatasetSelector` so SmartProcess/preprocessing-style dataset selection uses one searchable control.
 - Added `docs/phase-logs/PHASE_4B_10B_WORKBENCH_HISTORY_SELECTOR_AND_SEARCHABLE_SELECTORS.md`.
 - No Hermes/LLM call, backend change, analysis auto-run, dataset mutation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-10C: SearchableSelect QA & Accessibility Polish
+
+- Hardened `SearchableSelect` keyboard behavior with Escape close, Tab close, ArrowUp/ArrowDown highlighted-option movement, and Enter selection.
+- Added basic combobox/listbox ARIA attributes, accessible search input labeling, and option `aria-selected` state.
+- Improved close/reset consistency, click-outside handling, dropdown z-index, scroll bounds, highlighted styling, and long option badge truncation.
+- Added `docs/phase-logs/PHASE_4B_10C_SEARCHABLE_SELECT_QA_ACCESSIBILITY_POLISH.md`.
+- No Hermes/LLM call, backend change, assistant planning change, dataset mutation, dependency, package-file, or SmartAnalysis changes.

@@ -108,3 +108,16 @@ History options use deterministic Analysis History Catalog metadata:
 - bounded safe-summary labels and result keys.
 
 Selecting a history item still only prepares bounded result context. It does not rerun analysis or generate an AI explanation.
+
+## Phase 4B-10C Update: Searchable Selector Accessibility Polish
+
+The shared selector used by the Context Panel history picker now has lightweight combobox polish:
+
+- Escape closes the dropdown without changing selection.
+- ArrowUp/ArrowDown move the highlighted option.
+- Enter selects the highlighted option.
+- Tab closes the dropdown while allowing normal focus movement.
+- Clicking outside closes and resets the local search query.
+- Trigger, listbox, and options expose basic ARIA attributes.
+
+This remains a local, dependency-free selector. It is not yet a full portal-based design-system combobox.

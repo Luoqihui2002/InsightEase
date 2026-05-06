@@ -583,3 +583,12 @@ Status: implemented.
 - AI Workbench history selection now reuses Analysis History Catalog metadata for searchable option labels, badges, and keywords.
 - Catalog pages keep their standalone search/filter/grouping controls.
 - Remaining future work: fuller combobox keyboard/a11y behavior, grouped selector options, and server-side history search after backend approval.
+
+## Phase 4B-10C: SearchableSelect QA & Accessibility Polish
+
+Status: implemented.
+
+- The shared searchable selector now supports Escape close, Tab close, ArrowUp/ArrowDown highlighted-option movement, and Enter selection.
+- Basic combobox/listbox ARIA semantics and accessible search input labeling are in place.
+- Dropdown close/reset behavior, click-outside handling, layering, scrolling, and long option rendering have been polished across current usages.
+- Remaining future work: optional portal rendering, grouped options, async/server-side selector search, and automated browser accessibility smoke tests.

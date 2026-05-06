@@ -259,6 +259,20 @@ Expected:
 
 ## Searchable Selector QA
 
+Core selector behavior:
+
+- click a selector trigger and confirm the dropdown opens;
+- confirm the search input receives focus after opening;
+- type a query and confirm options filter immediately;
+- clear the query and confirm all matching options return;
+- press `Escape` and confirm the dropdown closes without changing selection;
+- reopen and press `ArrowDown` / `ArrowUp` to move the highlighted option;
+- press `Enter` and confirm the highlighted option is selected;
+- press `Tab` and confirm focus moves normally while the dropdown closes;
+- click outside the dropdown and confirm it closes;
+- use the clear action, when visible, and confirm the placeholder returns;
+- confirm long option lists scroll instead of overflowing nearby panels.
+
 AI Workbench dataset selector:
 
 - click `选择或搜索数据集...`;
