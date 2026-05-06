@@ -1479,3 +1479,13 @@ cd app && npm run build        # built in 20.50s ✅
 - Reorganized productization/reliability into Phase 6 and advanced analytics/dashboard/reporting into Phase 7.
 - Removed duplicated/outdated roadmap sections for old AI assistant planning, repeated Result Explainer entries, and immediate Dashboard/ECharts Phase 5 priority.
 - No application source, backend source, Hermes/LLM, join execution, dataset creation, or product behavior change was added.
+
+## Phase 4B-11A: Hermes Live Readiness Review
+
+- Added `docs/design/HERMES_LIVE_READINESS_CHECKLIST.md`.
+- Added `docs/phase-logs/PHASE_4B_11A_HERMES_LIVE_READINESS_REVIEW.md`.
+- Audited frontend runtime provider gating, Hermes dry-run runtime fallback, backend Hermes dry-run endpoint contracts, SafeResultSummary boundaries, AI Workbench result follow-up routing, and future plan-analysis metadata boundaries.
+- Confirmed the default assistant runtime remains `rule_based` and `hermes_dry_run` still requires explicit `VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_dry_run`.
+- Confirmed live Hermes is schema-reserved only and is not reachable by frontend runtime selection or backend dry-run implementation.
+- Documented provider gating rules, fallback/rollback expectations, required future secrets/config handling, and a Hermes live risk register.
+- No application source, backend source, live Hermes/LLM, secrets, joins, SQL generation, auto-run analysis, dataset mutation, or Phase 5 Join Builder implementation was added.

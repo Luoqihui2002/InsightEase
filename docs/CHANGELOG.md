@@ -1145,3 +1145,12 @@
 - Added `docs/phase-logs/PHASE_4B_10F_ROADMAP_CONSOLIDATION_AND_PHASE5_PLANNING.md`.
 - Updated `docs/CURRENT_PROGRESS.md` and `docs/CHANGELOG.md`.
 - No application source code, backend code, Hermes/LLM, joins, dataset creation, or product behavior changes.
+
+# Phase 4B-11A: Hermes Live Readiness Review
+
+- Added `docs/design/HERMES_LIVE_READINESS_CHECKLIST.md`.
+- Added `docs/phase-logs/PHASE_4B_11A_HERMES_LIVE_READINESS_REVIEW.md`.
+- Reviewed assistant runtime provider gating, backend Hermes dry-run contracts, SafeResultSummary boundaries, future plan-analysis metadata boundaries, fallback/rollback behavior, config/secrets expectations, and live-mode risks.
+- Confirmed default runtime remains `rule_based`, `hermes_dry_run` remains explicit opt-in, unknown provider values fall back to rule-based, and live Hermes is not implemented or reachable.
+- Documented preconditions for Phase 4B-11B result explainer live adapter and Phase 4B-11C plan-analysis live adapter.
+- No application source code, backend code, live Hermes/LLM, secrets, SQL generation, joins, auto-run analysis, dataset mutation, or Phase 5 Join Builder behavior changes.
