@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import {
   Clock,
   CheckCircle2,
@@ -45,8 +45,18 @@ import {
   dispatchAIWorkbenchHandoff,
 } from '@/lib/assistant/aiWorkbenchHandoff';
 import { buildSafeResultSummary } from '@/lib/assistant/safeResultSummary';
+import {
+  HISTORY_AI_READY_LABELS,
+  HISTORY_GROUP_MODE_LABELS,
+  filterAnalysisHistoryBySearch,
+  getAnalysisStatusLabel,
+  getAnalysisTypeLabel,
+  groupAnalysisHistory,
+  inferAnalysisHistoryCatalogMetadata,
+} from '@/lib/historyCatalog';
 import { quickRequest } from '@/lib/request';
 import type { Analysis, Dataset } from '@/types/api';
+import type { HistoryAIReadyStatus, HistoryGroupMode } from '@/types/historyCatalog';
 import gsap from 'gsap';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -96,10 +106,30 @@ export function History() {
   const [datasets, setDatasets] = useState<Record<string, Dataset>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [groupMode, setGroupMode] = useState<HistoryGroupMode>('default');
+  const [statusFilter, setStatusFilter] = useState<'all' | Analysis['status']>('all');
+  const [aiReadyFilter, setAiReadyFilter] = useState<'all' | HistoryAIReadyStatus>('all');
 
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['summary']));
+  const historyCatalogOptions = useMemo(() => ({ datasetsById: datasets }), [datasets]);
+  const filteredAnalyses = useMemo(() => {
+    const searched = filterAnalysisHistoryBySearch(analyses, searchQuery, historyCatalogOptions);
+    return searched.filter((analysis) => {
+      if (statusFilter !== 'all' && analysis.status !== statusFilter) return false;
+      if (aiReadyFilter !== 'all') {
+        const metadata = inferAnalysisHistoryCatalogMetadata(analysis, historyCatalogOptions);
+        if (metadata.ai_ready_status !== aiReadyFilter) return false;
+      }
+      return true;
+    });
+  }, [aiReadyFilter, analyses, historyCatalogOptions, searchQuery, statusFilter]);
+  const groupedAnalyses = useMemo(
+    () => groupAnalysisHistory(filteredAnalyses, groupMode, historyCatalogOptions),
+    [filteredAnalyses, groupMode, historyCatalogOptions]
+  );
 
   useEffect(() => {
     const loadData = async () => {
@@ -172,17 +202,41 @@ export function History() {
     }
   };
 
-  const getStatusText = (status: Analysis['status']) => {
-    switch (status) {
-      case 'completed':
-        return '已完成';
-      case 'failed':
-        return '失败';
-      case 'running':
-        return '进行中';
-      case 'pending':
-        return '等待中';
-    }
+  const getHistoryStatusText = (status: Analysis['status']) => getAnalysisStatusLabel(status);
+
+  const getStatusBadgeClass = (status: Analysis['status']) => {
+    if (status === 'completed') return 'border-[var(--neon-green)]/30 text-[var(--neon-green)] bg-[var(--neon-green)]/10';
+    if (status === 'failed') return 'border-[var(--neon-pink)]/30 text-[var(--neon-pink)] bg-[var(--neon-pink)]/10';
+    return 'border-[var(--neon-cyan)]/30 text-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10';
+  };
+
+  const getAIReadyBadgeClass = (status: HistoryAIReadyStatus) => {
+    if (status === 'ai_ready') return 'border-[var(--neon-purple)]/30 text-[var(--neon-purple)] bg-[var(--neon-purple)]/10';
+    if (status === 'summary_only') return 'border-yellow-500/30 text-yellow-300 bg-yellow-500/10';
+    if (status === 'failed_or_incomplete') return 'border-[var(--neon-cyan)]/30 text-[var(--neon-cyan)] bg-[var(--neon-cyan)]/10';
+    return 'border-[var(--border-subtle)] text-[var(--text-muted)] bg-[var(--bg-tertiary)]';
+  };
+
+  const renderCatalogBadges = (analysis: Analysis) => {
+    const metadata = inferAnalysisHistoryCatalogMetadata(analysis, historyCatalogOptions);
+    const datasetName = datasets[analysis.dataset_id]?.filename || analysis.dataset_id || '未知数据集';
+
+    return (
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        <span className="rounded border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">
+          {getAnalysisTypeLabel(analysis.type)}
+        </span>
+        <span className={`rounded border px-2 py-0.5 text-[10px] ${getStatusBadgeClass(analysis.status)}`}>
+          {getHistoryStatusText(analysis.status)}
+        </span>
+        <span className={`rounded border px-2 py-0.5 text-[10px] ${getAIReadyBadgeClass(metadata.ai_ready_status)}`}>
+          {HISTORY_AI_READY_LABELS[metadata.ai_ready_status]}
+        </span>
+        <span className="max-w-[220px] truncate rounded border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">
+          {datasetName}
+        </span>
+      </div>
+    );
   };
 
   const handleDelete = async (id: string) => {
@@ -534,6 +588,121 @@ export function History() {
     toast.success('已将结果加入 AI 工作台上下文，不会自动生成解释');
   };
 
+  const renderHistoryTable = (items: Analysis[]) => (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-[var(--border-subtle)]">
+            <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">分析类型</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">数据集</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">创建时间</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">状态</th>
+            <th className="text-right py-3 px-4 text-sm font-medium text-[var(--text-muted)]">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => {
+            const TypeIcon = typeIcons[item.type] || BarChart3;
+            const dataset = datasets[item.dataset_id];
+
+            return (
+              <tr
+                key={item.id}
+                className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+              >
+                <td className="py-4 px-4 align-top">
+                  <div className="flex items-center gap-2">
+                    <TypeIcon className="w-4 h-4 text-[var(--neon-cyan)]" />
+                    <span className="text-[var(--text-primary)]">
+                      {getAnalysisTypeLabel(item.type)}
+                    </span>
+                  </div>
+                  {renderCatalogBadges(item)}
+                </td>
+                <td className="py-4 px-4 text-[var(--text-secondary)] align-top">
+                  {dataset?.filename || '未知数据集'}
+                </td>
+                <td className="py-4 px-4 text-[var(--text-secondary)] align-top">
+                  {item.created_at ? new Date(item.created_at).toLocaleString('zh-CN') : '-'}
+                </td>
+                <td className="py-4 px-4 align-top">
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(item.status)}
+                    <span className={`
+                      text-sm
+                      ${item.status === 'completed' ? 'text-[var(--neon-green)]' : ''}
+                      ${item.status === 'failed' ? 'text-[var(--neon-pink)]' : ''}
+                      ${item.status === 'running' || item.status === 'pending' ? 'text-[var(--neon-cyan)]' : ''}
+                    `}>
+                      {getHistoryStatusText(item.status)}
+                    </span>
+                  </div>
+                </td>
+                <td className="py-4 px-4 text-right align-top">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-8 h-8 text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
+                      onClick={() => handleViewResult(item)}
+                      title="查看结果"
+                      aria-label="查看结果"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    {item.status === 'completed' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-8 h-8 text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
+                            title="下载报告"
+                            aria-label="下载报告"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleDownload(item, 'excel')}>
+                            <FileSpreadsheet className="w-4 h-4 text-[var(--neon-green)] mr-2" />
+                            Excel (.xlsx)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownload(item, 'csv')}>
+                            <FileText className="w-4 h-4 text-[var(--neon-cyan)] mr-2" />
+                            CSV (.csv)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownload(item, 'json')}>
+                            <FileJson className="w-4 h-4 text-[var(--neon-purple)] mr-2" />
+                            JSON (.json)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownload(item, 'markdown')}>
+                            <FileText className="w-4 h-4 text-[var(--text-secondary)] mr-2" />
+                            Markdown (.md)
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="w-8 h-8"
+                      onClick={() => handleDelete(item.id)}
+                      title="删除"
+                      aria-label="删除"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
   if (loading) {
     return (
       <PageShell>
@@ -586,128 +755,84 @@ export function History() {
 
       {/* 历史记录列表 */}
       <div ref={tableRef}>
-        <SectionCard title="分析记录">
+        <SectionCard title="分析历史目录">
+          <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_150px_170px]">
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="搜索分析类型、数据集、状态、摘要或结果字段"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)]/30"
+            />
+            <select
+              value={groupMode}
+              onChange={(event) => setGroupMode(event.target.value as HistoryGroupMode)}
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-sm text-[var(--text-primary)]"
+            >
+              {(Object.keys(HISTORY_GROUP_MODE_LABELS) as HistoryGroupMode[]).map((mode) => (
+                <option key={mode} value={mode}>{HISTORY_GROUP_MODE_LABELS[mode]}</option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as 'all' | Analysis['status'])}
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-sm text-[var(--text-primary)]"
+            >
+              <option value="all">全部状态</option>
+              <option value="completed">已完成</option>
+              <option value="running">运行中</option>
+              <option value="pending">等待中</option>
+              <option value="failed">失败</option>
+            </select>
+            <select
+              value={aiReadyFilter}
+              onChange={(event) => setAiReadyFilter(event.target.value as 'all' | HistoryAIReadyStatus)}
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-2 text-sm text-[var(--text-primary)]"
+            >
+              <option value="all">全部 AI 状态</option>
+              <option value="ai_ready">AI 可解释</option>
+              <option value="summary_only">摘要较少</option>
+              <option value="failed_or_incomplete">结果未完成</option>
+              <option value="not_ready">不可解释</option>
+            </select>
+          </div>
+
+          <p className="mb-4 text-xs text-[var(--text-muted)]">
+            当前按已加载的 {analyses.length} 条记录进行搜索和分组；历史结果不会被重新运行，也不会生成 AI 解释。
+          </p>
+
           {analyses.length === 0 ? (
             <Empty>
               <EmptyHeader>
                 <EmptyMedia>
                   <BarChart3 className="w-16 h-16 text-[var(--text-muted)] opacity-30" />
                 </EmptyMedia>
-                <EmptyTitle>暂无分析记录</EmptyTitle>
-                <EmptyDescription>创建你的第一个分析任务</EmptyDescription>
+                <EmptyTitle>暂无分析历史</EmptyTitle>
+                <EmptyDescription>创建你的第一个分析任务后，结果会出现在这里。</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : filteredAnalyses.length === 0 ? (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia>
+                  <BarChart3 className="w-16 h-16 text-[var(--text-muted)] opacity-30" />
+                </EmptyMedia>
+                <EmptyTitle>未找到匹配的分析历史</EmptyTitle>
+                <EmptyDescription>请尝试更换关键词、状态筛选或分组方式。</EmptyDescription>
               </EmptyHeader>
             </Empty>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[var(--border-subtle)]">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">分析类型</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">数据集</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">创建时间</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">状态</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-[var(--text-muted)]">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analyses.map((item) => {
-                    const TypeIcon = typeIcons[item.type] || BarChart3;
-                    const dataset = datasets[item.dataset_id];
-
-                    return (
-                      <tr
-                        key={item.id}
-                        className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
-                      >
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-2">
-                            <TypeIcon className="w-4 h-4 text-[var(--neon-cyan)]" />
-                            <span className="text-[var(--text-primary)]">
-                              {typeLabels[item.type] || item.type}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-[var(--text-secondary)]">
-                          {dataset?.filename || '未知数据集'}
-                        </td>
-                        <td className="py-4 px-4 text-[var(--text-secondary)]">
-                          {item.created_at ? new Date(item.created_at).toLocaleString('zh-CN') : '-'}
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(item.status)}
-                            <span className={`
-                              text-sm
-                              ${item.status === 'completed' ? 'text-[var(--neon-green)]' : ''}
-                              ${item.status === 'failed' ? 'text-[var(--neon-pink)]' : ''}
-                              ${item.status === 'running' || item.status === 'pending' ? 'text-[var(--neon-cyan)]' : ''}
-                            `}>
-                              {getStatusText(item.status)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="w-8 h-8 text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
-                              onClick={() => handleViewResult(item)}
-                              title="查看结果"
-                              aria-label="查看结果"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {item.status === 'completed' && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="w-8 h-8 text-[var(--text-muted)] hover:text-[var(--neon-cyan)]"
-                                    title="下载报告"
-                                    aria-label="下载报告"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleDownload(item, 'excel')}>
-                                    <FileSpreadsheet className="w-4 h-4 text-[var(--neon-green)] mr-2" />
-                                    Excel (.xlsx)
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDownload(item, 'csv')}>
-                                    <FileText className="w-4 h-4 text-[var(--neon-cyan)] mr-2" />
-                                    CSV (.csv)
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDownload(item, 'json')}>
-                                    <FileJson className="w-4 h-4 text-[var(--neon-purple)] mr-2" />
-                                    JSON (.json)
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDownload(item, 'markdown')}>
-                                    <FileText className="w-4 h-4 text-[var(--text-secondary)] mr-2" />
-                                    Markdown (.md)
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="w-8 h-8"
-                              onClick={() => handleDelete(item.id)}
-                              title="删除"
-                              aria-label="删除"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-5">
+              {groupedAnalyses.map((group) => (
+                <div key={group.key} className="rounded-lg border border-[var(--border-subtle)] overflow-hidden">
+                  {groupMode !== 'default' && (
+                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/60 px-4 py-3">
+                      <h3 className="text-sm font-medium text-[var(--text-primary)]">{group.label}</h3>
+                      <span className="text-xs text-[var(--text-muted)]">{group.count} 条分析</span>
+                    </div>
+                  )}
+                  {renderHistoryTable(group.items)}
+                </div>
+              ))}
             </div>
           )}
         </SectionCard>

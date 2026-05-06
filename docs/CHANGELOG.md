@@ -1090,3 +1090,14 @@
 - Added `docs/phase-logs/PHASE_4B_9D_WORKBENCH_QA_RECIPES_AND_DEMO_SCENARIOS.md`.
 - Updated README/progress/roadmap docs to reference `docs/qa/`.
 - No source code, backend fixture, runtime behavior, Hermes/LLM call, dependency, package-file, dataset mutation, or SmartAnalysis changes.
+
+# Phase 4B-10A: Analysis History Catalog Grouped Views
+
+- Added `app/src/types/historyCatalog.ts`.
+- Added `app/src/lib/historyCatalog.ts`.
+- Updated History page with search, status filter, AI-ready filter, and group modes for created day/week/type/status/dataset/AI-ready status.
+- Added compact history item badges for analysis type, status, AI-readiness, and dataset.
+- Added `docs/design/ANALYSIS_HISTORY_CATALOG_DESIGN.md`.
+- Added `docs/phase-logs/PHASE_4B_10A_ANALYSIS_HISTORY_CATALOG_GROUPED_VIEWS.md`.
+- Updated AI Workbench QA recipes and demo scenarios with History Catalog checks.
+- No Hermes/LLM call, backend persistence, analysis rerun, SQL generation, dataset mutation, dependency, package-file, or SmartAnalysis changes.

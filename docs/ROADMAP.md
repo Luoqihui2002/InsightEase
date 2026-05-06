@@ -565,3 +565,12 @@ Status: implemented.
 - Added demo scenario scripts for Dataset Catalog to forecast planning, Relationship Set to channel conversion planning, result follow-up, and safety regression.
 - Documented recommended demo datasets and expected deterministic catalog labels.
 - Remaining future work: optional browser-based smoke scripts, automated seed-data generation after explicit approval, reusable prefill banner extraction, Semantic/DataWorkshop prefill, and separately approved live Hermes integration.
+
+## Phase 4B-10A: Analysis History Catalog Grouped Views
+
+Status: implemented.
+
+- History page now has deterministic catalog metadata for loaded analysis records.
+- Search and grouping help users find prior results by time, type, status, dataset, and AI-ready status.
+- Existing result dialog and AI Workbench handoff remain bounded by `SafeResultSummary`.
+- Remaining future work: server-side history search/pagination, reusable history selector for AI Workbench, and separately approved live Hermes result explanation.

@@ -257,6 +257,33 @@ Expected:
 - selected history shows `SafeResultSummary`;
 - raw `result_data` is not persisted in session storage.
 
+## History Catalog QA
+
+Open History and verify the analysis catalog controls:
+
+- search by analysis type, for example `统计` or `forecast`;
+- search by dataset id or visible dataset filename;
+- search by status, for example `已完成` or `failed`;
+- search by bounded safe-summary result key when available;
+- group by `按创建日`;
+- group by `按创建周`;
+- group by `按分析类型`;
+- group by `按状态`;
+- group by `按数据集`;
+- group by `按 AI 可解释状态`;
+- filter by status;
+- filter by AI-ready state.
+
+Expected:
+
+- grouping and search apply to the currently loaded History page only;
+- group headers show readable labels and counts;
+- rows show analysis type, status, AI-ready, and dataset badges;
+- empty search shows `未找到匹配的分析历史`;
+- result dialog still opens;
+- `让 AI 解读这个结果` still hands off a `SafeResultSummary`;
+- no history result is rerun and no AI explanation is generated automatically.
+
 ## Result Handoff QA
 
 ### From History

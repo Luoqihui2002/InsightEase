@@ -70,14 +70,17 @@ Goal: show the bounded result handoff and deterministic follow-up mode.
 Steps:
 
 1. Open History.
-2. Open a completed result.
-3. Click `让 AI 解读这个结果`.
-4. Confirm AI Workbench opens with result context in the right panel.
-5. Ask: `下一步建议做什么？`.
-6. Try one more follow-up: `整理成报告文字`.
+2. Group by `按 AI 可解释状态`.
+3. Search or filter until a completed AI-ready result is visible.
+4. Open the completed result.
+5. Click `让 AI 解读这个结果`.
+6. Confirm AI Workbench opens with result context in the right panel.
+7. Ask: `下一步建议做什么？`.
+8. Try one more follow-up: `整理成报告文字`.
 
 Expected:
 
+- History Catalog grouping helps locate the result;
 - AI Workbench attaches `SafeResultSummary`;
 - prompt chips appear;
 - no explanation is generated until the user asks;

@@ -1421,3 +1421,13 @@ cd app && npm run build        # built in 20.50s ✅
 - Documented the recommended 10-dataset demo set and expected catalog classification targets.
 - Updated the docs index to make `docs/qa/` discoverable for future phases.
 - No product behavior, runtime behavior, backend fixture, dependency, package-file, dataset mutation, Hermes/LLM, or SmartAnalysis change was added.
+
+## Phase 4B-10A: Analysis History Catalog Grouped Views
+
+- Added deterministic frontend-only Analysis History Catalog metadata helpers.
+- History page now supports search over analysis metadata, dataset id/name, status labels, safe summary labels, and bounded result keys.
+- History page can group loaded records by created day, created week, analysis type, status, dataset, and AI-ready status.
+- History rows now show compact analysis type, status, AI-ready, and dataset badges.
+- Existing result dialog, export/download, delete, deep-link opening for loaded items, and AI Workbench handoff are preserved.
+- Search/grouping operate over the currently loaded backend page only; no backend persistence or schema change was added.
+- No Hermes/LLM call, analysis rerun, SQL generation, dataset mutation, package-file, dependency, or SmartAnalysis change was added.
