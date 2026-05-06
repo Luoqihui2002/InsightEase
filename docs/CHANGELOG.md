@@ -1137,3 +1137,11 @@
 - Proposed AI Workbench Join Builder UX, AnalysisPlanCard integration, backend preview/temp/save APIs, and Hermes/tool registry safety rules.
 - Updated progress, roadmap, assistant runtime design, and QA docs.
 - No application source code, backend execution, joins, dataset creation, SQL generation, Hermes/LLM, or analysis auto-run changes.
+
+# Phase 4B-10F: Roadmap Consolidation and Phase 5 Planning
+
+- Rewrote `docs/ROADMAP.md` around Phase 4A completed, Phase 4B AI Workbench/Hermes-ready closeout, Phase 5 multi-table execution, Phase 6 productization/reliability, and Phase 7 advanced analytics/dashboard/reporting.
+- Removed outdated current-stage text, duplicated old AI assistant/Hermes sections, repeated Result Explainer entries, and the old immediate Dashboard/ECharts Phase 5 priority.
+- Added `docs/phase-logs/PHASE_4B_10F_ROADMAP_CONSOLIDATION_AND_PHASE5_PLANNING.md`.
+- Updated `docs/CURRENT_PROGRESS.md` and `docs/CHANGELOG.md`.
+- No application source code, backend code, Hermes/LLM, joins, dataset creation, or product behavior changes.

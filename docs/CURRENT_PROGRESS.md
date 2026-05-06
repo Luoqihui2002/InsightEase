@@ -1469,3 +1469,13 @@ cd app && npm run build        # built in 20.50s ✅
 - Proposed future backend APIs for join preview, temporary analysis datasets, and saved derived datasets.
 - Documented Hermes/tool registry implications: join preview/create/save tools require explicit confirmation and must not execute silently.
 - No application source, backend source, Hermes/LLM, SQL generation, join execution, dataset creation, or analysis auto-run change was added.
+
+## Phase 4B-10F: Roadmap Consolidation and Phase 5 Planning
+
+- Rewrote `docs/ROADMAP.md` into a forward-looking structure aligned with current project progress.
+- Marked Phase 4A as completed engineering stabilization.
+- Reframed Phase 4B as AI Workbench & Hermes-ready Assistant, with remaining 4B-11 Hermes live readiness/adapters.
+- Moved multi-table execution into Phase 5 as the next major product layer.
+- Reorganized productization/reliability into Phase 6 and advanced analytics/dashboard/reporting into Phase 7.
+- Removed duplicated/outdated roadmap sections for old AI assistant planning, repeated Result Explainer entries, and immediate Dashboard/ECharts Phase 5 priority.
+- No application source, backend source, Hermes/LLM, join execution, dataset creation, or product behavior change was added.
