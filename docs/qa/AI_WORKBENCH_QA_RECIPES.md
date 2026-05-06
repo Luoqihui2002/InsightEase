@@ -417,6 +417,38 @@ Expected:
 - no raw result table is included;
 - unsupported questions continue through the normal planner path.
 
+## Future Multi-table Join Builder QA
+
+This is a future implementation checklist based on the Phase 4B-10E design. Until Join Builder is implemented, these are expected limitations rather than active product checks.
+
+Prompts that should eventually trigger Join Builder guidance:
+
+- `分析各渠道转化率`
+- `分析用户行为路径和订单转化`
+- `分析商品评论和商品类目的关系`
+- `分析用户画像对 LTV 的影响`
+
+Expected future behavior:
+
+- multi-table plans explain that current analysis modules need one analysis dataset;
+- AnalysisPlanCard offers `创建分析数据集` instead of direct navigation when multiple required datasets are present;
+- user chooses tables from the active Relationship Set subset;
+- isolated/reference tables are not auto-joined;
+- preview runs only after the user clicks preview;
+- many-to-many and high-risk relationships show prominent warnings;
+- temp dataset creation requires explicit confirmation;
+- saving a joined dataset requires explicit naming and confirmation;
+- target analysis pages receive a derived dataset prefill but do not auto-run.
+
+Must never happen:
+
+- silent joins;
+- arbitrary SQL execution from AI;
+- source dataset mutation;
+- automatic save of joined output;
+- automatic analysis run after join;
+- Hermes/LLM tool execution without confirmation.
+
 ## Hermes Dry-run QA
 
 ### Default Mode
@@ -496,6 +528,7 @@ Regression:
 - Dataset Catalog classification is deterministic and heuristic.
 - Catalog metadata is frontend-only and not persisted.
 - Relationship Sets are local assistant context and do not execute joins.
+- Multi-table Join Builder is design-only; analysis modules still require a single analysis-ready dataset.
 - Browser-local session state can still become stale after schema changes or deleted datasets; start a new conversation if context looks confusing.
 - Result follow-up is summary-based, not live AI interpretation.
 - PathAnalysis direct handoff uses a local summary id when quick endpoint results do not expose a backend history id.

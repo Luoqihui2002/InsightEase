@@ -1459,3 +1459,13 @@ cd app && npm run build        # built in 20.50s ✅
 - Attribution results now preserve completed backend analysis metadata and expose `带到 AI 工作台` beside export.
 - Existing History and Statistics handoff behavior remains unchanged.
 - No Hermes/LLM call, automatic explanation, analysis rerun, backend change, dataset mutation, dependency, package-file, or SmartAnalysis change was added.
+
+## Phase 4B-10E: Multi-table Analysis Dataset Builder Design
+
+- Added `docs/design/MULTI_TABLE_ANALYSIS_DATASET_BUILDER_DESIGN.md`.
+- Defined the missing bridge between Relationship Set planning and single-dataset analysis modules.
+- Introduced design concepts for `JoinPlan`, `JoinStep`, and bounded `JoinPreview`.
+- Proposed AI Workbench Join Builder flow: select graph, select tables, choose join relationships, choose columns, preview, confirm temp/save output, then open target analysis page.
+- Proposed future backend APIs for join preview, temporary analysis datasets, and saved derived datasets.
+- Documented Hermes/tool registry implications: join preview/create/save tools require explicit confirmation and must not execute silently.
+- No application source, backend source, Hermes/LLM, SQL generation, join execution, dataset creation, or analysis auto-run change was added.

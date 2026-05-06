@@ -601,3 +601,16 @@ Status: implemented.
 - Handoff uses the existing `SafeResultSummary` boundary and AI Workbench handoff payload.
 - No explanation is generated automatically and no analysis reruns.
 - Remaining future work: browser smoke tests for result handoff flows and handoff coverage for any remaining normalized result surfaces.
+
+## Phase 4B-10E: Multi-table Analysis Dataset Builder Design
+
+Status: design complete.
+
+- Defined the safe bridge from Relationship Set planning to single-dataset analysis module execution.
+- Join Builder will create analysis-ready derived datasets only after explicit user preview and confirmation.
+- Proposed phases:
+  - 4B-10F: Join Builder contract and frontend mock.
+  - 4B-10G: backend join preview service.
+  - 4B-10H: temporary analysis dataset with TTL.
+  - 4B-10I: save joined dataset with provenance metadata.
+- Remaining future work: implement the Join Builder contract without adding silent joins, SQL generation, Hermes live calls, or analysis auto-run.

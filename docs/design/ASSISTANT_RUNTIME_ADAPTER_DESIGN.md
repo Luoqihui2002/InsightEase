@@ -90,6 +90,14 @@ Dataset catalog context contract after Phase 4B-9B:
 - Full-library matching is used only for bounded candidate hints when no selected dataset or active graph gives a high-confidence match.
 - When no required dataset is confirmed, the planner/card should ask the user to confirm a dataset instead of creating empty analysis-page prefill navigation.
 
+Multi-table execution gap after Phase 4B-10E:
+
+- Relationship Sets remain allowed context graphs only.
+- Existing analysis modules mostly require a single analysis dataset.
+- Multi-table plans must not silently join source datasets.
+- Future Join Builder work should transform a user-confirmed subset of source tables into a temporary or saved derived analysis dataset.
+- The runtime may propose a Join Plan, but execution requires explicit user confirmation through Join Builder.
+
 ### Factory
 
 ```ts
@@ -226,6 +234,13 @@ All assistant capabilities are declared in `ASSISTANT_TOOL_REGISTRY`:
 | preview_join | ❌ | Yes | execute |
 | run_analysis | ❌ | Yes | execute |
 
+Future Join Builder tools from Phase 4B-10E:
+
+| Tool | Implemented | Requires Confirmation | Side Effect |
+|------|-------------|----------------------|-------------|
+| create_temp_analysis_dataset | No | Yes | execute |
+| save_joined_dataset | No | Yes | write |
+
 **Safety rule**: any tool with `side_effect_level: "execute"` or `"write"` must get explicit user confirmation before running. The UI must not auto-call these.
 
 ---
@@ -240,6 +255,23 @@ All assistant capabilities are declared in `ASSISTANT_TOOL_REGISTRY`:
 | Preview join | ❌ | May trigger heavy query |
 | Run analysis | ❌ | Creates backend task, consumes compute |
 | Modify dataset | ❌ | Data mutation |
+
+---
+
+## Future Join Builder Tool Safety
+
+Phase 4B-10E defines the Multi-table Analysis Dataset Builder design in:
+
+`docs/design/MULTI_TABLE_ANALYSIS_DATASET_BUILDER_DESIGN.md`
+
+Future runtime/tool behavior:
+
+- `preview_join` may be proposed but requires user confirmation before bounded preview execution.
+- `create_temp_analysis_dataset` requires explicit confirmation and must create a clearly labeled derived dataset with TTL.
+- `save_joined_dataset` requires explicit confirmation and must persist provenance metadata.
+- Hermes/LLM must not generate arbitrary SQL for execution.
+- Hermes/LLM must not silently join, save, mutate source datasets, or auto-run target analysis.
+- Many-to-many and high-risk joins require warnings and explicit override.
 
 ---
 

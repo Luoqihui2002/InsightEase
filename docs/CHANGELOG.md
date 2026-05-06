@@ -1128,3 +1128,12 @@
 - PathAnalysis uses bounded local summary metadata because quick endpoint results do not expose a history analysis id in the current page flow.
 - Updated QA/design/progress documentation and added `docs/phase-logs/PHASE_4B_10D_RESULT_PAGE_AI_WORKBENCH_HANDOFF.md`.
 - No Hermes/LLM call, automatic explanation, analysis rerun, backend change, dataset mutation, dependency, package-file, or SmartAnalysis changes.
+
+# Phase 4B-10E: Multi-table Analysis Dataset Builder Design
+
+- Added `docs/design/MULTI_TABLE_ANALYSIS_DATASET_BUILDER_DESIGN.md`.
+- Added `docs/phase-logs/PHASE_4B_10E_MULTI_TABLE_ANALYSIS_DATASET_BUILDER_DESIGN.md`.
+- Defined `JoinPlan`, `JoinStep`, and `JoinPreview` contracts for future safe multi-table analysis dataset creation.
+- Proposed AI Workbench Join Builder UX, AnalysisPlanCard integration, backend preview/temp/save APIs, and Hermes/tool registry safety rules.
+- Updated progress, roadmap, assistant runtime design, and QA docs.
+- No application source code, backend execution, joins, dataset creation, SQL generation, Hermes/LLM, or analysis auto-run changes.
