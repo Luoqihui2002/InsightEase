@@ -385,7 +385,7 @@ The payload carries dataset IDs and suggested field names only. It does not stor
 
 Phase 4B-8L defines a documentation-only contract for future Hermes assistant endpoints.
 
-Phase 4B-8M adds dry-run backend scaffolding for these endpoints. The scaffold validates payloads and returns bounded mock responses only; no real Hermes/LLM provider is connected.
+Phase 4B-8M adds dry-run backend scaffolding for these endpoints. Phase 4B-11B adds live Hermes result explanation only; plan-analysis remains dry-run/local fallback only.
 
 Design source:
 
@@ -404,6 +404,7 @@ Contract rules:
 - All successful responses should use existing `ResponseModel<T>` envelope.
 - The endpoints must use bounded context only.
 - `explain-result` may receive `SafeResultSummary`, metadata-only assistant context, user question, and explicit safety flags.
+- In live mode, `explain-result` may call the configured backend-only Hermes Agent through `HERMES_BASE_URL`; the browser never calls Hermes directly.
 - `plan-analysis` may receive dataset metadata, active relationship-set metadata, optional safe result summary, user question, and explicit safety flags.
 - Hermes must not receive raw uploaded rows, full raw result tables, unbounded `result_data`, credentials, secrets, or storage paths.
 - Hermes must not auto-run analysis, auto-join datasets, generate executable SQL, create datasets, or mutate datasets.
@@ -416,4 +417,9 @@ Feature flags planned for future backend implementation:
 HERMES_ASSISTANT_ENABLED=false
 HERMES_ASSISTANT_MODE=disabled|dry_run|live
 HERMES_ASSISTANT_TIMEOUT_MS=10000
+HERMES_BASE_URL=
+HERMES_AUTH_TOKEN=
+HERMES_MODEL=hermes-agent
 ```
+
+`HERMES_AUTH_TOKEN` must never be committed, logged, or returned by status responses.

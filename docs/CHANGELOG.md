@@ -1154,3 +1154,14 @@
 - Confirmed default runtime remains `rule_based`, `hermes_dry_run` remains explicit opt-in, unknown provider values fall back to rule-based, and live Hermes is not implemented or reachable.
 - Documented preconditions for Phase 4B-11B result explainer live adapter and Phase 4B-11C plan-analysis live adapter.
 - No application source code, backend code, live Hermes/LLM, secrets, SQL generation, joins, auto-run analysis, dataset mutation, or Phase 5 Join Builder behavior changes.
+
+# Phase 4B-11B: Hermes Result Explainer Live Adapter
+
+- Added backend live Hermes config fields for base URL, auth token, model, and timeout.
+- Added backend live result explanation through the configured Hermes Agent using bounded SafeResultSummary input only.
+- Added safe live status reporting with `available`, `availability`, and `platform` metadata, without exposing tokens or secrets.
+- Added backend fallback-shaped responses for disabled, misconfigured, unavailable, timeout, provider failure, and malformed response cases.
+- Updated AI Workbench result follow-up routing to attempt live Hermes only when result context exists, the user explicitly asks, and backend status supports live result explanation.
+- Preserved deterministic local result follow-up fallback and prevented result follow-up prompts from generating AnalysisPlanCard output.
+- Added focused backend tests and Phase 4B-11B documentation.
+- No live plan-analysis adapter, browser-to-Hermes direct call, raw result_data forwarding, raw dataset row forwarding, SQL generation, analysis auto-run, joins, dataset mutation, package change, or SmartAnalysis change.

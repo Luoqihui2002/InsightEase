@@ -1,7 +1,7 @@
 # Hermes Live Readiness Checklist
 
 **Version**: 2026-05-07
-**Status**: Phase 4B-11A review complete; live Hermes remains disabled
+**Status**: Phase 4B-11B result explainer live adapter implemented; planning remains rule-based/dry-run only
 
 ## Scope
 
@@ -29,14 +29,15 @@ Current frontend runtime selection is intentionally narrow:
 - the Hermes dry-run runtime calls only `/assistant/hermes/plan-analysis`;
 - dry-run failure, backend disablement, unavailable status, or invalid plan shape falls back to `ruleBasedAssistantRuntime`.
 
-Current backend state:
+Current backend state after Phase 4B-11B:
 
 - `HERMES_ASSISTANT_ENABLED` defaults to `false`;
 - `HERMES_ASSISTANT_MODE` defaults to `disabled`;
-- `dry_run` is the only mode that enables dry-run endpoints;
-- `live` is schema-reserved but `_active_dry_run_mode()` currently returns `disabled` for live mode;
-- no provider credentials are required or used by the dry-run scaffold;
-- no backend endpoint calls Hermes, Kimi, OpenAI, or another external LLM.
+- `dry_run` enables validation-only dry-run responses;
+- `live` can call the configured Hermes Agent for result explanation only;
+- `live` requires `HERMES_BASE_URL` and `HERMES_AUTH_TOKEN`;
+- `plan-analysis` remains dry-run/local fallback only;
+- no backend endpoint can run analysis, execute SQL, join datasets, create datasets, or mutate source datasets.
 
 ## Backend Contract Review
 
@@ -50,7 +51,7 @@ POST /api/v1/assistant/hermes/plan-analysis
 
 Findings:
 
-- status supports disabled and dry-run states today, with live reserved for future schema compatibility;
+- status supports disabled, dry-run, live misconfigured, live unavailable, and live available states;
 - explain-result accepts `SafeResultSummary`, a user question, optional metadata-only assistant context, and explicit safety flags;
 - plan-analysis accepts a bounded assistant context, user question, and explicit safety flags;
 - safety flags require `allow_raw_data=false`, `allow_auto_run=false`, `allow_sql_generation=false`, and `allow_dataset_mutation=false`;
@@ -59,7 +60,8 @@ Findings:
 - safe result summaries are validated against table, row, and column caps;
 - planning context caps dataset count, schema column count, and relationship edge count;
 - forbidden keys reject raw or sensitive payloads, including `raw_rows`, `raw_data`, `full_table`, `result_data`, `storage_path`, `file_path`, `credentials`, `secret`, `token`, `api_key`, `password`, `connection_string`, and `signed_url`;
-- dry-run responses are advisory, low-confidence, and marked as fallback-shaped;
+- dry-run and backend fallback responses are advisory, low-confidence, and marked as fallback-shaped;
+- live explain-result responses are normalized into `HermesExplainResultResponse` before frontend display;
 - no write, execution, SQL, join, dataset creation, or source dataset mutation is exposed by Hermes endpoints.
 
 ## Frontend Runtime Review
@@ -81,7 +83,8 @@ Findings:
 - AI Workbench uses `getAssistantRuntime()` instead of calling a live provider directly;
 - the diagnostic Hermes status probe is non-blocking and does not select a runtime;
 - result follow-up prompts are routed to deterministic `resultFollowupResponder` when a result context exists;
-- result follow-up does not call Hermes explain-result in default or dry-run planning mode;
+- result follow-up may call backend explain-result only when live status supports result explanation and the user explicitly asks about an attached result context;
+- result follow-up falls back to deterministic `resultFollowupResponder` when live Hermes is unavailable or returns `fallback_used=true`;
 - plan-analysis dry-run responses are validated for a minimum `AssistantAnalysisPlan` shape before rendering;
 - invalid dry-run responses fall back to the rule-based planner.
 
@@ -157,13 +160,13 @@ Current 4B-11A rules:
 2. Dry-run provider must require `VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_dry_run`.
 3. Unknown frontend provider values must fall back to `rule_based`.
 4. Backend Hermes must remain disabled unless `HERMES_ASSISTANT_ENABLED=true` and `HERMES_ASSISTANT_MODE=dry_run`.
-5. Backend `live` mode must remain non-operational until a future live adapter phase changes the implementation intentionally.
+5. Backend `live` mode is operational for result explanation only when explicitly configured.
 6. Frontend runtime selection must not be driven by the diagnostic status probe.
 7. No provider key may be committed to source control.
 
-Future live-mode gates should require all of the following before activation:
+Future live planning gates should require all of the following before activation:
 
-- explicit frontend live provider value added in a future phase;
+- explicit plan-analysis live adapter added in a future phase;
 - backend live mode implementation behind a disabled-by-default flag;
 - provider credentials loaded from local environment or a secrets manager only;
 - schema validation of every live response;

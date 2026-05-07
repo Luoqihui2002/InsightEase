@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { assistantApi } from '@/api/assistant';
 import type { ApiResponse } from '@/types/api';
-import type { HermesMode, HermesProvider, HermesStatusResponse, HermesSupports } from '@/types/hermes';
+import type {
+  HermesAvailability,
+  HermesMode,
+  HermesProvider,
+  HermesStatusResponse,
+  HermesSupports,
+} from '@/types/hermes';
 
 const HERMES_STATUS_CACHE_KEY = 'insightease_hermes_status_cache';
 const HERMES_STATUS_TTL_MS = 5 * 60 * 1000;
@@ -11,6 +17,9 @@ export interface HermesStatusState {
   enabled: boolean;
   mode?: HermesMode;
   provider?: HermesProvider;
+  available?: boolean;
+  availability?: HermesAvailability;
+  platform?: string;
   supports?: HermesSupports;
   message?: string;
   checked_at?: string;
@@ -48,6 +57,9 @@ function readCachedStatus(): HermesStatusState | null {
       enabled: Boolean(parsed.enabled),
       mode: parsed.mode,
       provider: parsed.provider,
+      available: parsed.available,
+      availability: parsed.availability,
+      platform: parsed.platform,
       supports: parsed.supports,
       message: parsed.message,
       checked_at: parsed.checked_at,
@@ -85,17 +97,32 @@ function normalizeStatusResponse(response: Awaited<ReturnType<typeof assistantAp
       enabled: false,
       mode: data.mode,
       provider: data.provider,
+      available: data.available,
+      availability: data.availability,
+      platform: data.platform,
       supports: data.supports,
       message: data.message,
       checked_at: checkedAt,
     };
   }
 
+  const status =
+    data.mode === 'live'
+      ? data.available === false
+        ? 'unavailable'
+        : 'live'
+      : data.mode === 'dry_run'
+        ? 'dry_run'
+        : 'disabled';
+
   return {
-    status: data.mode === 'live' ? 'live' : data.mode === 'dry_run' ? 'dry_run' : 'disabled',
+    status,
     enabled: data.enabled,
     mode: data.mode,
     provider: data.provider,
+    available: data.available,
+    availability: data.availability,
+    platform: data.platform,
     supports: data.supports,
     message: data.message,
     checked_at: checkedAt,

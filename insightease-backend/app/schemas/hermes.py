@@ -11,6 +11,14 @@ from pydantic import BaseModel, Field
 
 HermesMode = Literal["disabled", "dry_run", "live"]
 HermesProvider = Literal["hermes", "mock", "disabled"]
+HermesAvailability = Literal[
+    "disabled",
+    "dry_run",
+    "live_configured",
+    "live_available",
+    "live_unavailable",
+    "misconfigured",
+]
 HermesConfidence = Literal["low", "medium", "high"]
 HermesActionType = Literal[
     "navigate",
@@ -32,6 +40,9 @@ class HermesStatusResponse(BaseModel):
     provider: HermesProvider
     mode: HermesMode
     supports: HermesSupports
+    available: bool = False
+    availability: Optional[HermesAvailability] = None
+    platform: Optional[str] = None
     message: Optional[str] = None
 
 

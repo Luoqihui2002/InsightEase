@@ -1489,3 +1489,14 @@ cd app && npm run build        # built in 20.50s ✅
 - Confirmed live Hermes is schema-reserved only and is not reachable by frontend runtime selection or backend dry-run implementation.
 - Documented provider gating rules, fallback/rollback expectations, required future secrets/config handling, and a Hermes live risk register.
 - No application source, backend source, live Hermes/LLM, secrets, joins, SQL generation, auto-run analysis, dataset mutation, or Phase 5 Join Builder implementation was added.
+
+## Phase 4B-11B: Hermes Result Explainer Live Adapter
+
+- Added backend live Hermes settings for `HERMES_BASE_URL`, `HERMES_AUTH_TOKEN`, `HERMES_MODEL`, and `HERMES_ASSISTANT_TIMEOUT_MS`.
+- Added a live result-explanation adapter that calls the remote Hermes Agent from the backend only.
+- Extended Hermes status responses with safe live availability metadata while never exposing tokens or secrets.
+- Kept dry-run planning behavior unchanged; live `plan-analysis` is not implemented in this phase.
+- AI Workbench result follow-up now attempts live Hermes only after the user explicitly asks about an attached SafeResultSummary and backend status reports live explain-result support.
+- Deterministic `resultFollowupResponder` remains fallback for disabled, unavailable, timeout, malformed, or fallback-shaped live responses.
+- Added focused backend tests for config acceptance, forbidden raw payload validation, live response parsing, and fallback behavior.
+- No browser-to-Hermes direct call, raw result_data forwarding, raw dataset row forwarding, SQL generation, auto-run analysis, joins, dataset mutation, SmartAnalysis change, or Phase 5 Join Builder implementation was added.

@@ -47,6 +47,9 @@ import { useAssistantContext } from '@/hooks/useAssistantContext';
 import { useHermesStatus } from '@/hooks/useHermesStatus';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
+import { assistantApi } from '@/api/assistant';
+import type { ApiResponse } from '@/types/api';
+import type { HermesExplainResultResponse } from '@/types/hermes';
 import type { DatasetPreview } from '@/types/api';
 import type { SafeResultSummary } from '@/types/resultSummary';
 import type { AnalysisType } from '@/services/intent-recognition.service';
@@ -109,6 +112,70 @@ function getHermesDiagnosticLabel(
   if (status.status === 'disabled') return '本地规则模式 · Hermes disabled';
   if (status.status === 'unavailable') return '本地规则模式 · Hermes 状态不可用';
   return '本地规则模式';
+}
+
+function canUseHermesLiveResultExplainer(status: ReturnType<typeof useHermesStatus>): boolean {
+  return (
+    status.status === 'live' &&
+    status.mode === 'live' &&
+    status.enabled &&
+    status.available !== false &&
+    Boolean(status.supports?.explain_result)
+  );
+}
+
+function formatHermesExplainResult(response: HermesExplainResultResponse): string {
+  const sections = [
+    'Hermes live generated this from SafeResultSummary only. No analysis was rerun.',
+    response.answer,
+    response.key_findings.length > 0
+      ? ['Key findings:', ...response.key_findings.map((item) => `- ${item}`)].join('\n')
+      : undefined,
+    response.risks_and_caveats.length > 0
+      ? ['Risks and caveats:', ...response.risks_and_caveats.map((item) => `- ${item}`)].join('\n')
+      : undefined,
+    response.suggested_next_steps.length > 0
+      ? ['Suggested next steps:', ...response.suggested_next_steps.map((item, index) => `${index + 1}. ${item}`)].join('\n')
+      : undefined,
+  ].filter(Boolean);
+
+  return sections.join('\n\n');
+}
+
+function unwrapApiData<T>(response: unknown): T | undefined {
+  const maybeResponse = response as { data?: unknown };
+
+  if (isApiResponse<T>(maybeResponse?.data)) {
+    return maybeResponse.data.data;
+  }
+
+  if (isApiResponse<T>(response)) {
+    return response.data;
+  }
+
+  return undefined;
+}
+
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'code' in value &&
+      'message' in value &&
+      'data' in value
+  );
+}
+
+function isHermesExplainResultResponse(value: unknown): value is HermesExplainResultResponse {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<HermesExplainResultResponse>;
+  return (
+    typeof candidate.answer === 'string' &&
+    Array.isArray(candidate.key_findings) &&
+    Array.isArray(candidate.risks_and_caveats) &&
+    Array.isArray(candidate.suggested_next_steps) &&
+    Array.isArray(candidate.recommended_actions)
+  );
 }
 
 interface AIWorkbenchSessionSnapshot {
@@ -654,7 +721,53 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     return () => window.removeEventListener(AI_WORKBENCH_HANDOFF_EVENT, handleHandoff);
   }, [isOpen, messages]);
 
-  const handleSend = () => {
+  const buildResultFollowupContent = async (
+    userMessage: string,
+    summary: SafeResultSummary,
+    followupIntent: ReturnType<typeof detectResultFollowupIntent>
+  ): Promise<string> => {
+    const fallback = () => buildResultFollowupResponse(summary, followupIntent);
+
+    if (!canUseHermesLiveResultExplainer(hermesStatus)) {
+      return fallback();
+    }
+
+    try {
+      const contextDatasetId = summary.dataset_id ?? selectedDataset ?? undefined;
+      const contextDataset = contextDatasetId
+        ? datasets.find((dataset) => dataset.id === contextDatasetId)
+        : undefined;
+      const response = await assistantApi.explainResultWithHermes({
+        user_question: userMessage,
+        result_summary: summary,
+        assistant_context: {
+          selected_dataset_id: contextDatasetId,
+          selected_dataset_name: summary.dataset_name ?? contextDataset?.filename,
+          active_relationship_set_id: activeRelationshipSet?.id,
+          active_relationship_set_name: activeRelationshipSet?.name,
+          relationship_count: activeRelationshipSet?.relationships.length,
+          reference_dataset_count: activeRelationshipSet?.dataset_nodes.filter(
+            (node) => node.role === 'isolated' || node.role === 'reference_only'
+          ).length,
+        },
+        safety: {
+          allow_raw_data: false,
+          allow_auto_run: false,
+          allow_sql_generation: false,
+          allow_dataset_mutation: false,
+        },
+      });
+      const payload = unwrapApiData<HermesExplainResultResponse>(response);
+      if (!isHermesExplainResultResponse(payload) || payload.fallback_used) {
+        return `${fallback()}\n\nHermes live explanation unavailable; using local deterministic fallback.`;
+      }
+      return formatHermesExplainResult(payload);
+    } catch {
+      return `${fallback()}\n\nHermes live explanation unavailable; using local deterministic fallback.`;
+    }
+  };
+
+  const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
     const userMsg = inputValue.trim();
@@ -671,7 +784,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: activeResultSummary
-          ? buildResultFollowupResponse(activeResultSummary, followupIntent)
+          ? await buildResultFollowupContent(userMsg, activeResultSummary, followupIntent)
           : '我还没有看到需要解释的分析结果。请先从历史结果中选择一条，或从结果页点击「带到 AI 工作台 / 让 AI 解读这个结果」。',
         type: 'text',
         timestamp: new Date(),

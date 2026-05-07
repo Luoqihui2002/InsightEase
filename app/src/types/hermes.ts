@@ -4,6 +4,13 @@ import type { SafeResultSummary } from './resultSummary';
 export type HermesMode = 'disabled' | 'dry_run' | 'live';
 export type HermesProvider = 'hermes' | 'mock' | 'disabled';
 export type HermesConfidence = 'low' | 'medium' | 'high';
+export type HermesAvailability =
+  | 'disabled'
+  | 'dry_run'
+  | 'live_configured'
+  | 'live_available'
+  | 'live_unavailable'
+  | 'misconfigured';
 
 export interface HermesSupports {
   explain_result: boolean;
@@ -17,6 +24,9 @@ export interface HermesStatusResponse {
   provider: HermesProvider;
   mode: HermesMode;
   supports: HermesSupports;
+  available?: boolean;
+  availability?: HermesAvailability;
+  platform?: string;
   message?: string;
 }
 
