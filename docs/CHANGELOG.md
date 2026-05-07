@@ -1145,3 +1145,61 @@
 - Added `docs/phase-logs/PHASE_4B_10F_ROADMAP_CONSOLIDATION_AND_PHASE5_PLANNING.md`.
 - Updated `docs/CURRENT_PROGRESS.md` and `docs/CHANGELOG.md`.
 - No application source code, backend code, Hermes/LLM, joins, dataset creation, or product behavior changes.
+
+# Phase 4B-11A: Hermes Live Readiness Review
+
+- Added `docs/design/HERMES_LIVE_READINESS_CHECKLIST.md`.
+- Added `docs/phase-logs/PHASE_4B_11A_HERMES_LIVE_READINESS_REVIEW.md`.
+- Reviewed assistant runtime provider gating, backend Hermes dry-run contracts, SafeResultSummary boundaries, future plan-analysis metadata boundaries, fallback/rollback behavior, config/secrets expectations, and live-mode risks.
+- Confirmed default runtime remains `rule_based`, `hermes_dry_run` remains explicit opt-in, unknown provider values fall back to rule-based, and live Hermes is not implemented or reachable.
+- Documented preconditions for Phase 4B-11B result explainer live adapter and Phase 4B-11C plan-analysis live adapter.
+- No application source code, backend code, live Hermes/LLM, secrets, SQL generation, joins, auto-run analysis, dataset mutation, or Phase 5 Join Builder behavior changes.
+
+# Phase 4B-11B: Hermes Result Explainer Live Adapter
+
+- Added backend live Hermes config fields for base URL, auth token, model, and timeout.
+- Added backend live result explanation through the configured Hermes Agent using bounded SafeResultSummary input only.
+- Added safe live status reporting with `available`, `availability`, and `platform` metadata, without exposing tokens or secrets.
+- Added backend fallback-shaped responses for disabled, misconfigured, unavailable, timeout, provider failure, and malformed response cases.
+- Updated AI Workbench result follow-up routing to attempt live Hermes only when result context exists, the user explicitly asks, and backend status supports live result explanation.
+- Preserved deterministic local result follow-up fallback and prevented result follow-up prompts from generating AnalysisPlanCard output.
+- Added focused backend tests and Phase 4B-11B documentation.
+- No live plan-analysis adapter, browser-to-Hermes direct call, raw result_data forwarding, raw dataset row forwarding, SQL generation, analysis auto-run, joins, dataset mutation, package change, or SmartAnalysis change.
+
+# Phase 4B-11B-1: Hermes Safety Flag Validation Bugfix
+
+- Fixed a backend validation false positive that rejected the required `safety.allow_raw_data=false` contract flag.
+- Switched forbidden-key validation from broad substring matching to exact path-segment checks with approved `safety.*` exceptions.
+- Kept real raw/sensitive payload keys rejected, including `raw_rows`, `raw_data`, `result_data`, file/storage paths, credentials, secrets, tokens, API keys, passwords, connection strings, and signed URLs.
+- Added focused backend tests for valid safety flags and rejected raw/sensitive payload keys.
+- Added `docs/phase-logs/PHASE_4B_11B_1_HERMES_SAFETY_FLAG_VALIDATION_BUGFIX.md`.
+- No live plan-analysis, Join Builder behavior, SQL generation, analysis auto-run, dataset mutation, raw result_data forwarding, or raw dataset row forwarding was added.
+
+# Phase 4B-11B-2: AI Workbench UX QA Bugfix
+
+- Fixed AI Workbench header close/avatar/title alignment with a single stable flex row.
+- Added chat auto-scroll behavior for user messages, Hermes live result responses, deterministic fallback responses, handoff messages, and result follow-up quick action prompts.
+- Updated result follow-up prompts to append the user message before waiting on Hermes live explanation.
+- Moved `SearchableSelect` dropdowns to a fixed-position portal so the Analysis History selector is no longer clipped by Context Panel overflow.
+- Added `docs/phase-logs/PHASE_4B_11B_2_AI_WORKBENCH_UX_QA_BUGFIX.md`.
+- `npx tsc --noEmit` and `npm run build` pass; project-wide lint still fails due pre-existing frontend lint debt, while `SearchableSelect` lint passes.
+- No backend behavior, Hermes safety contract change, live plan-analysis, Join Builder, SQL generation, analysis auto-run, joins, source dataset mutation, or SmartAnalysis change was added.
+
+# Phase 4B-11B-2A: AI Workbench Header Alignment Follow-up
+
+- Applied a focused AI Workbench header visual patch after manual QA found the top-left close/avatar/title group was still misaligned.
+- Rebuilt the left header cluster as one fixed-height flex row with centered close button, centered assistant avatar wrapper, and a vertically centered title/subtitle block.
+- Added explicit line-height and truncation to keep the title/subtitle stable at desktop and narrower widths.
+- Preserved chat auto-scroll, Analysis History dropdown portal behavior, Hermes result explainer behavior, and all backend safety boundaries.
+- `npx tsc --noEmit` and `npm run build` pass; targeted `AIWorkspace.tsx` lint still fails due pre-existing file-level lint debt.
+
+# Phase 4B-11B-3: Result Explainer QA Hardening
+
+- Fixed `DatasetUnderstandingCard` partial-profile crashes by guarding missing numeric fields and rendering safe fallbacks instead of calling `toLocaleString()` on undefined values.
+- Added optional bounded `SafeResultSummary.explanation_hints` with derived module-specific context for Forecast, Attribution, Statistics, PathAnalysis, and Semantic result explanations.
+- Updated Hermes backend validation to accept capped safe explanation hints while preserving forbidden-key rejection for raw rows, raw data, raw result payloads, file/storage paths, credentials, secrets, tokens, API keys, passwords, connection strings, and signed URLs.
+- Updated the live Hermes result explainer prompt so responses use safe hints, distinguish confirmed findings from limitations, and do not claim raw-data inspection.
+- Added backend tests for enriched safe context, hint caps, and live request forwarding.
+- Updated Hermes/SafeResultSummary API docs and added the Phase 4B-11B-3 phase log.
+- `npx tsc --noEmit`, `npm run build`, targeted frontend lint, focused Hermes backend tests, and the backend test suite pass.
+- No live plan-analysis, Join Builder, SQL generation, analysis auto-run, joins, source dataset mutation, raw result forwarding, or raw dataset row forwarding was added.

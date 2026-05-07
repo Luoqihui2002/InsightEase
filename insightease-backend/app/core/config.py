@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from functools import lru_cache
 from urllib.parse import quote_plus
 
@@ -10,6 +11,18 @@ class Settings(BaseSettings):
     # 环境配置
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug_flag(cls, value):
+        """Accept common environment labels without crashing settings load."""
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "prod", "production"}:
+                return False
+            if normalized in {"debug", "dev", "development"}:
+                return True
+        return value
     
     # MySQL配置
     DB_HOST: str = "localhost"
@@ -49,11 +62,14 @@ class Settings(BaseSettings):
     KIMI_BASE_URL: str = "https://api.moonshot.cn/v1"
     KIMI_MODEL: str = "moonshot-v1-8k"
 
-    # Hermes assistant dry-run scaffold configuration.
-    # No provider credentials are required or supported in this phase.
+    # Hermes assistant configuration.
+    # Live provider credentials must come from environment/secrets only.
     HERMES_ASSISTANT_ENABLED: bool = False
     HERMES_ASSISTANT_MODE: str = "disabled"  # disabled | dry_run | live
     HERMES_ASSISTANT_TIMEOUT_MS: int = 10000
+    HERMES_BASE_URL: str | None = None
+    HERMES_AUTH_TOKEN: str | None = None
+    HERMES_MODEL: str = "hermes-agent"
 
     @property
     def HERMES_ASSISTANT_MODE_SAFE(self) -> str:
@@ -62,6 +78,16 @@ class Settings(BaseSettings):
         if mode not in {"disabled", "dry_run", "live"}:
             return "disabled"
         return mode
+
+    @property
+    def HERMES_LIVE_CONFIGURED(self) -> bool:
+        """Return whether required live Hermes connection fields are present."""
+        return bool(
+            self.HERMES_BASE_URL
+            and self.HERMES_BASE_URL.strip()
+            and self.HERMES_AUTH_TOKEN
+            and self.HERMES_AUTH_TOKEN.strip()
+        )
     
     SECRET_KEY: str = "your-secret-key"
     

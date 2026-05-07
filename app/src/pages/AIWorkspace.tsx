@@ -47,6 +47,9 @@ import { useAssistantContext } from '@/hooks/useAssistantContext';
 import { useHermesStatus } from '@/hooks/useHermesStatus';
 import type { AssistantAnalysisPlan } from '@/types/assistant';
 import { datasetApi } from '@/api';
+import { assistantApi } from '@/api/assistant';
+import type { ApiResponse } from '@/types/api';
+import type { HermesExplainResultResponse } from '@/types/hermes';
 import type { DatasetPreview } from '@/types/api';
 import type { SafeResultSummary } from '@/types/resultSummary';
 import type { AnalysisType } from '@/services/intent-recognition.service';
@@ -109,6 +112,70 @@ function getHermesDiagnosticLabel(
   if (status.status === 'disabled') return '本地规则模式 · Hermes disabled';
   if (status.status === 'unavailable') return '本地规则模式 · Hermes 状态不可用';
   return '本地规则模式';
+}
+
+function canUseHermesLiveResultExplainer(status: ReturnType<typeof useHermesStatus>): boolean {
+  return (
+    status.status === 'live' &&
+    status.mode === 'live' &&
+    status.enabled &&
+    status.available !== false &&
+    Boolean(status.supports?.explain_result)
+  );
+}
+
+function formatHermesExplainResult(response: HermesExplainResultResponse): string {
+  const sections = [
+    'Hermes live generated this from SafeResultSummary only. No analysis was rerun.',
+    response.answer,
+    response.key_findings.length > 0
+      ? ['Key findings:', ...response.key_findings.map((item) => `- ${item}`)].join('\n')
+      : undefined,
+    response.risks_and_caveats.length > 0
+      ? ['Risks and caveats:', ...response.risks_and_caveats.map((item) => `- ${item}`)].join('\n')
+      : undefined,
+    response.suggested_next_steps.length > 0
+      ? ['Suggested next steps:', ...response.suggested_next_steps.map((item, index) => `${index + 1}. ${item}`)].join('\n')
+      : undefined,
+  ].filter(Boolean);
+
+  return sections.join('\n\n');
+}
+
+function unwrapApiData<T>(response: unknown): T | undefined {
+  const maybeResponse = response as { data?: unknown };
+
+  if (isApiResponse<T>(maybeResponse?.data)) {
+    return maybeResponse.data.data;
+  }
+
+  if (isApiResponse<T>(response)) {
+    return response.data;
+  }
+
+  return undefined;
+}
+
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'code' in value &&
+      'message' in value &&
+      'data' in value
+  );
+}
+
+function isHermesExplainResultResponse(value: unknown): value is HermesExplainResultResponse {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<HermesExplainResultResponse>;
+  return (
+    typeof candidate.answer === 'string' &&
+    Array.isArray(candidate.key_findings) &&
+    Array.isArray(candidate.risks_and_caveats) &&
+    Array.isArray(candidate.suggested_next_steps) &&
+    Array.isArray(candidate.recommended_actions)
+  );
 }
 
 interface AIWorkbenchSessionSnapshot {
@@ -334,6 +401,30 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isNearChatBottomRef = useRef(true);
+  const forceScrollOnNextMessageRef = useRef(false);
+
+  const isChatNearBottom = useCallback(() => {
+    const container = scrollRef.current;
+    if (!container) return true;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+  }, []);
+
+  const scrollToLatestMessage = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    window.requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' });
+      isNearChatBottomRef.current = true;
+    });
+  }, []);
+
+  const forceNextMessageScroll = useCallback(() => {
+    forceScrollOnNextMessageRef.current = true;
+  }, []);
+
+  const handleChatScroll = useCallback(() => {
+    isNearChatBottomRef.current = isChatNearBottom();
+  }, [isChatNearBottom]);
 
   // 加载数据集列表
   useEffect(() => {
@@ -383,10 +474,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
   // 自动滚动到底部
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const shouldForceScroll = forceScrollOnNextMessageRef.current;
+    if (shouldForceScroll || isNearChatBottomRef.current) {
+      scrollToLatestMessage(shouldForceScroll ? 'smooth' : 'auto');
     }
-  }, [messages]);
+    forceScrollOnNextMessageRef.current = false;
+  }, [messages, scrollToLatestMessage]);
 
   // 加载数据集列表
   const loadDatasets = async () => {
@@ -458,6 +551,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       updatedAt: new Date(),
     };
     setCurrentSessionId(newSession.id);
+    forceNextMessageScroll();
     setMessages(newSession.messages);
     setGeneratedPlan(null);
     setPlanQuestion('');
@@ -472,6 +566,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     const session = chatHistory.find(s => s.id === sessionId);
     if (session) {
       setCurrentSessionId(sessionId);
+      forceNextMessageScroll();
       setMessages(session.messages);
       setActiveTab('chat');
     }
@@ -530,6 +625,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       content: question,
       timestamp: new Date(),
     };
+    const userMessages: Message[] = [...currentMessages, userMessage];
+    forceNextMessageScroll();
+    updateCurrentSession(userMessages);
 
     try {
       const selectedDatasetIds = selectedDataset ? [selectedDataset] : [];
@@ -567,11 +665,11 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         plan: response.plan,
       };
 
-      const newMessages: Message[] = [...currentMessages, userMessage, planMessage];
+      const newMessages: Message[] = [...userMessages, planMessage];
       updateCurrentSession(newMessages);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : '生成计划失败';
-      const newMessages: Message[] = [...currentMessages, userMessage, {
+      const newMessages: Message[] = [...userMessages, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: `生成计划时出错：${errorMsg}`,
@@ -654,7 +752,53 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     return () => window.removeEventListener(AI_WORKBENCH_HANDOFF_EVENT, handleHandoff);
   }, [isOpen, messages]);
 
-  const handleSend = () => {
+  const buildResultFollowupContent = async (
+    userMessage: string,
+    summary: SafeResultSummary,
+    followupIntent: ReturnType<typeof detectResultFollowupIntent>
+  ): Promise<string> => {
+    const fallback = () => buildResultFollowupResponse(summary, followupIntent);
+
+    if (!canUseHermesLiveResultExplainer(hermesStatus)) {
+      return fallback();
+    }
+
+    try {
+      const contextDatasetId = summary.dataset_id ?? selectedDataset ?? undefined;
+      const contextDataset = contextDatasetId
+        ? datasets.find((dataset) => dataset.id === contextDatasetId)
+        : undefined;
+      const response = await assistantApi.explainResultWithHermes({
+        user_question: userMessage,
+        result_summary: summary,
+        assistant_context: {
+          selected_dataset_id: contextDatasetId,
+          selected_dataset_name: summary.dataset_name ?? contextDataset?.filename,
+          active_relationship_set_id: activeRelationshipSet?.id,
+          active_relationship_set_name: activeRelationshipSet?.name,
+          relationship_count: activeRelationshipSet?.relationships.length,
+          reference_dataset_count: activeRelationshipSet?.dataset_nodes.filter(
+            (node) => node.role === 'isolated' || node.role === 'reference_only'
+          ).length,
+        },
+        safety: {
+          allow_raw_data: false,
+          allow_auto_run: false,
+          allow_sql_generation: false,
+          allow_dataset_mutation: false,
+        },
+      });
+      const payload = unwrapApiData<HermesExplainResultResponse>(response);
+      if (!isHermesExplainResultResponse(payload) || payload.fallback_used) {
+        return `${fallback()}\n\nHermes live explanation unavailable; using local deterministic fallback.`;
+      }
+      return formatHermesExplainResult(payload);
+    } catch {
+      return `${fallback()}\n\nHermes live explanation unavailable; using local deterministic fallback.`;
+    }
+  };
+
+  const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
     const userMsg = inputValue.trim();
@@ -667,19 +811,63 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         content: userMsg,
         timestamp: new Date(),
       };
-      const responseMessage: Message = {
+      const userMessages: Message[] = [...messages, userMessage];
+      forceNextMessageScroll();
+      updateCurrentSession(userMessages);
+      setIsLoading(true);
+      try {
+        const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: activeResultSummary
-          ? buildResultFollowupResponse(activeResultSummary, followupIntent)
+          ? await buildResultFollowupContent(userMsg, activeResultSummary, followupIntent)
           : '我还没有看到需要解释的分析结果。请先从历史结果中选择一条，或从结果页点击「带到 AI 工作台 / 让 AI 解读这个结果」。',
         type: 'text',
         timestamp: new Date(),
       };
-      updateCurrentSession([...messages, userMessage, responseMessage]);
+        updateCurrentSession([...userMessages, responseMessage]);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
     generatePlanForQuestion(userMsg);
+  };
+
+  const handleQuickPrompt = async (prompt: string) => {
+    if (!prompt.trim() || isLoading) return;
+    setInputValue(prompt);
+    inputRef.current?.focus();
+
+    const followupIntent = detectResultFollowupIntent(prompt);
+    if (followupIntent === 'unknown') return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: prompt,
+      timestamp: new Date(),
+    };
+    const userMessages: Message[] = [...messages, userMessage];
+    setInputValue('');
+    forceNextMessageScroll();
+    updateCurrentSession(userMessages);
+    setIsLoading(true);
+
+    try {
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: activeResultSummary
+          ? await buildResultFollowupContent(prompt, activeResultSummary, followupIntent)
+          : '我还没有看到需要解释的分析结果。请先从历史结果中选择一条，或从结果页点击「带到 AI 工作台 / 让 AI 解读这个结果」。',
+        type: 'text',
+        timestamp: new Date(),
+      };
+      updateCurrentSession([...userMessages, responseMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 键盘事件
@@ -827,22 +1015,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ========== 关闭按钮 ========== */}
-        <button
-          onClick={onClose}
-          aria-label="关闭 AI 工作台"
-          className={cn(
-            "absolute top-3 left-3 z-50",
-            "h-9 w-9 flex items-center justify-center",
-            "rounded-xl border border-white/10",
-            "bg-white/5 text-[var(--text-secondary)]",
-            "hover:bg-white/10 hover:text-white hover:border-white/20",
-            "transition-colors"
-          )}
-        >
-          <X className="w-4 h-4" />
-        </button>
-
         {/* ========== 上下布局：数据预览在上方 ========== */}
         {mainLayout === 'vertical' && showPreview && (
           <AIWorkbenchContextPanel
@@ -914,19 +1086,34 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           mainLayout === 'horizontal' ? "w-[62%]" : "flex-1"
         )}>
           {/* 头部 */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] pl-12 flex-shrink-0">
-            <AssistantAvatar variant="default" size="sm" />
-            <div className="flex-shrink-0">
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
-              <p
-                className="text-[10px] text-[var(--text-muted)]"
-                title={hermesStatus.message || 'Hermes 状态仅用于诊断，不会改变当前运行时'}
+          <div className="flex h-[68px] items-center gap-3 px-4 border-b border-[var(--border-subtle)] flex-shrink-0">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <button
+                onClick={onClose}
+                aria-label="关闭 AI 工作台"
+                className={cn(
+                  "h-9 w-9 shrink-0 flex items-center justify-center",
+                  "rounded-xl border border-white/10",
+                  "bg-white/5 text-[var(--text-secondary)]",
+                  "hover:bg-white/10 hover:text-white hover:border-white/20",
+                  "transition-colors"
+                )}
               >
-                规则型分析规划 · 选择数据集可获得更具体的建议 · {getHermesDiagnosticLabel(hermesStatus, runtimeProvider)}
-              </p>
+                <X className="h-4 w-4" />
+              </button>
+              <div className="h-9 w-9 shrink-0 flex items-center justify-center">
+                <AssistantAvatar variant="default" size="sm" className="shrink-0" />
+              </div>
+              <div className="min-w-0 flex flex-col justify-center">
+                <h2 className="truncate text-base font-semibold leading-none text-[var(--text-primary)]">AI 工作台</h2>
+                <p
+                  className="mt-1 truncate text-[10px] leading-none text-[var(--text-muted)]"
+                  title={hermesStatus.message || 'Hermes 状态仅用于诊断，不会改变当前运行时'}
+                >
+                  规则型分析规划 · 选择数据集可获得更具体的建议 · {getHermesDiagnosticLabel(hermesStatus, runtimeProvider)}
+                </p>
+              </div>
             </div>
-            
-            <div className="flex-1"></div>
             
             {/* 数据集选择 */}
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -1049,7 +1236,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             {activeTab === 'chat' && (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {/* 消息列表 */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4" ref={scrollRef}>
+                <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4" ref={scrollRef} onScroll={handleChatScroll}>
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -1097,6 +1284,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       </div>
                     </div>
                   ))}
+                  <div ref={messagesEndRef} aria-hidden="true" />
 
                 </div>
 
@@ -1119,8 +1307,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                         <button
                           key={prompt}
                           onClick={() => {
-                            setInputValue(prompt);
-                            inputRef.current?.focus();
+                            void handleQuickPrompt(prompt);
                           }}
                           className={cn(
                             'px-2.5 py-1 rounded-lg text-xs',

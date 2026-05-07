@@ -81,9 +81,42 @@ const TABLE_TYPE_LABELS: Record<TableType, string> = {
 };
 
 function getConfidenceLabel(c: number): { label: string; color: string } {
+  if (!Number.isFinite(c)) return { label: '未知置信度', color: 'text-[var(--text-muted)]' };
   if (c >= 0.8) return { label: '高置信度', color: 'text-[var(--neon-green)]' };
   if (c >= 0.5) return { label: '中置信度', color: 'text-[var(--neon-orange)]' };
   return { label: '低置信度', color: 'text-[var(--neon-pink)]' };
+}
+
+function formatNumber(value: unknown, fallback = '--'): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toLocaleString();
+  }
+  return fallback;
+}
+
+function formatPercent(value: unknown, digits = 1, fallback = '--'): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return `${(value * 100).toFixed(digits)}%`;
+}
+
+function getSafeColumns(profile: DatasetProfile): ColumnProfile[] {
+  return Array.isArray(profile.columns) ? profile.columns : [];
+}
+
+function getSafeClassification(profile: DatasetProfile) {
+  return profile.classification ?? {
+    table_type: 'unknown' as TableType,
+    confidence: 0,
+    evidence: [],
+    recommended_analyses: [],
+    warnings: [],
+  };
+}
+
+function getErrorMessage(error: unknown, fallback = '请求失败'): string {
+  return error instanceof Error ? error.message : fallback;
 }
 
 function getRoleIcon(role: ColumnRole) {
@@ -145,14 +178,15 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
     setLoading(true);
     setError('');
     try {
-      const res = (await assistantApi.profileDataset(datasetId)) as any;
-      if (res.code === 200 && res.data) {
-        setProfile(res.data as DatasetProfile);
+      const response = await assistantApi.profileDataset(datasetId);
+      const payload = response.data;
+      if (payload.code === 200 && payload.data) {
+        setProfile(payload.data);
       } else {
-        setError(res.message || '获取数据集画像失败');
+        setError(payload.message || '获取数据集画像失败');
       }
-    } catch (err: any) {
-      setError(err.message || '请求失败');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -201,30 +235,31 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
     );
   }
 
-  const cls = profile.classification;
+  const columns = getSafeColumns(profile);
+  const cls = getSafeClassification(profile);
   const conf = getConfidenceLabel(cls.confidence);
 
   // Role summary
   const roleCounts: Record<string, number> = {};
-  profile.columns.forEach((c) => {
+  columns.forEach((c) => {
     roleCounts[c.role] = (roleCounts[c.role] || 0) + 1;
   });
 
   // Semantic type summary
   const semanticCounts: Record<string, number> = {};
-  profile.columns.forEach((c) => {
+  columns.forEach((c) => {
     semanticCounts[c.semantic_type] = (semanticCounts[c.semantic_type] || 0) + 1;
   });
 
   // Group columns by role category
-  const idColumns = profile.columns.filter((c) => c.role.endsWith('_id'));
-  const timeColumns = profile.columns.filter((c) => c.role === 'timestamp' || c.role === 'date');
-  const metricColumns = profile.columns.filter((c) => c.role === 'metric' || c.role === 'amount_revenue');
-  const textColumns = profile.columns.filter((c) => c.role === 'text_field');
-  const treatmentColumns = profile.columns.filter((c) => c.role === 'treatment_group');
-  const warningColumns = profile.columns.filter((c) => (c.warnings?.length || 0) > 0);
+  const idColumns = columns.filter((c) => c.role.endsWith('_id'));
+  const timeColumns = columns.filter((c) => c.role === 'timestamp' || c.role === 'date');
+  const metricColumns = columns.filter((c) => c.role === 'metric' || c.role === 'amount_revenue');
+  const textColumns = columns.filter((c) => c.role === 'text_field');
+  const treatmentColumns = columns.filter((c) => c.role === 'treatment_group');
+  const warningColumns = columns.filter((c) => (c.warnings?.length || 0) > 0);
 
-  const displayColumns = showAllColumns ? profile.columns : profile.columns.slice(0, 20);
+  const displayColumns = showAllColumns ? columns : columns.slice(0, 20);
 
   return (
     <div className="rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden">
@@ -235,7 +270,7 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
           <div>
             <h3 className="text-sm font-medium text-[var(--text-primary)]">AI 数据理解</h3>
             <p className="text-xs text-[var(--text-muted)]">
-              {datasetName || profile.name} · {profile.row_count.toLocaleString()} 行 · {profile.column_count} 列
+              {datasetName || profile.name || '未知数据集'} · {formatNumber(profile.row_count)} 行 · {formatNumber(profile.column_count)} 列
             </p>
           </div>
         </div>
@@ -254,7 +289,7 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
         <div className="space-y-2">
           <h4 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">表类型推断</h4>
           <div className="flex flex-wrap gap-2">
-            {cls.evidence.map((e, i) => (
+            {(cls.evidence ?? []).map((e, i) => (
               <span
                 key={i}
                 className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)]"
@@ -276,11 +311,11 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
         </div>
 
         {/* Recommended analyses */}
-        {cls.recommended_analyses.length > 0 && (
+        {(cls.recommended_analyses ?? []).length > 0 && (
           <div className="space-y-2">
             <h4 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">推荐分析</h4>
             <div className="flex flex-wrap gap-2">
-              {cls.recommended_analyses.map((analysis) => (
+              {(cls.recommended_analyses ?? []).map((analysis) => (
                 <span
                   key={analysis}
                   className="text-xs px-2.5 py-1 rounded-full bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)] border border-[var(--neon-cyan)]/20"
@@ -295,9 +330,9 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
         {/* Quality warnings */}
         <div className="space-y-2">
           <h4 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">数据质量</h4>
-          {profile.quality_warnings.length > 0 ? (
+          {(profile.quality_warnings ?? []).length > 0 ? (
             <div className="space-y-1.5">
-              {profile.quality_warnings.map((w, i) => (
+              {(profile.quality_warnings ?? []).map((w, i) => (
                 <p key={i} className="text-xs text-[var(--neon-orange)] flex items-start gap-1.5">
                   <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
                   <span>{w}</span>
@@ -372,7 +407,7 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">字段详情</h4>
-            {profile.columns.length > 20 && (
+            {columns.length > 20 && (
               <button
                 onClick={() => setShowAllColumns((s) => !s)}
                 className="text-xs text-[var(--neon-cyan)] flex items-center gap-1 hover:underline"
@@ -383,7 +418,7 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
                   </>
                 ) : (
                   <>
-                    <ChevronDown className="w-3 h-3" /> 展开全部 ({profile.columns.length} 个)
+                    <ChevronDown className="w-3 h-3" /> 展开全部 ({columns.length} 个)
                   </>
                 )}
               </button>
@@ -423,15 +458,15 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
                       </span>
                     </td>
                     <td className="py-2 px-2 text-right">
-                      <span className={col.null_rate > 0.5 ? 'text-[var(--neon-pink)]' : 'text-[var(--text-secondary)]'}>
-                        {(col.null_rate * 100).toFixed(1)}%
+                      <span className={typeof col.null_rate === 'number' && col.null_rate > 0.5 ? 'text-[var(--neon-pink)]' : 'text-[var(--text-secondary)]'}>
+                        {formatPercent(col.null_rate)}
                       </span>
                     </td>
                     <td className="py-2 px-2 text-right text-[var(--text-secondary)]">
-                      {col.unique_count.toLocaleString()}
+                      {formatNumber(col.unique_count)}
                     </td>
                     <td className="py-2 px-2 text-[var(--text-muted)] text-xs max-w-[180px] truncate">
-                      {col.examples.slice(0, 3).map(String).join(', ')}
+                      {(Array.isArray(col.examples) ? col.examples : []).slice(0, 3).map(String).join(', ') || '暂无'}
                     </td>
                     <td className="py-2 px-2">
                       {col.warnings && col.warnings.length > 0 ? (
@@ -447,9 +482,9 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
               </tbody>
             </table>
           </div>
-          {!showAllColumns && profile.columns.length > 20 && (
+          {!showAllColumns && columns.length > 20 && (
             <p className="text-xs text-[var(--text-muted)]">
-              仅展示前 20 个字段，共 {profile.columns.length} 个字段
+              仅展示前 20 个字段，共 {columns.length} 个字段
             </p>
           )}
         </div>
@@ -484,7 +519,7 @@ function KeyColumnGroup({
           <div key={col.name} className="flex items-center justify-between text-xs">
             <span className="text-[var(--text-primary)] truncate">{col.name}</span>
             <span className="text-[var(--text-muted)] shrink-0 ml-2">
-              {(col.null_rate * 100).toFixed(0)}% 缺失
+              {formatPercent(col.null_rate, 0)} 缺失
             </span>
           </div>
         ))}

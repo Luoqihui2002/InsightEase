@@ -16,3 +16,7 @@ build/
 # 日志
 *.log
 npm-debug.log*
+
+# Pytest cache/temp directories
+.pytest_cache/
+pytest-cache-files-*/

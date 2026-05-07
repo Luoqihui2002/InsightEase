@@ -34,11 +34,22 @@ export const assistantApi = {
     request.get<ApiResponse<HermesStatusResponse>>('/assistant/hermes/status'),
 
   /**
-   * Validate and dry-run future Hermes result explanation payloads.
-   * Does not call Hermes/LLM and does not generate a live explanation.
+   * Explain a SafeResultSummary through the InsightEase backend Hermes boundary.
+   * The backend may use disabled/dry-run/live mode based on server config and
+   * must return a fallback-shaped response when live Hermes is unavailable.
+   */
+  explainResultWithHermes: (payload: HermesExplainResultRequest) =>
+    request.post<ApiResponse<HermesExplainResultResponse>>('/assistant/hermes/explain-result', payload, {
+      timeout: 65000,
+    }),
+
+  /**
+   * Backward-compatible alias for dry-run contract checks.
    */
   explainResultWithHermesDryRun: (payload: HermesExplainResultRequest) =>
-    request.post<ApiResponse<HermesExplainResultResponse>>('/assistant/hermes/explain-result', payload),
+    request.post<ApiResponse<HermesExplainResultResponse>>('/assistant/hermes/explain-result', payload, {
+      timeout: 65000,
+    }),
 
   /**
    * Validate and dry-run future Hermes planning payloads.

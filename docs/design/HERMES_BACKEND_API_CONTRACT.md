@@ -4,7 +4,7 @@
 
 This document defines the backend API contract for Hermes assistant integration.
 
-Phase 4B-8M implements a dry-run backend scaffold for the contract endpoints. The scaffold validates bounded payloads and returns contract-shaped mock responses only.
+Phase 4B-8M implements a dry-run backend scaffold for the contract endpoints. Phase 4B-11B implements live result explanation only. Plan-analysis remains dry-run/local fallback only.
 
 No real Hermes provider, LLM call, frontend runtime switch, SQL generation, automatic analysis execution, automatic join, or dataset mutation exists.
 
@@ -54,7 +54,7 @@ POST /api/v1/assistant/hermes/plan-analysis
 Implemented status after Phase 4B-8M:
 
 - `status`: dry-run/disabled scaffold exists.
-- `explain-result`: validation-only dry-run scaffold exists.
+- `explain-result`: dry-run scaffold plus live SafeResultSummary explainer adapter exists.
 - `plan-analysis`: validation-only dry-run scaffold exists.
 
 Optional future endpoints, not fully specified:
@@ -84,6 +84,15 @@ export interface HermesStatusResponse {
   enabled: boolean;
   provider: "hermes" | "mock" | "disabled";
   mode: "disabled" | "dry_run" | "live";
+  available?: boolean;
+  availability?:
+    | "disabled"
+    | "dry_run"
+    | "live_configured"
+    | "live_available"
+    | "live_unavailable"
+    | "misconfigured";
+  platform?: string;
   supports: {
     explain_result: boolean;
     plan_analysis: boolean;
@@ -99,7 +108,8 @@ Behavior:
 - If Hermes is not configured, return `enabled: false`.
 - If `mode` is `disabled`, all `supports.*` values should be `false`.
 - If `mode` is `dry_run`, the backend may validate payloads and return mock/contract responses without external provider calls.
-- If `mode` is `live`, the backend may call the configured Hermes provider after all safety validation passes.
+- If `mode` is `live`, the backend may call the configured Hermes provider for result explanation only after all safety validation passes.
+- Phase 4B-11B does not allow live `plan-analysis`.
 - This endpoint must never expose API keys, credentials, provider secrets, storage paths, or internal file paths.
 
 Frontend behavior:
@@ -153,6 +163,14 @@ export interface HermesExplainResultRequest {
 }
 ```
 
+Phase 4B-11B-3 note: `result_summary` may include optional
+`explanation_hints` generated from bounded frontend result summaries. These
+hints are derived product context only, such as selected fields, model names,
+module-specific findings, chart summaries, table summaries, limitations, and
+recommended follow-ups. They must not contain raw `result_data`, raw uploaded
+rows, full tables, file paths, storage paths, credentials, tokens, API keys,
+signed URLs, SQL, or dataset mutation instructions.
+
 Response envelope:
 
 ```ts
@@ -192,6 +210,7 @@ Backend must reject the request if:
 - `safety.allow_dataset_mutation !== false`;
 - `result_summary` exceeds size limits;
 - `result_summary.tables[*].rows` exceeds Safe Result Summary caps;
+- `result_summary.explanation_hints` exceeds hint list or string caps;
 - request body appears to contain raw uploaded rows, full result tables, storage paths, credentials, secrets, or unbounded nested `result_data`;
 - `user_question` is empty or exceeds request limits.
 
@@ -322,6 +341,8 @@ Initial limits:
 - Max `SafeResultSummary.tables`: inherit cap, currently 3.
 - Max rows per safe table: inherit cap, currently 5.
 - Max columns per safe table: inherit cap, currently 12.
+- Max `SafeResultSummary.explanation_hints` list fields: 8 items each.
+- Max direct `SafeResultSummary.explanation_hints` text fields: 500 characters each.
 - Max datasets in planning context: 50.
 - Max schema columns per dataset: 100.
 - Max relationship edges: 200.
@@ -354,13 +375,16 @@ Future backend settings:
 HERMES_ASSISTANT_ENABLED=false
 HERMES_ASSISTANT_MODE=disabled|dry_run|live
 HERMES_ASSISTANT_TIMEOUT_MS=10000
+HERMES_BASE_URL=
+HERMES_AUTH_TOKEN=
+HERMES_MODEL=hermes-agent
 ```
 
 Phase 4B-8M implementation note:
 
 - defaults are disabled;
 - `dry_run` is the only enabled scaffold mode;
-- `live` is reserved for a future phase and is treated as unavailable by the scaffold;
+- `live` is supported for result explanation only when explicitly configured;
 - no provider credentials are required.
 
 Mode behavior:
@@ -454,11 +478,11 @@ Current deterministic behavior remains required fallback:
 
 This contract and dry-run scaffold do not:
 
-- implement live Hermes provider calls;
+- implement live plan-analysis provider calls;
 - switch runtime mode;
 - add streaming;
 - add provider secrets;
-- call Hermes/LLM;
+- call Hermes/LLM outside the explicitly configured backend-only result explainer adapter;
 - auto-run analysis;
 - auto-join datasets;
 - generate SQL;

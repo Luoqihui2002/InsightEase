@@ -13,8 +13,10 @@ MAX_TABLE_COLUMNS = 12
 MAX_DATASETS = 50
 MAX_SCHEMA_COLUMNS = 100
 MAX_RELATIONSHIP_EDGES = 200
+MAX_HINT_ITEMS = 8
+MAX_HINT_TEXT_CHARS = 500
 
-FORBIDDEN_KEY_PARTS = {
+FORBIDDEN_KEYS = {
     "raw_rows",
     "raw_data",
     "full_table",
@@ -29,6 +31,22 @@ FORBIDDEN_KEY_PARTS = {
     "password",
     "connection_string",
     "signed_url",
+}
+
+ALLOWED_SAFETY_PATHS = {
+    "safety.allow_raw_data",
+    "safety.allow_auto_run",
+    "safety.allow_sql_generation",
+    "safety.allow_dataset_mutation",
+    "safety.require_user_confirmation_for_execution",
+}
+
+SAFETY_FLAG_KEYS = {
+    "allow_raw_data",
+    "allow_auto_run",
+    "allow_sql_generation",
+    "allow_dataset_mutation",
+    "require_user_confirmation_for_execution",
 }
 
 
@@ -146,6 +164,45 @@ def _validate_safe_result_summary(summary: Dict[str, Any]) -> None:
                         "The result summary has too many preview columns for Hermes dry-run validation.",
                     )
 
+    hints = summary.get("explanation_hints")
+    if isinstance(hints, dict):
+        _validate_explanation_hints(hints)
+
+
+def _validate_explanation_hints(hints: Dict[str, Any]) -> None:
+    list_fields = {
+        "selected_fields",
+        "primary_metric_names",
+        "primary_metric_interpretation",
+        "module_specific_findings",
+        "chart_summaries",
+        "table_summaries",
+        "limitations",
+        "recommended_followups",
+    }
+
+    for key, value in hints.items():
+        if key in list_fields:
+            if not isinstance(value, list):
+                raise HermesValidationError(
+                    "INVALID_RESULT_SUMMARY",
+                    f"explanation_hints.{key} must be a list.",
+                    "Result explanation hints are malformed, so the local fallback should be used.",
+                )
+            if len(value) > MAX_HINT_ITEMS:
+                raise HermesValidationError(
+                    "SUMMARY_TOO_LARGE",
+                    f"explanation_hints.{key} contains more than {MAX_HINT_ITEMS} items.",
+                    "The result explanation hints are too large for Hermes validation.",
+                )
+
+        if isinstance(value, str) and len(value) > MAX_HINT_TEXT_CHARS:
+            raise HermesValidationError(
+                "SUMMARY_TOO_LARGE",
+                f"explanation_hints.{key} exceeds {MAX_HINT_TEXT_CHARS} characters.",
+                "The result explanation hints are too large for Hermes validation.",
+            )
+
 
 def _validate_planning_context(context: Dict[str, Any]) -> None:
     datasets = context.get("datasets", [])
@@ -190,18 +247,39 @@ def _reject_forbidden_keys(value: Any, path: str = "", depth: int = 0) -> None:
 
     if isinstance(value, dict):
         for key, nested in value.items():
-            key_text = str(key).lower()
-            if _contains_forbidden_part(key_text):
+            current_path = f"{path}.{key}" if path else str(key)
+            if _is_forbidden_path(current_path):
                 raise HermesValidationError(
                     "INVALID_REQUEST",
-                    f"Forbidden raw or sensitive key detected: {path + '.' if path else ''}{key}",
+                    f"Forbidden raw or sensitive key detected: {current_path}",
                     "The request appears to include raw data or sensitive fields, so Hermes dry-run rejected it.",
                 )
-            _reject_forbidden_keys(nested, f"{path}.{key}" if path else str(key), depth + 1)
+            _reject_forbidden_keys(nested, current_path, depth + 1)
     elif isinstance(value, list):
         for index, nested in enumerate(value):
             _reject_forbidden_keys(nested, f"{path}[{index}]", depth + 1)
 
 
-def _contains_forbidden_part(key_text: str) -> bool:
-    return any(part in key_text for part in FORBIDDEN_KEY_PARTS)
+def _is_forbidden_path(path: str) -> bool:
+    normalized_path = path.lower()
+    if normalized_path in ALLOWED_SAFETY_PATHS:
+        return False
+
+    for segment in _path_segments(normalized_path):
+        if segment in FORBIDDEN_KEYS:
+            return True
+        if segment in SAFETY_FLAG_KEYS:
+            return True
+        if segment.endswith("_token") or segment.startswith("token_"):
+            return True
+
+    return False
+
+
+def _path_segments(path: str) -> list[str]:
+    segments: list[str] = []
+    for segment in path.split("."):
+        key = segment.split("[", 1)[0]
+        if key:
+            segments.append(key)
+    return segments
