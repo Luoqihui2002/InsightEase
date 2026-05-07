@@ -9,6 +9,7 @@ from app.services.hermes_live_service import (
 from app.services.hermes_validation_service import (
     HermesValidationError,
     validate_explain_result_payload,
+    validate_plan_analysis_payload,
 )
 
 
@@ -139,6 +140,99 @@ def test_explain_result_rejects_raw_result_data_key():
     payload = {
         "user_question": "Explain this",
         "result_summary": {"analysis_id": "1", "result_data": [{"raw": "row"}]},
+        "safety": {
+            "allow_raw_data": False,
+            "allow_auto_run": False,
+            "allow_sql_generation": False,
+            "allow_dataset_mutation": False,
+        },
+    }
+
+    with pytest.raises(HermesValidationError):
+        validate_explain_result_payload(payload)
+
+
+def test_explain_result_accepts_required_safety_flags():
+    payload = {
+        "user_question": "Explain this",
+        "result_summary": _safe_summary(),
+        "safety": {
+            "allow_raw_data": False,
+            "allow_auto_run": False,
+            "allow_sql_generation": False,
+            "allow_dataset_mutation": False,
+        },
+    }
+
+    validate_explain_result_payload(payload)
+
+
+def test_explain_result_rejects_safety_flags_outside_safety_path():
+    payload = {
+        "user_question": "Explain this",
+        "result_summary": {
+            **_safe_summary(),
+            "allow_raw_data": False,
+        },
+        "safety": {
+            "allow_raw_data": False,
+            "allow_auto_run": False,
+            "allow_sql_generation": False,
+            "allow_dataset_mutation": False,
+        },
+    }
+
+    with pytest.raises(HermesValidationError):
+        validate_explain_result_payload(payload)
+
+
+def test_plan_analysis_accepts_required_safety_flags():
+    payload = {
+        "user_question": "Plan this",
+        "assistant_context": {"datasets": [], "relationship_set": None},
+        "safety": {
+            "allow_raw_data": False,
+            "allow_auto_run": False,
+            "allow_sql_generation": False,
+            "allow_dataset_mutation": False,
+            "require_user_confirmation_for_execution": True,
+        },
+    }
+
+    validate_plan_analysis_payload(payload)
+
+
+def test_explain_result_rejects_nested_raw_rows():
+    payload = {
+        "user_question": "Explain this",
+        "result_summary": {
+            **_safe_summary(),
+            "tables": [
+                {
+                    "title": "unsafe",
+                    "columns": [],
+                    "rows": [],
+                    "raw_rows": [],
+                }
+            ],
+        },
+        "safety": {
+            "allow_raw_data": False,
+            "allow_auto_run": False,
+            "allow_sql_generation": False,
+            "allow_dataset_mutation": False,
+        },
+    }
+
+    with pytest.raises(HermesValidationError):
+        validate_explain_result_payload(payload)
+
+
+def test_explain_result_rejects_token_like_payload_key():
+    payload = {
+        "user_question": "Explain this",
+        "result_summary": _safe_summary(),
+        "assistant_context": {"HERMES_AUTH_TOKEN": "secret-token"},
         "safety": {
             "allow_raw_data": False,
             "allow_auto_run": False,

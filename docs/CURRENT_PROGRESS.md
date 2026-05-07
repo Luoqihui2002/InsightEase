@@ -1500,3 +1500,11 @@ cd app && npm run build        # built in 20.50s ✅
 - Deterministic `resultFollowupResponder` remains fallback for disabled, unavailable, timeout, malformed, or fallback-shaped live responses.
 - Added focused backend tests for config acceptance, forbidden raw payload validation, live response parsing, and fallback behavior.
 - No browser-to-Hermes direct call, raw result_data forwarding, raw dataset row forwarding, SQL generation, auto-run analysis, joins, dataset mutation, SmartAnalysis change, or Phase 5 Join Builder implementation was added.
+
+## Phase 4B-11B-1: Hermes Safety Flag Validation Bugfix
+
+- Fixed Hermes validation false positive for required safety flags such as `safety.allow_raw_data=false`.
+- Replaced broad substring matching with path-segment based forbidden-key detection.
+- Allowed only the approved `safety.*` flag paths while keeping `raw_rows`, `raw_data`, `result_data`, file/storage paths, credentials, secrets, tokens, API keys, passwords, connection strings, and signed URLs rejected.
+- Added backend tests for valid safety flags, invalid nested raw rows, invalid raw result data, token-like payload keys, and misplaced safety flags.
+- No live plan-analysis, Join Builder behavior, SQL generation, analysis auto-run, dataset mutation, raw result_data forwarding, or raw dataset row forwarding was added.

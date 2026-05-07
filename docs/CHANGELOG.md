@@ -1165,3 +1165,12 @@
 - Preserved deterministic local result follow-up fallback and prevented result follow-up prompts from generating AnalysisPlanCard output.
 - Added focused backend tests and Phase 4B-11B documentation.
 - No live plan-analysis adapter, browser-to-Hermes direct call, raw result_data forwarding, raw dataset row forwarding, SQL generation, analysis auto-run, joins, dataset mutation, package change, or SmartAnalysis change.
+
+# Phase 4B-11B-1: Hermes Safety Flag Validation Bugfix
+
+- Fixed a backend validation false positive that rejected the required `safety.allow_raw_data=false` contract flag.
+- Switched forbidden-key validation from broad substring matching to exact path-segment checks with approved `safety.*` exceptions.
+- Kept real raw/sensitive payload keys rejected, including `raw_rows`, `raw_data`, `result_data`, file/storage paths, credentials, secrets, tokens, API keys, passwords, connection strings, and signed URLs.
+- Added focused backend tests for valid safety flags and rejected raw/sensitive payload keys.
+- Added `docs/phase-logs/PHASE_4B_11B_1_HERMES_SAFETY_FLAG_VALIDATION_BUGFIX.md`.
+- No live plan-analysis, Join Builder behavior, SQL generation, analysis auto-run, dataset mutation, raw result_data forwarding, or raw dataset row forwarding was added.
