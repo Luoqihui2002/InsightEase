@@ -1184,3 +1184,11 @@
 - Added `docs/phase-logs/PHASE_4B_11B_2_AI_WORKBENCH_UX_QA_BUGFIX.md`.
 - `npx tsc --noEmit` and `npm run build` pass; project-wide lint still fails due pre-existing frontend lint debt, while `SearchableSelect` lint passes.
 - No backend behavior, Hermes safety contract change, live plan-analysis, Join Builder, SQL generation, analysis auto-run, joins, source dataset mutation, or SmartAnalysis change was added.
+
+# Phase 4B-11B-2A: AI Workbench Header Alignment Follow-up
+
+- Applied a focused AI Workbench header visual patch after manual QA found the top-left close/avatar/title group was still misaligned.
+- Rebuilt the left header cluster as one fixed-height flex row with centered close button, centered assistant avatar wrapper, and a vertically centered title/subtitle block.
+- Added explicit line-height and truncation to keep the title/subtitle stable at desktop and narrower widths.
+- Preserved chat auto-scroll, Analysis History dropdown portal behavior, Hermes result explainer behavior, and all backend safety boundaries.
+- `npx tsc --noEmit` and `npm run build` pass; targeted `AIWorkspace.tsx` lint still fails due pre-existing file-level lint debt.

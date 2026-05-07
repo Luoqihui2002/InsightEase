@@ -1086,32 +1086,34 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           mainLayout === 'horizontal' ? "w-[62%]" : "flex-1"
         )}>
           {/* 头部 */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
-            <button
-              onClick={onClose}
-              aria-label="关闭 AI 工作台"
-              className={cn(
-                "h-9 w-9 shrink-0 flex items-center justify-center",
-                "rounded-xl border border-white/10",
-                "bg-white/5 text-[var(--text-secondary)]",
-                "hover:bg-white/10 hover:text-white hover:border-white/20",
-                "transition-colors"
-              )}
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <AssistantAvatar variant="default" size="sm" />
-            <div className="flex-shrink-0 leading-tight">
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
-              <p
-                className="text-[10px] text-[var(--text-muted)]"
-                title={hermesStatus.message || 'Hermes 状态仅用于诊断，不会改变当前运行时'}
+          <div className="flex h-[68px] items-center gap-3 px-4 border-b border-[var(--border-subtle)] flex-shrink-0">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <button
+                onClick={onClose}
+                aria-label="关闭 AI 工作台"
+                className={cn(
+                  "h-9 w-9 shrink-0 flex items-center justify-center",
+                  "rounded-xl border border-white/10",
+                  "bg-white/5 text-[var(--text-secondary)]",
+                  "hover:bg-white/10 hover:text-white hover:border-white/20",
+                  "transition-colors"
+                )}
               >
-                规则型分析规划 · 选择数据集可获得更具体的建议 · {getHermesDiagnosticLabel(hermesStatus, runtimeProvider)}
-              </p>
+                <X className="h-4 w-4" />
+              </button>
+              <div className="h-9 w-9 shrink-0 flex items-center justify-center">
+                <AssistantAvatar variant="default" size="sm" className="shrink-0" />
+              </div>
+              <div className="min-w-0 flex flex-col justify-center">
+                <h2 className="truncate text-base font-semibold leading-none text-[var(--text-primary)]">AI 工作台</h2>
+                <p
+                  className="mt-1 truncate text-[10px] leading-none text-[var(--text-muted)]"
+                  title={hermesStatus.message || 'Hermes 状态仅用于诊断，不会改变当前运行时'}
+                >
+                  规则型分析规划 · 选择数据集可获得更具体的建议 · {getHermesDiagnosticLabel(hermesStatus, runtimeProvider)}
+                </p>
+              </div>
             </div>
-            
-            <div className="flex-1"></div>
             
             {/* 数据集选择 */}
             <div className="flex items-center gap-2 flex-shrink-0">

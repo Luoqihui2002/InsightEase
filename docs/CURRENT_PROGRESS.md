@@ -1518,3 +1518,10 @@ cd app && npm run build        # built in 20.50s ✅
 - Moved `SearchableSelect` dropdown rendering into a fixed-position portal so the Analysis History selector is not clipped by Context Panel overflow.
 - Preserved Hermes result explainer safety boundaries, deterministic fallback, dataset/relationship/history selectors, and non-Hermes planner behavior.
 - No backend behavior, live plan-analysis, Join Builder, SQL generation, analysis auto-run, joins, dataset mutation, or SmartAnalysis change was added.
+
+## Phase 4B-11B-2A: AI Workbench Header Alignment Follow-up
+
+- Applied a narrow visual patch to the AI Workbench top-left header cluster after manual QA found the previous alignment pass was still visually off.
+- Rebuilt the left cluster as a single fixed-height flex row containing the close button, assistant avatar wrapper, and title/subtitle block.
+- Added explicit fixed dimensions, centered avatar wrapping, `flex-col justify-center`, `leading-none`, and truncation to stabilize the visual baseline.
+- Left chat auto-scroll, SearchableSelect dropdown portal behavior, Hermes result explanation, and backend behavior unchanged.

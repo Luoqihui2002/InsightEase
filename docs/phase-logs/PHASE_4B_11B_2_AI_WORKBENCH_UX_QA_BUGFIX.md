@@ -102,3 +102,31 @@ Manual browser QA was not run in this environment. The implemented behavior targ
 ## Status
 
 Completed.
+
+## Patch 4B-11B-2A: Header Alignment Follow-up
+
+Manual browser QA found that chat auto-scroll and Analysis History dropdown clipping were fixed, but the AI Workbench top-left header group still looked visually misaligned.
+
+Applied a narrow header-only patch:
+
+- Rebuilt the top-left header cluster as one `flex items-center` group.
+- Gave the toolbar a stable fixed height.
+- Kept the close button and assistant avatar at matching fixed dimensions.
+- Wrapped the avatar in a centered `h-9 w-9` container.
+- Changed the title/subtitle block to `flex flex-col justify-center`.
+- Added explicit `leading-none`, `mt-1`, and `truncate` behavior for clean title/subtitle alignment.
+- Kept the dataset selector, relationship selector, layout toggle, chat auto-scroll, dropdown portal, Hermes result explainer, and backend behavior unchanged.
+
+Validation:
+
+- `cd app && npx tsc --noEmit`
+  - Passed.
+- `cd app && npm run build`
+  - Passed.
+- `cd app && npx eslint src/pages/AIWorkspace.tsx`
+  - Failed due existing file-level lint debt (`any`, hook dependency, constant-expression, and old hook naming issues). The patch did not add a new lint category.
+
+Manual browser QA:
+
+- A Vite dev server was started and `http://127.0.0.1:5173` responded with HTTP 200.
+- Interactive visual verification was not available in this execution environment. The patch is ready for local browser confirmation against the supplied QA checklist.
