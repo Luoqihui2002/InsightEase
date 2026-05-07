@@ -401,6 +401,30 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isNearChatBottomRef = useRef(true);
+  const forceScrollOnNextMessageRef = useRef(false);
+
+  const isChatNearBottom = useCallback(() => {
+    const container = scrollRef.current;
+    if (!container) return true;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+  }, []);
+
+  const scrollToLatestMessage = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    window.requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' });
+      isNearChatBottomRef.current = true;
+    });
+  }, []);
+
+  const forceNextMessageScroll = useCallback(() => {
+    forceScrollOnNextMessageRef.current = true;
+  }, []);
+
+  const handleChatScroll = useCallback(() => {
+    isNearChatBottomRef.current = isChatNearBottom();
+  }, [isChatNearBottom]);
 
   // 加载数据集列表
   useEffect(() => {
@@ -450,10 +474,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
 
   // 自动滚动到底部
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const shouldForceScroll = forceScrollOnNextMessageRef.current;
+    if (shouldForceScroll || isNearChatBottomRef.current) {
+      scrollToLatestMessage(shouldForceScroll ? 'smooth' : 'auto');
     }
-  }, [messages]);
+    forceScrollOnNextMessageRef.current = false;
+  }, [messages, scrollToLatestMessage]);
 
   // 加载数据集列表
   const loadDatasets = async () => {
@@ -525,6 +551,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       updatedAt: new Date(),
     };
     setCurrentSessionId(newSession.id);
+    forceNextMessageScroll();
     setMessages(newSession.messages);
     setGeneratedPlan(null);
     setPlanQuestion('');
@@ -539,6 +566,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     const session = chatHistory.find(s => s.id === sessionId);
     if (session) {
       setCurrentSessionId(sessionId);
+      forceNextMessageScroll();
       setMessages(session.messages);
       setActiveTab('chat');
     }
@@ -597,6 +625,9 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
       content: question,
       timestamp: new Date(),
     };
+    const userMessages: Message[] = [...currentMessages, userMessage];
+    forceNextMessageScroll();
+    updateCurrentSession(userMessages);
 
     try {
       const selectedDatasetIds = selectedDataset ? [selectedDataset] : [];
@@ -634,11 +665,11 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         plan: response.plan,
       };
 
-      const newMessages: Message[] = [...currentMessages, userMessage, planMessage];
+      const newMessages: Message[] = [...userMessages, planMessage];
       updateCurrentSession(newMessages);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : '生成计划失败';
-      const newMessages: Message[] = [...currentMessages, userMessage, {
+      const newMessages: Message[] = [...userMessages, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: `生成计划时出错：${errorMsg}`,
@@ -780,7 +811,12 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         content: userMsg,
         timestamp: new Date(),
       };
-      const responseMessage: Message = {
+      const userMessages: Message[] = [...messages, userMessage];
+      forceNextMessageScroll();
+      updateCurrentSession(userMessages);
+      setIsLoading(true);
+      try {
+        const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: activeResultSummary
@@ -789,10 +825,49 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         type: 'text',
         timestamp: new Date(),
       };
-      updateCurrentSession([...messages, userMessage, responseMessage]);
+        updateCurrentSession([...userMessages, responseMessage]);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
     generatePlanForQuestion(userMsg);
+  };
+
+  const handleQuickPrompt = async (prompt: string) => {
+    if (!prompt.trim() || isLoading) return;
+    setInputValue(prompt);
+    inputRef.current?.focus();
+
+    const followupIntent = detectResultFollowupIntent(prompt);
+    if (followupIntent === 'unknown') return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: prompt,
+      timestamp: new Date(),
+    };
+    const userMessages: Message[] = [...messages, userMessage];
+    setInputValue('');
+    forceNextMessageScroll();
+    updateCurrentSession(userMessages);
+    setIsLoading(true);
+
+    try {
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: activeResultSummary
+          ? await buildResultFollowupContent(prompt, activeResultSummary, followupIntent)
+          : '我还没有看到需要解释的分析结果。请先从历史结果中选择一条，或从结果页点击「带到 AI 工作台 / 让 AI 解读这个结果」。',
+        type: 'text',
+        timestamp: new Date(),
+      };
+      updateCurrentSession([...userMessages, responseMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 键盘事件
@@ -940,22 +1015,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ========== 关闭按钮 ========== */}
-        <button
-          onClick={onClose}
-          aria-label="关闭 AI 工作台"
-          className={cn(
-            "absolute top-3 left-3 z-50",
-            "h-9 w-9 flex items-center justify-center",
-            "rounded-xl border border-white/10",
-            "bg-white/5 text-[var(--text-secondary)]",
-            "hover:bg-white/10 hover:text-white hover:border-white/20",
-            "transition-colors"
-          )}
-        >
-          <X className="w-4 h-4" />
-        </button>
-
         {/* ========== 上下布局：数据预览在上方 ========== */}
         {mainLayout === 'vertical' && showPreview && (
           <AIWorkbenchContextPanel
@@ -1027,9 +1086,22 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           mainLayout === 'horizontal' ? "w-[62%]" : "flex-1"
         )}>
           {/* 头部 */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] pl-12 flex-shrink-0">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
+            <button
+              onClick={onClose}
+              aria-label="关闭 AI 工作台"
+              className={cn(
+                "h-9 w-9 shrink-0 flex items-center justify-center",
+                "rounded-xl border border-white/10",
+                "bg-white/5 text-[var(--text-secondary)]",
+                "hover:bg-white/10 hover:text-white hover:border-white/20",
+                "transition-colors"
+              )}
+            >
+              <X className="w-4 h-4" />
+            </button>
             <AssistantAvatar variant="default" size="sm" />
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 leading-tight">
               <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 工作台</h2>
               <p
                 className="text-[10px] text-[var(--text-muted)]"
@@ -1162,7 +1234,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
             {activeTab === 'chat' && (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {/* 消息列表 */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4" ref={scrollRef}>
+                <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4" ref={scrollRef} onScroll={handleChatScroll}>
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -1210,6 +1282,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       </div>
                     </div>
                   ))}
+                  <div ref={messagesEndRef} aria-hidden="true" />
 
                 </div>
 
@@ -1232,8 +1305,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                         <button
                           key={prompt}
                           onClick={() => {
-                            setInputValue(prompt);
-                            inputRef.current?.focus();
+                            void handleQuickPrompt(prompt);
                           }}
                           className={cn(
                             'px-2.5 py-1 rounded-lg text-xs',

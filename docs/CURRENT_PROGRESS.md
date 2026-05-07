@@ -1508,3 +1508,13 @@ cd app && npm run build        # built in 20.50s ✅
 - Allowed only the approved `safety.*` flag paths while keeping `raw_rows`, `raw_data`, `result_data`, file/storage paths, credentials, secrets, tokens, API keys, passwords, connection strings, and signed URLs rejected.
 - Added backend tests for valid safety flags, invalid nested raw rows, invalid raw result data, token-like payload keys, and misplaced safety flags.
 - No live plan-analysis, Join Builder behavior, SQL generation, analysis auto-run, dataset mutation, raw result_data forwarding, or raw dataset row forwarding was added.
+
+## Phase 4B-11B-2: AI Workbench UX QA Bugfix
+
+- Fixed AI Workbench header alignment by placing the close action in the same flex row as the assistant avatar and title block.
+- Added smart chat auto-scroll with a bottom sentinel, near-bottom tracking, and forced scroll after user-submitted messages.
+- Updated result follow-up message handling so the user prompt appears immediately before waiting for Hermes live or deterministic fallback responses.
+- Updated quick action result prompt chips to use the same result follow-up message path.
+- Moved `SearchableSelect` dropdown rendering into a fixed-position portal so the Analysis History selector is not clipped by Context Panel overflow.
+- Preserved Hermes result explainer safety boundaries, deterministic fallback, dataset/relationship/history selectors, and non-Hermes planner behavior.
+- No backend behavior, live plan-analysis, Join Builder, SQL generation, analysis auto-run, joins, dataset mutation, or SmartAnalysis change was added.

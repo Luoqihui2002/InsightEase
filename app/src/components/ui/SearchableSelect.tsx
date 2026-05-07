@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,13 @@ interface SearchableSelectProps {
   allowClear?: boolean;
   disabled?: boolean;
   className?: string;
+}
+
+interface DropdownPosition {
+  top: number;
+  left: number;
+  width: number;
+  maxListHeight: number;
 }
 
 function getNextEnabledIndex(
@@ -62,8 +70,10 @@ export function SearchableSelect({
   const [query, setQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
   const selectedOption = options.find((option) => option.value === value);
 
   const filteredOptions = useMemo(() => {
@@ -92,6 +102,27 @@ export function SearchableSelect({
     setOpen(true);
   };
 
+  const updateDropdownPosition = () => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const gap = 8;
+    const preferredHeight = 288;
+    const spaceBelow = viewportHeight - rect.bottom - gap;
+    const spaceAbove = rect.top - gap;
+    const openAbove = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const availableHeight = Math.max(140, Math.min(preferredHeight, openAbove ? spaceAbove : spaceBelow));
+
+    setDropdownPosition({
+      top: openAbove ? Math.max(gap, rect.top - availableHeight - gap) : rect.bottom + gap,
+      left: rect.left,
+      width: rect.width,
+      maxListHeight: Math.max(96, availableHeight - 48),
+    });
+  };
+
   const selectOption = (option: SearchableSelectOption | undefined) => {
     if (!option || option.disabled) return;
     onChange(option.value);
@@ -100,23 +131,28 @@ export function SearchableSelect({
 
   useEffect(() => {
     if (!open) return;
+    updateDropdownPosition();
     const timer = window.setTimeout(() => inputRef.current?.focus(), 0);
     return () => window.clearTimeout(timer);
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    setHighlightedIndex((currentIndex) => {
-      if (filteredOptions[currentIndex] && !filteredOptions[currentIndex].disabled) {
-        return currentIndex;
-      }
-      return getFirstEnabledIndex(filteredOptions);
-    });
-  }, [filteredOptions, open]);
+
+    const handleWindowChange = () => updateDropdownPosition();
+    window.addEventListener('resize', handleWindowChange);
+    window.addEventListener('scroll', handleWindowChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!rootRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         closeDropdown();
       }
     };
@@ -174,7 +210,7 @@ export function SearchableSelect({
 
     if (event.key === 'Enter') {
       event.preventDefault();
-      selectOption(filteredOptions[highlightedIndex]);
+      selectOption(filteredOptions[visibleHighlightedIndex]);
     }
   };
 
@@ -183,8 +219,97 @@ export function SearchableSelect({
     closeDropdown();
   };
 
+  const visibleHighlightedIndex =
+    highlightedIndex >= 0 && filteredOptions[highlightedIndex] && !filteredOptions[highlightedIndex].disabled
+      ? highlightedIndex
+      : getFirstEnabledIndex(filteredOptions);
   const selectedActiveOptionId =
-    open && highlightedIndex >= 0 ? `${activeOptionId}-${highlightedIndex}` : undefined;
+    open && visibleHighlightedIndex >= 0 ? `${activeOptionId}-${visibleHighlightedIndex}` : undefined;
+
+  const dropdown = open && dropdownPosition ? (
+    <div
+      ref={dropdownRef}
+      style={{
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+      }}
+      className="fixed z-[9999] min-w-[220px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] shadow-2xl shadow-black/40"
+    >
+      <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2">
+        <Search className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={handleInputKeyDown}
+          placeholder={searchPlaceholder}
+          aria-label={searchPlaceholder}
+          aria-controls={listboxId}
+          aria-activedescendant={selectedActiveOptionId}
+          className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none"
+        />
+      </div>
+      <div
+        id={listboxId}
+        role="listbox"
+        style={{ maxHeight: dropdownPosition.maxListHeight }}
+        className="overflow-y-auto overscroll-contain p-1"
+      >
+        {filteredOptions.length === 0 ? (
+          <div className="px-3 py-3 text-xs text-[var(--text-muted)]">{emptyText}</div>
+        ) : (
+          filteredOptions.map((option, index) => {
+            const isSelected = value === option.value;
+            const isHighlighted = index === visibleHighlightedIndex;
+
+            return (
+              <button
+                id={`${activeOptionId}-${index}`}
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                disabled={option.disabled}
+                onClick={() => selectOption(option)}
+                onMouseEnter={() => {
+                  if (!option.disabled) setHighlightedIndex(index);
+                }}
+                className={cn(
+                  'w-full rounded-md px-3 py-2 text-left transition-colors',
+                  isSelected
+                    ? 'bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]'
+                    : 'text-[var(--text-primary)]',
+                  isHighlighted && !isSelected && 'bg-[var(--bg-tertiary)]',
+                  !option.disabled && 'hover:bg-[var(--bg-tertiary)]',
+                  option.disabled && 'cursor-not-allowed opacity-50'
+                )}
+              >
+                <div className="flex min-w-0 items-center justify-between gap-2">
+                  <span className="min-w-0 truncate text-sm">{option.label}</span>
+                  {option.badges && option.badges.length > 0 && (
+                    <span className="flex max-w-[55%] shrink-0 flex-wrap justify-end gap-1">
+                      {option.badges.slice(0, 3).map((badge) => (
+                        <span
+                          key={badge}
+                          className="max-w-full truncate rounded border border-[var(--border-subtle)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)]"
+                        >
+                          {badge}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </div>
+                {option.description && (
+                  <p className="mt-1 line-clamp-2 text-xs text-[var(--text-muted)]">{option.description}</p>
+                )}
+              </button>
+            );
+          })
+        )}
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div ref={rootRef} className={cn('relative', className)}>
@@ -247,77 +372,7 @@ export function SearchableSelect({
         </span>
       </button>
 
-      {open && (
-        <div className="absolute z-[80] mt-2 w-full min-w-[220px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] shadow-xl">
-          <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2">
-            <Search className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" />
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={handleInputKeyDown}
-              placeholder={searchPlaceholder}
-              aria-label={searchPlaceholder}
-              aria-controls={listboxId}
-              aria-activedescendant={selectedActiveOptionId}
-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none"
-            />
-          </div>
-          <div id={listboxId} role="listbox" className="max-h-64 overflow-y-auto overscroll-contain p-1">
-            {filteredOptions.length === 0 ? (
-              <div className="px-3 py-3 text-xs text-[var(--text-muted)]">{emptyText}</div>
-            ) : (
-              filteredOptions.map((option, index) => {
-                const isSelected = value === option.value;
-                const isHighlighted = index === highlightedIndex;
-
-                return (
-                  <button
-                    id={`${activeOptionId}-${index}`}
-                    key={option.value}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    disabled={option.disabled}
-                    onClick={() => selectOption(option)}
-                    onMouseEnter={() => {
-                      if (!option.disabled) setHighlightedIndex(index);
-                    }}
-                    className={cn(
-                      'w-full rounded-md px-3 py-2 text-left transition-colors',
-                      isSelected
-                        ? 'bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)]'
-                        : 'text-[var(--text-primary)]',
-                      isHighlighted && !isSelected && 'bg-[var(--bg-tertiary)]',
-                      !option.disabled && 'hover:bg-[var(--bg-tertiary)]',
-                      option.disabled && 'cursor-not-allowed opacity-50'
-                    )}
-                  >
-                    <div className="flex min-w-0 items-center justify-between gap-2">
-                      <span className="min-w-0 truncate text-sm">{option.label}</span>
-                      {option.badges && option.badges.length > 0 && (
-                        <span className="flex max-w-[55%] shrink-0 flex-wrap justify-end gap-1">
-                          {option.badges.slice(0, 3).map((badge) => (
-                            <span
-                              key={badge}
-                              className="max-w-full truncate rounded border border-[var(--border-subtle)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)]"
-                            >
-                              {badge}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                    </div>
-                    {option.description && (
-                      <p className="mt-1 line-clamp-2 text-xs text-[var(--text-muted)]">{option.description}</p>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
+      {dropdown && createPortal(dropdown, document.body)}
     </div>
   );
 }

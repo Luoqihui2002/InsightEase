@@ -1174,3 +1174,13 @@
 - Added focused backend tests for valid safety flags and rejected raw/sensitive payload keys.
 - Added `docs/phase-logs/PHASE_4B_11B_1_HERMES_SAFETY_FLAG_VALIDATION_BUGFIX.md`.
 - No live plan-analysis, Join Builder behavior, SQL generation, analysis auto-run, dataset mutation, raw result_data forwarding, or raw dataset row forwarding was added.
+
+# Phase 4B-11B-2: AI Workbench UX QA Bugfix
+
+- Fixed AI Workbench header close/avatar/title alignment with a single stable flex row.
+- Added chat auto-scroll behavior for user messages, Hermes live result responses, deterministic fallback responses, handoff messages, and result follow-up quick action prompts.
+- Updated result follow-up prompts to append the user message before waiting on Hermes live explanation.
+- Moved `SearchableSelect` dropdowns to a fixed-position portal so the Analysis History selector is no longer clipped by Context Panel overflow.
+- Added `docs/phase-logs/PHASE_4B_11B_2_AI_WORKBENCH_UX_QA_BUGFIX.md`.
+- `npx tsc --noEmit` and `npm run build` pass; project-wide lint still fails due pre-existing frontend lint debt, while `SearchableSelect` lint passes.
+- No backend behavior, Hermes safety contract change, live plan-analysis, Join Builder, SQL generation, analysis auto-run, joins, source dataset mutation, or SmartAnalysis change was added.
