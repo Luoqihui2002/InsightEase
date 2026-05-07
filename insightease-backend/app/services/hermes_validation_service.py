@@ -13,6 +13,8 @@ MAX_TABLE_COLUMNS = 12
 MAX_DATASETS = 50
 MAX_SCHEMA_COLUMNS = 100
 MAX_RELATIONSHIP_EDGES = 200
+MAX_HINT_ITEMS = 8
+MAX_HINT_TEXT_CHARS = 500
 
 FORBIDDEN_KEYS = {
     "raw_rows",
@@ -161,6 +163,45 @@ def _validate_safe_result_summary(summary: Dict[str, Any]) -> None:
                         f"SafeResultSummary row contains more than {MAX_TABLE_COLUMNS} columns.",
                         "The result summary has too many preview columns for Hermes dry-run validation.",
                     )
+
+    hints = summary.get("explanation_hints")
+    if isinstance(hints, dict):
+        _validate_explanation_hints(hints)
+
+
+def _validate_explanation_hints(hints: Dict[str, Any]) -> None:
+    list_fields = {
+        "selected_fields",
+        "primary_metric_names",
+        "primary_metric_interpretation",
+        "module_specific_findings",
+        "chart_summaries",
+        "table_summaries",
+        "limitations",
+        "recommended_followups",
+    }
+
+    for key, value in hints.items():
+        if key in list_fields:
+            if not isinstance(value, list):
+                raise HermesValidationError(
+                    "INVALID_RESULT_SUMMARY",
+                    f"explanation_hints.{key} must be a list.",
+                    "Result explanation hints are malformed, so the local fallback should be used.",
+                )
+            if len(value) > MAX_HINT_ITEMS:
+                raise HermesValidationError(
+                    "SUMMARY_TOO_LARGE",
+                    f"explanation_hints.{key} contains more than {MAX_HINT_ITEMS} items.",
+                    "The result explanation hints are too large for Hermes validation.",
+                )
+
+        if isinstance(value, str) and len(value) > MAX_HINT_TEXT_CHARS:
+            raise HermesValidationError(
+                "SUMMARY_TOO_LARGE",
+                f"explanation_hints.{key} exceeds {MAX_HINT_TEXT_CHARS} characters.",
+                "The result explanation hints are too large for Hermes validation.",
+            )
 
 
 def _validate_planning_context(context: Dict[str, Any]) -> None:

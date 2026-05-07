@@ -15,7 +15,39 @@ export interface SafeResultSummary {
   tables: SafeTableSummary[];
   charts: SafeChartSummary[];
   warnings: string[];
+  explanation_hints?: SafeResultExplanationHints;
   available_actions: SafeResultAction[];
+}
+
+export interface SafeResultExplanationHints {
+  analysis_goal?: string;
+  method?: string;
+  selected_fields?: string[];
+  model_name?: string;
+  primary_metric_names?: string[];
+  primary_metric_interpretation?: string[];
+  module_specific_findings?: string[];
+  chart_summaries?: SafeChartExplanationSummary[];
+  table_summaries?: SafeTableExplanationSummary[];
+  limitations?: string[];
+  recommended_followups?: string[];
+}
+
+export interface SafeChartExplanationSummary {
+  chart_type: string;
+  title?: string;
+  x_field?: string;
+  y_field?: string;
+  trend?: 'up' | 'down' | 'flat' | 'mixed' | 'unknown';
+  notable_points?: string[];
+}
+
+export interface SafeTableExplanationSummary {
+  name: string;
+  row_count?: number;
+  column_count?: number;
+  key_columns?: string[];
+  notable_values?: string[];
 }
 
 export interface SafeMetricSummary {

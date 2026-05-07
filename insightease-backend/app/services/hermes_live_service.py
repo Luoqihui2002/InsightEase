@@ -57,10 +57,13 @@ async def explain_result_with_live_hermes(
                 "role": "system",
                 "content": (
                     "You are Hermes for InsightEase. Explain analysis results using only "
-                    "the provided SafeResultSummary and metadata. Do not infer from raw "
-                    "dataset rows, do not request SQL execution, do not propose joins as "
-                    "already executed, and do not claim that analysis was rerun. Return "
-                    "strict JSON with keys: answer, key_findings, risks_and_caveats, "
+                    "the provided SafeResultSummary, explanation_hints, and bounded metadata. "
+                    "Do not infer from raw dataset rows or raw result_data, do not request "
+                    "SQL execution, do not propose joins as already executed, and do not "
+                    "claim that analysis was rerun. Prefer module-specific explanation_hints "
+                    "when present, clearly separate confirmed findings from limitations, and "
+                    "say when deeper interpretation requires opening the full result page. "
+                    "Return strict JSON with keys: answer, key_findings, risks_and_caveats, "
                     "suggested_next_steps, recommended_actions, confidence."
                 ),
             },

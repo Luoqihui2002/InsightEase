@@ -101,6 +101,16 @@ Current caps in `buildSafeResultSummary()`:
 - columns per table: 12;
 - warnings: 8;
 - long strings: 120 characters.
+- optional explanation hint lists: 8 items each;
+- optional direct explanation hint text fields: 500 characters each.
+
+Phase 4B-11B-3 adds optional `explanation_hints` to make live result explanation
+less generic while preserving the same safety boundary. These hints are bounded,
+derived summaries only. They may include selected fields, model names,
+module-specific findings, chart/table summaries, limitations, and recommended
+follow-ups. They must not include raw `result_data`, raw uploaded rows, full
+tables, file paths, storage paths, credentials, tokens, API keys, signed URLs,
+SQL, or dataset mutation instructions.
 
 Reviewed result handoff paths:
 

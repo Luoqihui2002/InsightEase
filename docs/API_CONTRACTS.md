@@ -403,10 +403,11 @@ Contract rules:
 
 - All successful responses should use existing `ResponseModel<T>` envelope.
 - The endpoints must use bounded context only.
-- `explain-result` may receive `SafeResultSummary`, metadata-only assistant context, user question, and explicit safety flags.
+- `explain-result` may receive `SafeResultSummary`, optional bounded `explanation_hints`, metadata-only assistant context, user question, and explicit safety flags.
 - In live mode, `explain-result` may call the configured backend-only Hermes Agent through `HERMES_BASE_URL`; the browser never calls Hermes directly.
 - `plan-analysis` may receive dataset metadata, active relationship-set metadata, optional safe result summary, user question, and explicit safety flags.
 - Hermes must not receive raw uploaded rows, full raw result tables, unbounded `result_data`, credentials, secrets, or storage paths.
+- `explanation_hints` are derived summaries only, capped by list/string limits, and must not include raw rows, raw result payloads, secrets, file paths, SQL, or mutation instructions.
 - Hermes must not auto-run analysis, auto-join datasets, generate executable SQL, create datasets, or mutate datasets.
 - Frontend must fallback to `ruleBasedAssistantRuntime` and deterministic `resultFollowupResponder` when Hermes is disabled, unavailable, or fails.
 - Default backend config keeps Hermes disabled; frontend runtime behavior remains deterministic by default.

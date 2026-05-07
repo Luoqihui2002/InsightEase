@@ -30,6 +30,7 @@ It is not an AI explanation and does not run analysis.
 - capped table previews;
 - chart/config summaries;
 - warnings;
+- optional bounded `explanation_hints` for module-specific result explanation;
 - safe follow-up actions.
 
 ## Truncation Rules
@@ -40,6 +41,7 @@ It is not an AI explanation and does not run analysis.
 - Table rows: max 5.
 - Table columns: max 12.
 - Warnings: max 8.
+- Explanation hint lists: max 8 items.
 - Long strings are truncated.
 - Nested objects are summarized by key count or key names instead of expanded.
 
@@ -62,6 +64,27 @@ It is not an AI explanation and does not run analysis.
 
 - ResultView can optionally expose a compact summary header from this contract.
 - Hermes/LLM result explanation should receive this bounded summary instead of raw `result_data`.
+
+## Phase 4B-11B-3 Explanation Hints
+
+`SafeResultSummary` may include optional `explanation_hints` to improve Hermes result explanation quality without sending raw result payloads.
+
+Allowed hint content:
+
+- analysis goal and method/model name;
+- selected field names;
+- primary metric names and short metric interpretations;
+- module-specific findings for Forecast, Attribution, Statistics, PathAnalysis, and Semantic results when safely derivable;
+- capped chart summaries;
+- capped table summaries;
+- limitations and recommended follow-ups.
+
+Rules:
+
+- Hints are derived summaries only.
+- Hints must not include raw `result_data`, raw uploaded rows, full tables, file/storage paths, credentials, tokens, signed URLs, SQL, or mutation instructions.
+- Hints are optional; deterministic fallback and Hermes live explanation must remain usable without them.
+- If hints are sparse, Hermes must state limitations rather than claiming access to unavailable details.
 
 ## Phase 4B-8I Handoff Use
 
@@ -107,6 +130,7 @@ Future Hermes result explanation must use `SafeResultSummary` as its result inpu
 Hermes may receive:
 
 - `SafeResultSummary`;
+- optional bounded `SafeResultSummary.explanation_hints`;
 - selected dataset metadata;
 - active relationship set metadata;
 - user question;

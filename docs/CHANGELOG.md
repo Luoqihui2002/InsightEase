@@ -1192,3 +1192,14 @@
 - Added explicit line-height and truncation to keep the title/subtitle stable at desktop and narrower widths.
 - Preserved chat auto-scroll, Analysis History dropdown portal behavior, Hermes result explainer behavior, and all backend safety boundaries.
 - `npx tsc --noEmit` and `npm run build` pass; targeted `AIWorkspace.tsx` lint still fails due pre-existing file-level lint debt.
+
+# Phase 4B-11B-3: Result Explainer QA Hardening
+
+- Fixed `DatasetUnderstandingCard` partial-profile crashes by guarding missing numeric fields and rendering safe fallbacks instead of calling `toLocaleString()` on undefined values.
+- Added optional bounded `SafeResultSummary.explanation_hints` with derived module-specific context for Forecast, Attribution, Statistics, PathAnalysis, and Semantic result explanations.
+- Updated Hermes backend validation to accept capped safe explanation hints while preserving forbidden-key rejection for raw rows, raw data, raw result payloads, file/storage paths, credentials, secrets, tokens, API keys, passwords, connection strings, and signed URLs.
+- Updated the live Hermes result explainer prompt so responses use safe hints, distinguish confirmed findings from limitations, and do not claim raw-data inspection.
+- Added backend tests for enriched safe context, hint caps, and live request forwarding.
+- Updated Hermes/SafeResultSummary API docs and added the Phase 4B-11B-3 phase log.
+- `npx tsc --noEmit`, `npm run build`, targeted frontend lint, focused Hermes backend tests, and the backend test suite pass.
+- No live plan-analysis, Join Builder, SQL generation, analysis auto-run, joins, source dataset mutation, raw result forwarding, or raw dataset row forwarding was added.

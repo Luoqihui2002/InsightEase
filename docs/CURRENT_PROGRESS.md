@@ -1525,3 +1525,14 @@ cd app && npm run build        # built in 20.50s ✅
 - Rebuilt the left cluster as a single fixed-height flex row containing the close button, assistant avatar wrapper, and title/subtitle block.
 - Added explicit fixed dimensions, centered avatar wrapping, `flex-col justify-center`, `leading-none`, and truncation to stabilize the visual baseline.
 - Left chat auto-scroll, SearchableSelect dropdown portal behavior, Hermes result explanation, and backend behavior unchanged.
+
+## Phase 4B-11B-3: Result Explainer QA Hardening
+
+- Fixed a Datasets page crash in `DatasetUnderstandingCard` by replacing unsafe direct numeric formatting with safe formatters and fallback rendering for partial dataset profile responses.
+- Added optional bounded `SafeResultSummary.explanation_hints` so Hermes live result explanations can use derived module-specific context without receiving raw `result_data` or raw uploaded rows.
+- Added safe hint extraction for Forecast, Attribution, Statistics, PathAnalysis, and Semantic result shapes where structured values are available.
+- Updated Hermes backend validation to accept capped safe explanation hints while continuing to reject raw/sensitive payload keys.
+- Updated the Hermes result explainer prompt to use explanation hints, distinguish confirmed findings from limitations, and avoid claiming raw-data inspection.
+- Added backend tests for enriched safe context acceptance, hint caps, and live request forwarding.
+- Frontend typecheck/build, targeted frontend lint, focused Hermes tests, and the backend test suite pass.
+- No live plan-analysis, Join Builder, SQL generation, analysis auto-run, joins, source dataset mutation, raw result forwarding, or raw dataset row forwarding was added.

@@ -163,6 +163,14 @@ export interface HermesExplainResultRequest {
 }
 ```
 
+Phase 4B-11B-3 note: `result_summary` may include optional
+`explanation_hints` generated from bounded frontend result summaries. These
+hints are derived product context only, such as selected fields, model names,
+module-specific findings, chart summaries, table summaries, limitations, and
+recommended follow-ups. They must not contain raw `result_data`, raw uploaded
+rows, full tables, file paths, storage paths, credentials, tokens, API keys,
+signed URLs, SQL, or dataset mutation instructions.
+
 Response envelope:
 
 ```ts
@@ -202,6 +210,7 @@ Backend must reject the request if:
 - `safety.allow_dataset_mutation !== false`;
 - `result_summary` exceeds size limits;
 - `result_summary.tables[*].rows` exceeds Safe Result Summary caps;
+- `result_summary.explanation_hints` exceeds hint list or string caps;
 - request body appears to contain raw uploaded rows, full result tables, storage paths, credentials, secrets, or unbounded nested `result_data`;
 - `user_question` is empty or exceeds request limits.
 
@@ -332,6 +341,8 @@ Initial limits:
 - Max `SafeResultSummary.tables`: inherit cap, currently 3.
 - Max rows per safe table: inherit cap, currently 5.
 - Max columns per safe table: inherit cap, currently 12.
+- Max `SafeResultSummary.explanation_hints` list fields: 8 items each.
+- Max direct `SafeResultSummary.explanation_hints` text fields: 500 characters each.
 - Max datasets in planning context: 50.
 - Max schema columns per dataset: 100.
 - Max relationship edges: 200.
@@ -467,11 +478,11 @@ Current deterministic behavior remains required fallback:
 
 This contract and dry-run scaffold do not:
 
-- implement live Hermes provider calls;
+- implement live plan-analysis provider calls;
 - switch runtime mode;
 - add streaming;
 - add provider secrets;
-- call Hermes/LLM;
+- call Hermes/LLM outside the explicitly configured backend-only result explainer adapter;
 - auto-run analysis;
 - auto-join datasets;
 - generate SQL;

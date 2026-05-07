@@ -4,6 +4,7 @@ from app.core.config import Settings
 from app.schemas.hermes import HermesExplainResultRequest
 from app.services.hermes_live_service import (
     HermesLiveError,
+    explain_result_with_live_hermes,
     parse_hermes_explain_response,
 )
 from app.services.hermes_validation_service import (
@@ -167,6 +168,73 @@ def test_explain_result_accepts_required_safety_flags():
     validate_explain_result_payload(payload)
 
 
+def test_explain_result_accepts_enriched_explanation_hints():
+    payload = {
+        "user_question": "Explain this",
+        "result_summary": {
+            **_safe_summary(),
+            "explanation_hints": {
+                "analysis_goal": "Explain forecast result.",
+                "method": "Prophet",
+                "selected_fields": ["date", "sales"],
+                "model_name": "Prophet",
+                "primary_metric_names": ["mape"],
+                "module_specific_findings": ["Forecast horizon: 30 periods."],
+                "chart_summaries": [
+                    {
+                        "chart_type": "line",
+                        "title": "Forecast",
+                        "x_field": "date",
+                        "y_field": "sales",
+                        "trend": "up",
+                        "notable_points": ["last forecast is above first forecast"],
+                    }
+                ],
+                "table_summaries": [
+                    {
+                        "name": "forecast",
+                        "row_count": 5,
+                        "column_count": 3,
+                        "key_columns": ["date", "sales"],
+                        "notable_values": ["sales=120"],
+                    }
+                ],
+                "limitations": ["Only bounded SafeResultSummary is available."],
+                "recommended_followups": ["Open the full result page."],
+            },
+        },
+        "safety": {
+            "allow_raw_data": False,
+            "allow_auto_run": False,
+            "allow_sql_generation": False,
+            "allow_dataset_mutation": False,
+        },
+    }
+
+    validate_explain_result_payload(payload)
+
+
+def test_explain_result_rejects_oversized_explanation_hints():
+    payload = {
+        "user_question": "Explain this",
+        "result_summary": {
+            **_safe_summary(),
+            "explanation_hints": {
+                "module_specific_findings": [f"finding-{index}" for index in range(9)],
+            },
+        },
+        "safety": {
+            "allow_raw_data": False,
+            "allow_auto_run": False,
+            "allow_sql_generation": False,
+            "allow_dataset_mutation": False,
+        },
+    }
+
+    with pytest.raises(HermesValidationError):
+        validate_explain_result_payload(payload)
+
+
 def test_explain_result_rejects_safety_flags_outside_safety_path():
     payload = {
         "user_question": "Explain this",
@@ -303,3 +371,45 @@ def test_openai_compatible_hermes_response_is_validated():
     assert response.fallback_used is False
     assert response.answer == "Looks good"
     assert response.confidence == "high"
+
+
+@pytest.mark.anyio
+async def test_live_explain_request_forwards_explanation_hints(monkeypatch):
+    captured = {}
+
+    async def fake_request_json(method, url, payload, auth_token, timeout_ms):
+        captured["payload"] = payload
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"answer":"Uses hints","key_findings":["Forecast horizon: 30 periods"],"risks_and_caveats":[],"suggested_next_steps":[],"recommended_actions":[],"confidence":"high"}'
+                    }
+                }
+            ]
+        }
+
+    monkeypatch.setattr("app.services.hermes_live_service._request_json", fake_request_json)
+
+    request = _request(
+        {
+            **_safe_summary(),
+            "explanation_hints": {
+                "method": "Prophet",
+                "module_specific_findings": ["Forecast horizon: 30 periods."],
+            },
+        }
+    )
+
+    response = await explain_result_with_live_hermes(
+        request=request,
+        base_url="http://127.0.0.1:8642/v1",
+        auth_token="secret-token",
+        model="hermes-agent",
+        timeout_ms=1000,
+    )
+
+    user_content = captured["payload"]["messages"][1]["content"]
+    assert "explanation_hints" in user_content
+    assert "Forecast horizon: 30 periods" in user_content
+    assert response.answer == "Uses hints"
