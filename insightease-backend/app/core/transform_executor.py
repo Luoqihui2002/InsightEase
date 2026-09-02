@@ -7,9 +7,13 @@ Receives a pd.DataFrame + list of operations, returns a pd.DataFrame.
 
 import re
 import time
+import logging
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any, Tuple
+
+
+logger = logging.getLogger(__name__)
 
 
 class TransformError(Exception):
@@ -45,14 +49,14 @@ def execute_operations(df: pd.DataFrame, operations: List[Dict[str, Any]]) -> Tu
             current = _apply_operation(current, op_type, config, idx)
         except TransformError:
             raise
-        except Exception as e:
-            available = list(current.columns)
+        except Exception as exc:
+            logger.exception("Unexpected transform failure at step %s (%s)", idx, op_type)
             raise TransformError(
-                message=f"第 {idx + 1} 步 {op_type} 失败: {str(e)}",
+                message=f"第 {idx + 1} 步 {op_type} 执行失败",
                 step_index=idx,
                 step_type=op_type,
                 error_category="EXECUTION_ERROR",
-            )
+            ) from exc
 
     duration_ms = int((time.perf_counter() - start_time) * 1000)
     summary = {
@@ -351,13 +355,14 @@ def _exec_derive(df: pd.DataFrame, config: Dict[str, Any], step_index: int) -> p
 
     try:
         result = eval(expr, {"__builtins__": {}}, {"df": df, "pd": pd, "np": np})
-    except Exception as e:
+    except Exception as exc:
+        logger.exception("Derive formula evaluation failed at step %s", step_index)
         raise TransformError(
-            message=f"derive formula 计算错误: {str(e)}",
+            message="derive formula 计算失败，请检查字段类型和表达式",
             step_index=step_index,
             step_type="derive",
             error_category="FORMULA_EVAL_ERROR",
-        )
+        ) from exc
 
     out = df.copy()
     out[new_col] = result

@@ -37,7 +37,7 @@ const CANDIDATE_CONFIDENCE_LABELS: Record<'low' | 'medium' | 'high', string> = {
 
 const ANALYSIS_TYPE_LABELS: Record<RecommendedAnalysisType, string> = {
   descriptive: '描述统计',
-  semantic: '语义分析',
+  data_overview: '数据概览',
   attribution: '归因分析',
   forecast: '时序预测',
   path_analysis: '路径/漏斗分析',
@@ -49,7 +49,7 @@ const ANALYSIS_TYPE_LABELS: Record<RecommendedAnalysisType, string> = {
 
 const ANALYSIS_TYPE_COLORS: Record<RecommendedAnalysisType, string> = {
   descriptive: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
-  semantic: 'bg-violet-400/10 text-violet-400 border-violet-400/20',
+  data_overview: 'bg-violet-400/10 text-violet-400 border-violet-400/20',
   attribution: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
   forecast: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',
   path_analysis: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20',
@@ -67,7 +67,6 @@ const FIELD_ROLE_LABELS: Record<string, string> = {
   event_name: '事件名称',
   dimension: '维度列',
   feature: '特征列',
-  text_column: '文本列',
   join_key: '关联键',
 };
 

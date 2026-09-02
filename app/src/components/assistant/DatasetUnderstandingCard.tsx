@@ -245,7 +245,7 @@ export function DatasetUnderstandingCard({ datasetId, datasetName }: DatasetUnde
     roleCounts[c.role] = (roleCounts[c.role] || 0) + 1;
   });
 
-  // Semantic type summary
+  // Field type summary
   const semanticCounts: Record<string, number> = {};
   columns.forEach((c) => {
     semanticCounts[c.semantic_type] = (semanticCounts[c.semantic_type] || 0) + 1;

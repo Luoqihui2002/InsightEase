@@ -57,7 +57,7 @@ function SheetContent({
         data-slot="sheet-content"
         className={cn(
           "data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
-          // Kimi 风格毛玻璃效果
+          // Translucent glass surface
           "bg-[rgba(21,27,61,0.85)] backdrop-blur-[24px] saturate-[180%]",
           "border-[rgba(255,255,255,0.12)]",
           "shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)]",

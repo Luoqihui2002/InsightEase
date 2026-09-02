@@ -44,12 +44,12 @@
 
 ---
 
-## 3. Semantic（语义分析）
+## 3. Data Overview（数据概览）
 
 | # | 检查项 | 状态 | 备注 |
 |---|--------|------|------|
 | 3.1 | 上传 `09_product_reviews_semantic.csv` | ⬜ | |
-| 3.2 | 运行 Comprehensive 语义分析 | ⬜ | |
+| 3.2 | 运行 Comprehensive 字段概览 | ⬜ | |
 | 3.3 | ResultView 渲染 summary 块 | ⬜ | |
 | 3.4 | ResultView 渲染 metric 块 | ⬜ | |
 | 3.5 | ResultView 渲染 table 块（13 列） | ⬜ | |

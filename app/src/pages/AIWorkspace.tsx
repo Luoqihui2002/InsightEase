@@ -52,13 +52,19 @@ import type { ApiResponse } from '@/types/api';
 import type { HermesExplainResultResponse } from '@/types/hermes';
 import type { DatasetPreview } from '@/types/api';
 import type { SafeResultSummary } from '@/types/resultSummary';
-import type { AnalysisType } from '@/services/intent-recognition.service';
-
 import type { Dataset } from '@/types/api';
 import { cn } from '@/lib/utils';
 
+type AnalysisCapabilityId =
+  | 'visualization'
+  | 'forecast'
+  | 'clustering'
+  | 'attribution'
+  | 'correlation'
+  | 'descriptive';
+
 interface AnalysisCapability {
-  id: AnalysisType;
+  id: AnalysisCapabilityId;
   name: string;
   icon: any;
   description: string;
@@ -682,30 +688,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     }
   };
 
-
-
-  // 普通对话（不走分析流程）
-  // const handleGeneralChat = async (prompt: string) => {
-  //   addMessage({ role: 'assistant', content: '', isStreaming: true, type: 'text' });
-
-  //   // 构建上下文
-  //   const history = messages
-  //     .filter(m => m.role !== 'assistant' || !m.isStreaming)
-  //     .slice(-6)
-  //     .map(m => ({
-  //       role: m.role,
-  //       content: m.content
-  //     }));
-
-  //   await aiApi.chatStream(prompt, (_chunk, text) => {
-  //     updateLastMessage({ content: text });
-  //   }, {
-  //     history,
-  //     onFinish: () => updateLastMessage({ isStreaming: false }),
-  //     onError: (err) => updateLastMessage({ content: `抱歉：${err}`, isStreaming: false, type: 'error' }),
-  //   });
-  // };
-
   // 添加消息
   const addMessage = (msg: Partial<Message>) => {
     const newMessage: Message = {
@@ -879,7 +861,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   };
 
   // 使用能力卡片 — 数据集依赖型能力需先选数据集
-  const useCapability = (cap: AnalysisCapability) => {
+  const handleCapability = (cap: AnalysisCapability) => {
     if (!selectedDataset) {
       addMessage({
         role: 'assistant',
@@ -1033,51 +1015,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
               if (!selectedAnalysisHistorySummary) setResultFollowupPrompts([]);
             }}
           />
-        )}
-
-        {datasetPreview !== null && false && mainLayout === 'vertical' && showPreview && (
-          <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex-shrink-0 max-h-[240px] overflow-hidden flex flex-col">
-            {/* 数据预览头部 */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)] flex-shrink-0">
-              <h3 className="text-sm font-medium text-[var(--text-primary)]">
-                数据预览（前5行 / 共{datasetPreview!.totalRows}行）
-              </h3>
-              <button
-                onClick={() => setShowPreview(false)}
-                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-              >
-                收起
-              </button>
-            </div>
-            {/* 数据表格 */}
-            <div className="p-3 overflow-auto flex-1">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-[var(--border-subtle)]">
-                    {datasetPreview!.columns.map(col => (
-                      <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
-                        {col}
-                        <span className="ml-1 text-[10px] opacity-60">
-                          ({datasetPreview?.columnTypes[col] || 'unknown'})
-                        </span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {datasetPreview!.rows.map((row, idx) => (
-                    <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
-                      {datasetPreview!.columns.map(col => (
-                        <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
-                          {row[col] ?? '-'}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         )}
 
         {/* ========== AI 对话区域 ========== */}
@@ -1537,7 +1474,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                         {capabilities.map((cap) => (
                           <button
                             key={cap.id}
-                            onClick={() => useCapability(cap)}
+                            onClick={() => handleCapability(cap)}
                             disabled={!selectedDataset || isLoading}
                             className="p-4 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 border border-transparent hover:border-[var(--neon-cyan)]/30 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -1630,47 +1567,6 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
           />
         )}
 
-        {datasetPreview !== null && false && mainLayout === 'horizontal' && showPreview && (
-          <div className="w-[38%] border-l border-[var(--border-subtle)] bg-[var(--bg-tertiary)]/30 flex flex-col min-h-0 overflow-hidden">
-            {/* 数据预览头部 */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
-              <h3 className="text-sm font-medium text-[var(--text-primary)]">
-                数据预览
-              </h3>
-              <span className="text-xs text-[var(--text-muted)]">
-                共{datasetPreview!.totalRows}行
-              </span>
-            </div>
-            {/* 数据表格 */}
-            <div className="flex-1 overflow-auto p-3">
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-[var(--bg-tertiary)]">
-                  <tr className="border-b border-[var(--border-subtle)]">
-                    {datasetPreview!.columns.map(col => (
-                      <th key={col} className="px-2 py-1.5 text-left text-[var(--text-muted)] whitespace-nowrap">
-                        {col}
-                        <span className="ml-1 text-[10px] opacity-60">
-                          ({datasetPreview?.columnTypes[col] || 'unknown'})
-                        </span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {datasetPreview!.rows.map((row, idx) => (
-                    <tr key={idx} className="border-b border-[var(--border-subtle)]/50">
-                      {datasetPreview!.columns.map(col => (
-                        <td key={col} className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap max-w-[150px] truncate">
-                          {row[col] ?? '-'}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </motion.div>
     </div>
   );

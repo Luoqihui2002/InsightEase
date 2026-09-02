@@ -11,6 +11,7 @@ Handles:
 import uuid
 import os
 import tempfile
+import logging
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
@@ -29,6 +30,7 @@ from app.core.transform_executor import (
 )
 from app.models.models import Dataset
 
+logger = logging.getLogger(__name__)
 
 # Constants
 MAX_OPERATIONS = 20
@@ -236,7 +238,7 @@ async def execute_transform(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         await db.rollback()
         # Clean up saved file if any
         try:
@@ -244,7 +246,8 @@ async def execute_transform(
                 await storage.delete(new_storage_path)
         except Exception:
             pass
-        raise HTTPException(status_code=500, detail=f"transform 保存失败: {str(e)}")
+        logger.exception("Transform save failed for dataset %s", dataset.id)
+        raise HTTPException(status_code=500, detail="转换结果保存失败")
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

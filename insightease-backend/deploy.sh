@@ -28,12 +28,12 @@ echo -e "${GREEN}✅ Docker 环境检查通过${NC}"
 # 检查配置文件
 if [ ! -f ".env" ]; then
     echo -e "${YELLOW}⚠️  .env 文件不存在，正在从模板创建...${NC}"
-    if [ -f ".env.production" ]; then
-        cp .env.production .env
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
         echo -e "${YELLOW}⚠️  请编辑 .env 文件，修改数据库密码和密钥配置！${NC}"
         exit 1
     else
-        echo -e "${RED}❌ .env.production 模板文件也不存在${NC}"
+        echo -e "${RED}❌ .env.example 模板文件也不存在${NC}"
         exit 1
     fi
 fi

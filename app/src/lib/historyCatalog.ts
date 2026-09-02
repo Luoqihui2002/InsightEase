@@ -52,7 +52,7 @@ export function getAnalysisTypeLabel(type: string): string {
     case "attribution":
       return "归因分析";
     case "semantic":
-      return "语义分析";
+      return "文本分析（历史）";
     case "ab_test":
       return "A/B 分析";
     case "regression":

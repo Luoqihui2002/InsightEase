@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  Brain,
+  TableProperties,
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,9 @@ import {
   AnalysisActionBar,
 } from '@/components/analysis';
 import { ResultView } from '@/components/results';
-import { toSemanticAnalysisResult } from '@/lib/adapters/semanticResultAdapter';
+import { toDataOverviewResult } from '@/lib/adapters/dataOverviewResultAdapter';
 
-export function Semantic() {
+export function DataOverview() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState('');
@@ -57,7 +57,6 @@ export function Semantic() {
   }, [showResult]);
 
   const handleAnalyze = async () => {
-    console.log('handleAnalyze called, selectedDataset:', selectedDataset);
     if (!selectedDataset) {
       toast.error('请先选择数据集');
       return;
@@ -132,13 +131,11 @@ export function Semantic() {
   const handleExportJSON = () => {
     if (!analysisResult) return;
 
-    // 生成报告内容
     const report = {
-      title: '语义分析报告',
+      title: '数据概览与字段分析报告',
       dataset: datasetInfo?.filename,
       generatedAt: new Date().toLocaleString(),
       columnStats: analysisResult.column_stats || [],
-      aiSummary: analysisResult.ai_summary || ''
     };
 
     // 转换为 JSON 并下载
@@ -146,7 +143,7 @@ export function Semantic() {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `semantic-analysis-report-${Date.now()}.json`;
+    link.download = `data-overview-report-${Date.now()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -157,18 +154,15 @@ export function Semantic() {
 
   return (
     <AnalysisPageShell
-      title="语义分析"
-      description="自动识别字段语义类型，理解数据结构"
+      title="数据概览"
+      description="查看字段类型、完整性和基础分布统计"
     >
       <div className="flex flex-col lg:flex-row gap-6">
         <AnalysisConfigPanel
           footer={
             <>
               <Button
-                onClick={() => {
-                  console.log('Analyze button clicked, selectedDataset:', selectedDataset);
-                  handleAnalyze();
-                }}
+                onClick={handleAnalyze}
                 disabled={isAnalyzing || !selectedDataset}
                 className="w-full"
               >
@@ -179,8 +173,8 @@ export function Semantic() {
                   </>
                 ) : (
                   <>
-                    <Brain className="w-4 h-4 mr-2" />
-                    启动分析
+                    <TableProperties className="w-4 h-4 mr-2" />
+                    生成概览
                   </>
                 )}
               </Button>
@@ -196,7 +190,7 @@ export function Semantic() {
             <label className="text-sm text-[var(--text-muted)]">选择数据集</label>
             <DatasetSelector 
               value={selectedDataset}
-              onChange={(value) => { console.log("Dataset selected:", value); setSelectedDataset(value); }}
+              onChange={setSelectedDataset}
             />
             {datasetInfo && (
               <p className="text-xs text-[var(--neon-cyan)]">
@@ -205,10 +199,10 @@ export function Semantic() {
             )}
           </div>
 
-          {/* 语义分析说明 */}
+          {/* 数据概览说明 */}
           <div className="p-3 rounded text-sm" style={{ backgroundColor: 'var(--bg-secondary)' }}>
             <p className="text-[var(--text-muted)]">
-              语义分析将自动识别数据集中的字段类型和语义含义，无需手动选择列。
+              本页基于确定性的字段统计展示数据类型、缺失情况和常见值，不执行情感、主题或语义推断。
             </p>
           </div>
         </AnalysisConfigPanel>
@@ -218,7 +212,7 @@ export function Semantic() {
           loadingMessage="正在分析数据，请稍候..."
           empty={!showResult && !isAnalyzing}
           emptyTitle="选择数据集并启动分析"
-          emptyDescription="语义分析结果将在此显示"
+          emptyDescription="字段统计和数据质量概览将在此显示"
           actions={showResult ? (
             <AnalysisActionBar onExportJSON={handleExportJSON} />
           ) : undefined}
@@ -226,7 +220,7 @@ export function Semantic() {
           {showResult && (
             <div ref={resultRef}>
               {(() => {
-                const converted = toSemanticAnalysisResult(
+                const converted = toDataOverviewResult(
                   analysisResult,
                   datasetInfo
                 );

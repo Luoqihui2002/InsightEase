@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
-import traceback
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
@@ -14,7 +13,7 @@ from app.models import Dataset, Analysis
 
 # 配置日志
 logging.basicConfig(
-    level=getattr(logging, settings.LOG_LEVEL),
+    level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -38,27 +37,15 @@ app = FastAPI(
     redirect_slashes=False
 )
 
-# CORS 配置 - 必须在所有中间件之前
-# 直接硬编码允许前端地址，确保CORS工作
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-if settings.ALLOWED_ORIGINS == "*":
-    origins = ["*"]
-else:
-    origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()]
-    origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
-
+# CORS is configured from explicit origins. Wildcard origins and credentialed
+# requests are never enabled together.
+origins = settings.CORS_ORIGINS
 logger.info(f"CORS allowed origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials="*" not in origins,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -73,38 +60,14 @@ async def root():
     return {
         "name": settings.PROJECT_NAME, 
         "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT,
         "docs": "/docs" if settings.DEBUG else None
     }
 
-# 全局异常处理器 - 确保返回JSON且带CORS头
+# Global fallback: log server-side diagnostics, return a stable public message.
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Global exception: {exc}")
-    logger.error(traceback.format_exc())
-    
-    # 创建带CORS头的响应
-    response = JSONResponse(
+    logger.exception("Unhandled request error on %s", request.url.path, exc_info=exc)
+    return JSONResponse(
         status_code=500,
-        content={"code": 500, "message": f"服务器错误: {str(exc)}"}
+        content={"code": 500, "message": "服务器内部错误，请稍后重试"}
     )
-    
-    # 手动添加CORS头
-    origin = request.headers.get("origin")
-    if origin in ["http://localhost:5173", "http://127.0.0.1:5173"]:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-    
-    return response
-
-# 处理 OPTIONS 预检请求
-@app.options("/{path:path}")
-async def options_handler(request: Request, path: str):
-    response = JSONResponse(content={})
-    origin = request.headers.get("origin")
-    if origin in ["http://localhost:5173", "http://127.0.0.1:5173"]:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-    return response

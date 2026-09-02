@@ -193,7 +193,7 @@ def classify_table(column_profiles: List[Dict[str, Any]], row_count: int) -> Dic
     if _has("user_id") and (_has_name(["signup", "register", "gender", "age", "region", "channel"]) or _has("date")):
         evidence.append(f"检测到用户标识列 ({role_counts.get('user_id', 0)} 个)")
         evidence.append("包含用户属性字段（如地区、性别、注册时间）")
-        recommended = ["Statistics", "Semantic"]
+        recommended = ["Data Overview", "Statistics"]
         return {
             "tableType": "user",
             "confidence": 0.9,
@@ -232,7 +232,7 @@ def classify_table(column_profiles: List[Dict[str, Any]], row_count: int) -> Dic
     if _has("text_field") and (_has("metric") or _has_name(["rating", "score", "sentiment"])):
         evidence.append(f"检测到文本字段 ({role_counts.get('text_field', 0)} 个)")
         evidence.append("包含评分或情感相关字段")
-        recommended = ["Semantic", "Statistics"]
+        recommended = ["Data Overview", "Statistics"]
         return {
             "tableType": "review_text",
             "confidence": 0.85,
@@ -258,7 +258,7 @@ def classify_table(column_profiles: List[Dict[str, Any]], row_count: int) -> Dic
     if _has("product_id") and _has_name(["category", "brand", "price", "rating"]):
         evidence.append(f"检测到商品标识列 ({role_counts.get('product_id', 0)} 个)")
         evidence.append("包含品类、品牌、价格等商品属性")
-        recommended = ["Statistics", "Semantic"]
+        recommended = ["Data Overview", "Statistics"]
         return {
             "tableType": "product",
             "confidence": 0.85,

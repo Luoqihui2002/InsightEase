@@ -18,7 +18,6 @@ from app.services.prediction_service import PredictionService
 from app.services.path_analysis_service import PathAnalysisService
 from app.services.attribution_service import AttributionService
 from app.services.sequence_mining_service import SequenceMiningService
-from app.services.ai_service import ai_service
 from app.api.v1.endpoints.auth import get_current_active_user
 from app.api.v1.endpoints.datasets import read_csv_with_auto_header
 
@@ -113,10 +112,10 @@ async def execute_analysis_task(analysis_id: str, dataset_id: str,
                                                error_msg="不支持的文件格式")
                     return
                 logger.info(f"File loaded successfully, shape: {df.shape}")
-            except Exception as e:
-                logger.error(f"Failed to read file: {e}")
+            except Exception:
+                logger.exception("Failed to read dataset file for analysis %s", analysis_id)
                 await update_analysis_status(db, analysis_id, "failed", 
-                                           error_msg=f"读取文件失败: {str(e)}")
+                                           error_msg="读取数据集失败")
                 return
             
             # 执行不同类型的分析
@@ -603,34 +602,14 @@ async def execute_analysis_task(analysis_id: str, dataset_id: str,
             else:
                 result_data = {"error": f"未知的分析类型: {analysis_type}"}
             
-            # 如果数据量不大，生成AI摘要
-            if len(df) <= 1000 and analysis_type in ["descriptive", "comprehensive"]:
-                try:
-                    ai_result = await ai_service.interpret_data(df, "general")
-                    result_data["ai_summary"] = ai_result["interpretation"]
-                    
-                    # 更新数据集的AI摘要
-                    result_dataset = await db.execute(
-                        select(Dataset).where(Dataset.id == dataset_id)
-                    )
-                    dataset_obj = result_dataset.scalar_one_or_none()
-                    if dataset_obj:
-                        dataset_obj.ai_summary = ai_result["interpretation"][:500]  # 限制长度
-                        await db.commit()
-                except Exception as e:
-                    # AI摘要生成失败不影响主分析
-                    pass
-            
             # 更新分析结果
             logger.info(f"Updating analysis status to completed, result_data keys: {result_data.keys() if result_data else 'None'}")
             await update_analysis_status(db, analysis_id, "completed", result_data=result_data)
             logger.info(f"Analysis {analysis_id} completed successfully")
             
-        except Exception as e:
-            import traceback
-            error_msg = f"分析执行失败: {str(e)}\n{traceback.format_exc()}"
-            logger.error(f"Analysis {analysis_id} failed: {error_msg}")
-            await update_analysis_status(db, analysis_id, "failed", error_msg=error_msg)
+        except Exception:
+            logger.exception("Analysis %s failed", analysis_id)
+            await update_analysis_status(db, analysis_id, "failed", error_msg="分析执行失败")
 
 
 def calculate_quality_score(df: pd.DataFrame) -> int:
@@ -1018,8 +997,9 @@ async def quick_path_analysis(
         
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(500, detail=f"分析失败: {str(e)}")
+    except Exception:
+        logger.exception("Path analysis failed for dataset %s", request.dataset_id)
+        raise HTTPException(500, detail="路径分析失败")
 
 
 @router.get("/path/columns/{dataset_id}", response_model=ResponseModel[dict])
@@ -1105,8 +1085,9 @@ async def get_path_columns(
             "suggested_timestamp": next((c["name"] for c in columns if "timestamp" in c["suggestions"]), None)
         })
         
-    except Exception as e:
-        raise HTTPException(500, detail=f"获取列信息失败: {str(e)}")
+    except Exception:
+        logger.exception("Failed to inspect path-analysis columns for dataset %s", dataset_id)
+        raise HTTPException(500, detail="获取列信息失败")
 
 
 class QuickSequenceMiningRequest(BaseModel):
@@ -1179,8 +1160,9 @@ async def quick_sequence_mining(
         
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(500, detail=f"序列模式挖掘失败: {str(e)}")
+    except Exception:
+        logger.exception("Sequence mining failed for dataset %s", request.dataset_id)
+        raise HTTPException(500, detail="序列模式挖掘失败")
 
 
 # ========== 聚类分析 API ==========
@@ -1337,9 +1319,9 @@ async def run_clustering(
         
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Clustering failed: {str(e)}", exc_info=True)
-        raise HTTPException(500, detail=f"聚类分析失败: {str(e)}")
+    except Exception:
+        logger.exception("Clustering failed for dataset %s", request.dataset_id)
+        raise HTTPException(500, detail="聚类分析失败")
 
 
 class SaveClusterResultRequest(BaseModel):
@@ -1510,5 +1492,6 @@ async def save_cluster_result(
         
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(500, detail=f"保存聚类结果失败: {str(e)}")
+    except Exception:
+        logger.exception("Saving cluster result failed for dataset %s", request.source_dataset_id)
+        raise HTTPException(500, detail="保存聚类结果失败")

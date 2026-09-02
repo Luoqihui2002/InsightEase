@@ -95,7 +95,7 @@ Build a safe AI-assisted analysis workbench that can understand datasets, manage
 - Horizontal default layout.
 - Session continuity.
 - Guided Quick Analysis.
-- SmartAnalysis public navigation deprecation/hide path.
+- SmartAnalysis retirement completed in V1.0-P0A.
 
 #### Assistant Runtime Adapter
 
@@ -421,7 +421,7 @@ These items are not primary roadmap phases right now but can be revisited when t
 
 - DataWorkshop component splitting.
 - Reusable prefill banner extraction.
-- Semantic/DataWorkshop prefill support.
+- Data Overview/DataWorkshop prefill support.
 - More complete design-system combobox with portal/grouped options.
 - Server-side history pagination improvements.
 - Relationship graph visualization.

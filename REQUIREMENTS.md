@@ -12,8 +12,7 @@
 ```
 InsightEase/
 ├── app/                    # 前端 (React + Vite)
-├── insightease-backend/    # 后端 (FastAPI)
-└── setup_backend.py       # 后端初始化脚本
+└── insightease-backend/    # 后端 (FastAPI)
 ```
 
 ---
@@ -158,10 +157,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env 配置数据库连接
 
-# 初始化数据库
-python setup_backend.py
-
-# 启动服务
+# 启动服务（应用启动时检查并初始化数据库表）
 uvicorn main:app --reload --port 8000
 ```
 
@@ -172,15 +168,19 @@ uvicorn main:app --reload --port 8000
 ### 后端 .env
 ```env
 # 数据库
-DATABASE_URL=mysql+aiomysql://username:password@localhost:3306/insightease
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=insightease_app
+DB_PASSWORD=replace-with-a-strong-password
+DB_NAME=insightease
 
 # 安全
-SECRET_KEY=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+SECRET_KEY=replace-with-at-least-32-random-characters
+ENVIRONMENT=development
+DEBUG=false
 
 # CORS
-CORS_ORIGINS=["http://localhost:5173"]
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 # 文件上传
 MAX_UPLOAD_SIZE=104857600  # 100MB

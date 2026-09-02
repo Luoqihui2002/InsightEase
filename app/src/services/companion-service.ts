@@ -136,7 +136,9 @@ class CompanionService {
       try {
         const data = JSON.parse(saved);
         this.lastTriggerTime = data.lastTriggerTime || {};
-      } catch {}
+      } catch {
+        // Ignore malformed legacy local state and continue with defaults.
+      }
     }
   }
 
@@ -226,10 +228,8 @@ class CompanionService {
         window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/data-workshop' } }));
         break;
       case 'goto-analysis':
-        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/smart-analysis' } }));
-        break;
       case 'auto-analyze':
-        window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/smart-analysis' } }));
+        window.dispatchEvent(new CustomEvent('companion-action', { detail: { type: 'open-chat' } }));
         break;
       case 'goto-forecast':
         window.dispatchEvent(new CustomEvent('companion-navigate', { detail: { path: '/app/forecast' } }));
@@ -247,7 +247,7 @@ class CompanionService {
         window.dispatchEvent(new CustomEvent('companion-action', { detail: { type: 'open-help' } }));
         break;
       case 'report-bug':
-        window.open('https://github.com/your-repo/issues', '_blank');
+        window.open('https://github.com/Luoqihui2002/InsightEase/issues', '_blank', 'noopener,noreferrer');
         break;
       default:
         window.dispatchEvent(new CustomEvent('companion-action', { detail: { type: action } }));

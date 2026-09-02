@@ -14,6 +14,10 @@ import pytest
 import httpx
 
 BASE_URL = "http://localhost:8000"
+pytestmark = pytest.mark.skipif(
+    os.getenv("INSIGHTEASE_RUN_INTEGRATION") != "1",
+    reason="requires a running backend; set INSIGHTEASE_RUN_INTEGRATION=1 to enable",
+)
 
 
 @pytest.fixture(scope="module")

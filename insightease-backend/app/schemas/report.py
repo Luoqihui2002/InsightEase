@@ -1,5 +1,5 @@
 """报告导出相关的Schemas"""
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from enum import Enum
@@ -17,7 +17,7 @@ class ReportCreateRequest(BaseModel):
     dataset_id: str
     title: Optional[str] = None
     format: ReportFormat = ReportFormat.PDF
-    include_analysis: List[str] = []  # 要包含的分析ID列表，为空则包含所有
+    include_analysis: List[str] = Field(default_factory=list)  # 要包含的分析ID列表，为空则包含所有
 
 
 class ReportResponse(BaseModel):

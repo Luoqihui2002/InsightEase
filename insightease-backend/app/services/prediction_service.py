@@ -4,6 +4,9 @@ import numpy as np
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 电商大促配置（动态使用当前年份）
 _CURRENT_YEAR = datetime.now().year
@@ -198,9 +201,10 @@ class PredictionService:
         # 准备数据
         try:
             ts_df = PredictionService.prepare_time_series(df, date_col, value_col, freq)
-        except Exception as e:
+        except Exception:
+            logger.exception("Time-series preparation failed")
             return {
-                "error": f"数据准备失败: {str(e)}",
+                "error": "数据准备失败，请检查日期列和数值列格式",
                 "diagnostic": diagnostic
             }
         
@@ -209,8 +213,7 @@ class PredictionService:
             return {
                 "error": f"有效数据点太少（仅 {len(ts_df)} 个），无法进行预测",
                 "solution": "请检查：1)日期列格式是否正确 2)数值列是否包含有效数字 3)数据是否包含缺失值",
-                "diagnostic": diagnostic,
-                "sample_data": df[[date_col, value_col]].head(5).to_dict('records') if len(df) > 0 else []
+                "diagnostic": diagnostic
             }
         
         # Prophet 需要 ds 和 y 列
@@ -231,8 +234,9 @@ class PredictionService:
         
         try:
             model.fit(prophet_df)
-        except Exception as e:
-            return {"error": f"模型训练失败: {str(e)}"}
+        except Exception:
+            logger.exception("Prophet model training failed")
+            return {"error": "模型训练失败"}
         
         # 生成未来日期
         future = model.make_future_dataframe(periods=periods, freq=freq)
@@ -632,11 +636,12 @@ class PredictionService:
                         "valid": False
                     })
                     
-            except Exception as e:
+            except Exception:
+                logger.exception("Forecast model %s failed during comparison", model_key)
                 results.append({
                     "model": model_name,
                     "model_key": model_key,
-                    "error": str(e),
+                    "error": "模型执行失败",
                     "valid": False
                 })
         
@@ -734,10 +739,11 @@ class PredictionService:
                     })
                     growth_rates.append({"column": col, "rate": growth_rate})
                     
-            except Exception as e:
+            except Exception:
+                logger.exception("Batch forecast failed for column %s", col)
                 forecasts.append({
                     "column": col,
-                    "error": str(e)
+                    "error": "预测执行失败"
                 })
         
         # 计算汇总统计

@@ -60,21 +60,23 @@
 - 前端: `app/src/pages/DataWorkshop.tsx`, `app/src/utils/workshop-adapter.ts`, `app/src/api/workshop.ts`
 - 后端: `insightease-backend/app/api/v1/endpoints/transform.py`, `transform_service.py`, `transform_executor.py`
 
-### 2.3 AI 智能分析
+### 2.3 Assistant 分析规划与结果解释
 
 ```
 用户进入 AIWorkspace
-  -> 选择数据集 → 加载前 5 行预览
-  -> 自然语言输入分析需求
-  -> AI 意图识别 → 提取分析类型和参数
-  -> POST /api/v1/analysis/ → 创建后台任务
-  -> 轮询任务状态 (3s 间隔)
-  -> 任务完成 → 展示图表/表格/指标/下载
+  -> 选择数据集 / Relationship Set / 历史结果
+  -> Metadata-first Assistant 读取 Dataset Profile 与关系元数据
+  -> 规则型 planner 生成可确认的分析计划（当前默认）
+  -> 用户进入对应分析页并手动启动分析
+  -> 后端 Analysis API 执行并返回结构化 ResultView 数据
+  -> SafeResultSummary 经后端边界交给 Hermes 做结果解释
 ```
 
 **涉及文件**:
-- 前端: `app/src/pages/AIWorkspace.tsx`, `app/src/services/intent-recognition.service.ts`, `app/src/services/analysis-execution.service.ts`, `app/src/components/AnalysisResultRenderer.tsx`
-- 后端: `insightease-backend/app/api/v1/endpoints/analysis.py`, `ai.py`
+- 前端: `app/src/pages/AIWorkspace.tsx`, `app/src/lib/assistant/analysisPlannerMock.ts`, `app/src/lib/assistant/safeResultSummary.ts`, `app/src/api/assistant.ts`
+- 后端: `insightease-backend/app/api/v1/endpoints/assistant.py`, `analysis.py`, `hermes.py`
+
+Legacy `/api/v1/ai/*`、浏览器端 `aiApi`/intent recognition/execution service 和 SmartAnalysis mock 页面均已退役。浏览器不会直接持有或调用模型凭据。
 
 ---
 
@@ -87,6 +89,8 @@
 - **DuckDB-WASM** 不再作为正式处理引擎
 - **前端安全模式按钮**不再切换数据路径
 - **DataWorkshop 浏览器端执行**正式数据处理的功能已移除
+- **Legacy Kimi `/api/v1/ai/*` 链路**已移除
+- **`/app/smart-analysis` mock 向导**已移除
 
 > 这些功能对应的代码（`legacy/browser-processing/` 目录及其依赖）已删除。若未来需要私有化部署能力，应通过 self-hosted backend 实现，而非浏览器端处理。
 
@@ -114,7 +118,7 @@
 | 数据库 | MySQL (aiomysql) |
 | 文件存储 | 本地磁盘 / 阿里云 OSS（切换）|
 | 数据处理 | pandas |
-| AI | OpenAI-compatible API (Kimi) |
+| Assistant | Metadata-first planner + backend-only Hermes result explainer |
 | 任务 | BackgroundTasks |
 
 ---

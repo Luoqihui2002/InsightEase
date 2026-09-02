@@ -73,6 +73,14 @@ const DESCRIPTIVE_RULE: KeywordRule = {
 
 const KEYWORD_RULES: KeywordRule[] = [
   {
+    type: 'data_overview',
+    keywords: ['数据概览', '字段概览', '字段类型', '数据结构', 'schema', 'column profile', 'data overview'],
+    label: '数据概览与字段统计',
+    requiredFieldRoles: [],
+    nextActionLabel: '进入数据概览',
+    nextActionTarget: '/app/data-overview',
+  },
+  {
     type: 'forecast',
     keywords: ['预测', '趋势', '未来', 'forecast', 'trend', 'time series', 'sales'],
     label: '预测趋势分析',
@@ -121,16 +129,6 @@ const KEYWORD_RULES: KeywordRule[] = [
     nextActionTarget: '/app/statistics',
   },
   {
-    type: 'semantic',
-    keywords: ['评论', '文本', '语义', '情感', 'review', 'comment', 'semantic', 'sentiment', 'topic', 'text'],
-    label: '评论文本语义分析',
-    requiredFieldRoles: [
-      { role: 'text_column', required: true, reason: '语义分析需要文本、评论或反馈列。' },
-    ],
-    nextActionLabel: '进入语义分析',
-    nextActionTarget: '/app/semantic',
-  },
-  {
     type: 'smart_process',
     keywords: ['缺失', '异常', '分布', 'quality', 'missing', 'null', 'outlier', 'clean'],
     label: '数据质量检查',
@@ -160,7 +158,6 @@ const FIELD_PATTERNS: Record<string, string[]> = {
   event_name: ['event', 'event_name', 'action', 'page', 'page_name', 'screen', 'block_type'],
   group_column: ['group', 'variant', 'treatment', 'control', 'arm', 'bucket'],
   target_metric: ['revenue', 'gmv', 'sales', 'amount', 'converted', 'conversion', 'orders', 'ltv', 'value', 'price', 'quantity', 'score', 'rate', 'metric'],
-  text_column: ['review', 'comment', 'text', 'content', 'description', 'feedback', 'note'],
   dimension: ['category', 'brand', 'channel', 'region', 'city', 'platform', 'source', 'campaign', 'status', 'type'],
   feature: ['age', 'gender', 'region', 'city', 'channel', 'platform', 'device', 'os', 'version', 'score'],
   join_key: ['_id', 'id', 'key'],
@@ -187,10 +184,10 @@ const INTENT_CATALOG_MAP: Record<RecommendedAnalysisType, Omit<AnalysisIntent, '
     preferred_data_types: ['experiment_table'],
     preferred_analysis_tags: ['ab_test'],
   },
-  semantic: {
-    preferred_business_categories: ['review_text', 'product'],
-    preferred_data_types: ['text_table'],
-    preferred_analysis_tags: ['semantic'],
+  data_overview: {
+    preferred_business_categories: [],
+    preferred_data_types: [],
+    preferred_analysis_tags: ['descriptive', 'data_quality'],
   },
   regression: {
     preferred_business_categories: ['user', 'order', 'forecast'],
@@ -219,7 +216,7 @@ const INTENT_DATASET_TOKENS: Record<RecommendedAnalysisType, string[]> = {
   forecast: ['daily', 'sales', 'forecast', 'time', 'trend', 'metric'],
   attribution: ['marketing', 'touchpoint', 'attribution', 'channel', 'campaign', 'order', 'conversion'],
   ab_test: ['experiment', 'ab', 'variant', 'treatment', 'control', 'group'],
-  semantic: ['review', 'comment', 'semantic', 'text', 'sentiment', 'feedback'],
+  data_overview: ['overview', 'schema', 'column', 'field', 'quality'],
   regression: ['user', 'customer', 'ltv', 'order', 'metric', 'feature'],
   smart_process: ['quality', 'missing', 'null', 'anomaly', 'outlier'],
   descriptive: [],
@@ -267,7 +264,7 @@ export function inferAnalysisIntentFromQuestion(question: string): AnalysisInten
     preferred_business_categories: base.preferred_business_categories,
     preferred_data_types: base.preferred_data_types,
     preferred_analysis_tags: base.preferred_analysis_tags,
-    descriptive_like: rule.type === 'descriptive',
+    descriptive_like: rule.type === 'descriptive' || rule.type === 'data_overview',
     dataset_tokens: INTENT_DATASET_TOKENS[rule.type] ?? [],
   };
 }

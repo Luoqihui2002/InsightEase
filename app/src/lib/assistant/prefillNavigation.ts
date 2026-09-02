@@ -9,7 +9,7 @@ const PREFILL_TTL_MS = 24 * 60 * 60 * 1000;
 
 const ANALYSIS_TYPES: RecommendedAnalysisType[] = [
   'descriptive',
-  'semantic',
+  'data_overview',
   'attribution',
   'forecast',
   'path_analysis',

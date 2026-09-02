@@ -1,16 +1,18 @@
 # InsightEase 当前进度
 
-**更新日期**: 2026-04-28
+**更新日期**: 2026-09-03
 
 ---
 
 ## 当前阶段状态
 
-**Phase 3 代码重构、legacy 清理、类型检查与生产构建已完成。**
+**V1.0 P0A 架构与安全收口已完成；下一阶段为 P0B Hermes Live Planning。**
 
-- `npx tsc --noEmit` — 0 errors ✅
-- `npm run build` — 生产构建成功 ✅（built in 19.47s）
-- 后端 Transform API 集成测试 — 6/6 通过 ✅
+- 旧 Kimi `/api/v1/ai/*` 与 SmartAnalysis mock 链路已移除 ✅
+- `Semantic` 已校正为 `Data Overview` ✅
+- 报告 ownership、生产配置、CORS 与异常脱敏已加固 ✅
+- `npm run lint` / `npm run build` — 通过 ✅
+- 后端 pytest — 74 passed，6 个 live integration 用例按设计跳过 ✅
 
 ---
 
@@ -26,7 +28,8 @@
 | 3D | DataWorkshop 前端接入 preview/save | ✅ 完成 |
 | 3E | Legacy 删除 | ✅ 完成 |
 | 3F | Build gate cleanup | ✅ 完成 |
-| 3G | 文档收口 | 🟡 部分完成 |
+| 3G | 文档收口 | ✅ 完成 |
+| V1.0 P0A | 架构与安全收口 | ✅ 完成 |
 
 ---
 
@@ -39,7 +42,9 @@ Upload CSV/Excel
   -> DataWorkshop（filter/rename/dedup/derive/sample 后端执行）
      -> preview（不保存）
      -> transform（保存为新数据集）
-  -> AIWorkspace / SmartAnalysis（意图识别 + 分析执行 + 可视化）
+  -> AI Workbench（metadata-first 确定性规划 + 人工确认）
+  -> 既有 Analysis 执行
+  -> SafeResultSummary -> Hermes 结果解释
 ```
 
 ---
@@ -55,7 +60,7 @@ Upload CSV/Excel
 - [ ] DataWorkshop 执行 filter + rename preview
 - [ ] DataWorkshop 保存为新数据集
 - [ ] 新数据集出现在 Datasets
-- [ ] 新数据集可进入 AIWorkspace / SmartAnalysis
+- [ ] 新数据集可进入 AI Workbench / Data Overview
 - [ ] 页面无 console error
 
 ---

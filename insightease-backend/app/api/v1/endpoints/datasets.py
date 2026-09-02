@@ -5,6 +5,7 @@ import pandas as pd
 import uuid
 import shutil
 import os
+import logging
 from pathlib import Path
 from datetime import datetime
 
@@ -20,6 +21,7 @@ from app.schemas.dataset import (
 from app.api.v1.endpoints.auth import get_current_active_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def calculate_quality_score(df: pd.DataFrame) -> int:
@@ -205,13 +207,14 @@ async def upload_dataset(
         
         return ResponseModel(data=db_dataset)
         
-    except Exception as e:
+    except Exception:
         # 如果数据库保存失败，尝试删除已上传的文件
         try:
             await storage.delete(storage_path)
         except:
             pass
-        raise HTTPException(500, detail=f"处理失败: {str(e)}")
+        logger.exception("Dataset upload failed for user %s", current_user.id)
+        raise HTTPException(500, detail="数据集处理失败")
 
 def _normalize_dataset_schema(dataset):
     """
@@ -341,8 +344,9 @@ async def preview_dataset(
             "data": data,
             "total_rows": dataset.row_count
         })
-    except Exception as e:
-        raise HTTPException(500, detail=f"读取失败: {str(e)}")
+    except Exception:
+        logger.exception("Dataset preview failed for dataset %s", dataset_id)
+        raise HTTPException(500, detail="读取数据集失败")
 
 @router.delete("/{dataset_id}")
 async def delete_dataset(
@@ -483,8 +487,9 @@ async def get_dataset_statistics(
             "missing_values_percentage": missing_percentage
         })
         
-    except Exception as e:
-        raise HTTPException(500, detail=f"统计计算失败: {str(e)}")
+    except Exception:
+        logger.exception("Dataset statistics failed for dataset %s", dataset_id)
+        raise HTTPException(500, detail="统计计算失败")
 
 
 @router.get("/{dataset_id}/download")

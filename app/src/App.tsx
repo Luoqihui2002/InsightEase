@@ -10,9 +10,8 @@ import { Dashboard } from '@/pages/Dashboard';
 import { Datasets } from '@/pages/Datasets';
 import { History } from '@/pages/History';
 import { Upload } from '@/pages/Upload';
-import { SmartAnalysis } from '@/pages/SmartAnalysis';
 import { SmartProcess } from '@/pages/SmartProcess';
-import { Semantic } from '@/pages/Semantic';
+import { DataOverview } from '@/pages/DataOverview';
 import { Statistics } from '@/pages/Statistics';
 import { Attribution } from '@/pages/Attribution';
 import { Forecast } from '@/pages/Forecast';
@@ -110,9 +109,9 @@ function AppContent() {
             <Route path="datasets" element={<ErrorBoundary><Datasets /></ErrorBoundary>} />
             <Route path="history" element={<ErrorBoundary><History /></ErrorBoundary>} />
             <Route path="upload" element={<ErrorBoundary><Upload /></ErrorBoundary>} />
-            <Route path="smart-analysis" element={<ErrorBoundary><SmartAnalysis /></ErrorBoundary>} />
             <Route path="smart-process" element={<ErrorBoundary><SmartProcess /></ErrorBoundary>} />
-            <Route path="semantic" element={<ErrorBoundary><Semantic /></ErrorBoundary>} />
+            <Route path="data-overview" element={<ErrorBoundary><DataOverview /></ErrorBoundary>} />
+            <Route path="semantic" element={<Navigate to="/app/data-overview" replace />} />
             <Route path="statistics" element={<ErrorBoundary><Statistics /></ErrorBoundary>} />
             <Route path="attribution" element={<ErrorBoundary><Attribution /></ErrorBoundary>} />
             <Route path="forecast" element={<ErrorBoundary><Forecast /></ErrorBoundary>} />

@@ -209,7 +209,7 @@ export interface InferRelationshipsResponse {
 
 export type RecommendedAnalysisType =
   | "descriptive"
-  | "semantic"
+  | "data_overview"
   | "attribution"
   | "forecast"
   | "path_analysis"
@@ -227,7 +227,6 @@ export interface AnalysisFieldRequirement {
     | "event_name"
     | "dimension"
     | "feature"
-    | "text_column"
     | "join_key";
   required: boolean;
   candidate_columns: string[];

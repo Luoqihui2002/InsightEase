@@ -1,5 +1,14 @@
 # InsightEase 变更日志
 
+## V1.0 P0A：架构与安全收口（2026-09-03）
+
+- 退休旧 Kimi `/api/v1/ai/*`、前端旧意图识别/自动执行链和 SmartAnalysis mock 页面。
+- `Semantic` 更名为 `Data Overview`，移除未实现的 NLP 能力宣称。
+- 修复报告 API 认证、所有权和文件隔离问题，收紧生产配置、CORS 与异常输出。
+- 清理个人基础设施信息、危险默认值、`.bak`、旧生成脚本和不再使用的依赖。
+- 新增 P0A 架构/安全回归测试；详细记录见 `phase-logs/V1_0_P0A_ARCHITECTURE_SECURITY_CLEANUP.md`。
+- 未实现 P0B Hermes Live Planning 或 P0C 多表执行。
+
 ## Phase 1-2：修复错误模式概念
 
 - 修正"本地模式"与"云端模式"的概念混淆

@@ -19,12 +19,12 @@ Write-Host "Docker check passed" -ForegroundColor Green
 # Check .env file
 if (!(Test-Path ".env")) {
     Write-Host "Warning: .env not found, copying from template..." -ForegroundColor Yellow
-    if (Test-Path ".env.production") {
-        Copy-Item .env.production .env
+    if (Test-Path ".env.example") {
+        Copy-Item .env.example .env
         Write-Host "Please edit .env file with your database password!" -ForegroundColor Yellow
         exit 1
     } else {
-        Write-Host "Error: .env.production template not found" -ForegroundColor Red
+        Write-Host "Error: .env.example template not found" -ForegroundColor Red
         exit 1
     }
 }

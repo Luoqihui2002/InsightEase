@@ -103,7 +103,7 @@ Current modules include:
 - Forecasting
 - Attribution analysis
 - Path analysis
-- Semantic analysis
+- Data overview and field profiling
 - Data preprocessing
 - Analysis history management
 
@@ -212,7 +212,7 @@ flowchart TD
     G --> H{Analysis Type}
 
     H -->|Single-table| I[Prefill Analysis Page]
-    I --> J[Statistics / Forecast / Attribution / Path / Semantic]
+    I --> J[Statistics / Forecast / Attribution / Path / Data Overview]
     J --> K[Manual Start Analysis]
     K --> L[Backend Analysis Execution]
     L --> M[ResultView / Charts / Tables]
@@ -281,7 +281,7 @@ flowchart TB
     subgraph EXEC[Execution Layer]
         E1[pandas Transform Executor]
         E2[Background Analysis Tasks]
-        E3[Statistics / Forecast / Attribution / Path / Semantic Services]
+        E3[Statistics / Forecast / Attribution / Path / Data Overview Services]
         E4[Future Join Preview / Derived Dataset Builder]
     end
 
@@ -406,7 +406,7 @@ flowchart LR
 
     subgraph PROFILE[Deterministic Metadata Layer]
         P1[Column Role Detection]
-        P2[Semantic Type Detection]
+        P2[Field Type and Role Detection]
         P3[Table Classification]
         P4[Quality Warnings]
     end

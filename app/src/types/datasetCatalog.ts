@@ -27,7 +27,7 @@ export type DatasetAnalysisTag =
   | "attribution"
   | "ab_test"
   | "regression"
-  | "semantic"
+  | "text_data"
   | "data_quality";
 
 export type DatasetUploadWeekBucket =

@@ -75,7 +75,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
     {
       icon: Brain,
       title: 'AI智能解读',
-      description: '基于Kimi大模型的深度数据分析，自动发现业务洞察',
+      description: '基于数据元信息规划分析，并用 Hermes 安全解释结构化结果',
     },
     {
       icon: BarChart3,

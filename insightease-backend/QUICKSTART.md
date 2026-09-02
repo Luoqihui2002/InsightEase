@@ -29,7 +29,7 @@ sudo usermod -aG docker $USER
 newgrp docker
 
 # 配置环境变量
-cp .env.production .env
+cp .env.example .env
 # 用编辑器修改 .env，填入数据库密码
 
 # 一键部署
@@ -89,7 +89,7 @@ docker-compose logs -f backend
 ### 数据库连不上？
 - 检查RDS白名单是否包含服务器公网IP
 - 检查 `.env` 中的密码是否正确
-- 测试连接：`mysql -h rm-bp16b812wmn5k8j34so.mysql.rds.aliyuncs.com -u luoqihui_mysql -p`
+- 测试连接：`mysql -h db.example.internal -u insightease_app -p`
 
 ### 前端连不上后端？
 - 检查服务器防火墙是否开放8000端口

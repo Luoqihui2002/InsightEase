@@ -17,7 +17,6 @@ greenlet
 python-jose[cryptography]
 passlib[bcrypt]
 aiofiles
-openai
 prophet
 matplotlib
 seaborn

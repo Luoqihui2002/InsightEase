@@ -26,7 +26,7 @@
 cd insightease-backend
 
 # 2. 复制并编辑环境配置
-cp .env.production .env
+cp .env.example .env
 # 编辑 .env 文件，填写你的数据库密码和密钥
 
 # 3. 运行部署脚本
@@ -40,7 +40,7 @@ chmod +x deploy.sh
 cd insightease-backend
 
 # 2. 复制并编辑环境配置
-copy .env.production .env
+copy .env.example .env
 # 编辑 .env 文件，填写你的数据库密码和密钥
 
 # 3. 运行部署脚本
@@ -62,7 +62,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 #### 2. 配置环境变量
 ```bash
-cp .env.production .env
+cp .env.example .env
 # 编辑 .env 文件，修改以下配置：
 # - DB_PASSWORD: 你的RDS数据库密码
 # - SECRET_KEY: 随机密钥（用于JWT签名）
@@ -88,12 +88,12 @@ docker-compose logs -f backend
 
 ## ⚙️ 配置详解
 
-### 数据库配置（已配置好）
+### 数据库配置
 ```env
-DB_HOST=rm-bp16b812wmn5k8j34so.mysql.rds.aliyuncs.com
+DB_HOST=db.example.internal
 DB_PORT=3306
-DB_USER=luoqihui_mysql
-DB_PASSWORD=你的密码
+DB_USER=insightease_app
+DB_PASSWORD=replace-with-a-strong-password
 DB_NAME=insightease
 ```
 
@@ -101,22 +101,23 @@ DB_NAME=insightease
 ```env
 # 生成随机密钥（Linux/Mac）
 # openssl rand -hex 32
-SECRET_KEY=your-super-secret-key-change-this
+SECRET_KEY=replace-with-output-of-openssl-rand
 ```
 
 ### CORS配置
 ```env
-# 开发环境（允许所有域名）
-ALLOWED_ORIGINS=*
+# 开发环境（显式列出本地前端）
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 # 生产环境（限制指定域名）
 ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
 
-### AI配置（可选）
+### Hermes 配置（可选）
 ```env
-# 如果需要AI功能，填入你的Kimi API Key
-KIMI_API_KEY=sk-your-key-here
+HERMES_ASSISTANT_ENABLED=false
+HERMES_ASSISTANT_MODE=disabled
+# live 模式下再通过部署环境注入 HERMES_BASE_URL 和 HERMES_AUTH_TOKEN
 ```
 
 ---
@@ -208,7 +209,7 @@ docker-compose logs backend
 ### 2. 数据库连接失败
 ```bash
 # 测试数据库连接
-mysql -h rm-bp16b812wmn5k8j34so.mysql.rds.aliyuncs.com -u luoqihui_mysql -p
+mysql -h db.example.internal -u insightease_app -p
 
 # 检查RDS白名单设置（添加服务器IP）
 ```

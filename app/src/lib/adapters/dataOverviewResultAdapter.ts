@@ -1,11 +1,11 @@
 /**
- * Adapter: converts Semantic (comprehensive) backend result into unified AnalysisResult.
+ * Adapter: converts deterministic comprehensive field statistics into a data-overview result.
  */
 
 import type { AnalysisResult, ResultBlock } from "@/types/result";
 import type { Dataset } from "@/types/api";
 
-interface SemanticColumnStats {
+interface DataOverviewColumnStats {
   name: string;
   dtype: string;
   type: "numeric" | "categorical" | "datetime" | "other";
@@ -21,15 +21,14 @@ interface SemanticColumnStats {
   top_values?: string[];
 }
 
-interface SemanticResultData {
+interface DataOverviewResultData {
   total_rows?: number;
   total_columns?: number;
-  column_stats?: SemanticColumnStats[];
-  ai_summary?: string;
+  column_stats?: DataOverviewColumnStats[];
 }
 
-export function toSemanticAnalysisResult(
-  data: SemanticResultData | null | undefined,
+export function toDataOverviewResult(
+  data: DataOverviewResultData | null | undefined,
   datasetInfo: Dataset | null
 ): AnalysisResult | null {
   const columnStats = data?.column_stats;
@@ -56,7 +55,7 @@ export function toSemanticAnalysisResult(
   );
 
   // === Summary block ===
-  let summaryContent = `已识别 ${totalColumns} 个字段的语义类型。`;
+  let summaryContent = `已汇总 ${totalColumns} 个字段的类型与完整性。`;
   if (numericCount > 0) {
     summaryContent += `数值型字段 ${numericCount} 个，`;
   }
@@ -227,21 +226,12 @@ export function toSemanticAnalysisResult(
 
   blocks.push({
     type: "table",
-    title: "字段语义识别详情",
+    title: "字段统计详情",
     columns: tableColumns,
     rows: tableRows,
     sortable: true,
     emptyMessage: "无字段统计数据",
   });
-
-  // === AI Summary block ===
-  if (data?.ai_summary) {
-    blocks.push({
-      type: "text",
-      title: "AI 智能解读",
-      content: data.ai_summary,
-    });
-  }
 
   // === Warning blocks ===
   for (const col of highNullColumns) {
@@ -265,9 +255,9 @@ export function toSemanticAnalysisResult(
   }
 
   return {
-    id: `semantic-${datasetInfo?.id ?? "unknown"}`,
-    analysisType: "semantic_analysis",
-    title: "语义分析结果",
+    id: `data-overview-${datasetInfo?.id ?? "unknown"}`,
+    analysisType: "data_overview",
+    title: "数据概览结果",
     description: datasetInfo?.filename
       ? `数据集: ${datasetInfo.filename}`
       : undefined,

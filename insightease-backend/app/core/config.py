@@ -1,16 +1,19 @@
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator, model_validator
 from functools import lru_cache
+from secrets import token_urlsafe
 from urllib.parse import quote_plus
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
     PROJECT_NAME: str = "InsightEase API"
     VERSION: str = "2.0.0"
     API_V1_STR: str = "/api/v1"
     
     # 环境配置
     ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     @field_validator("DEBUG", mode="before")
     @classmethod
@@ -28,7 +31,7 @@ class Settings(BaseSettings):
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
     DB_USER: str = "root"
-    DB_PASSWORD: str = "password"
+    DB_PASSWORD: str = ""
     DB_NAME: str = "insightease"
     
     @property
@@ -57,11 +60,6 @@ class Settings(BaseSettings):
             self.OSS_ENDPOINT
         ])
     
-    # AI配置
-    KIMI_API_KEY: str = ""
-    KIMI_BASE_URL: str = "https://api.moonshot.cn/v1"
-    KIMI_MODEL: str = "moonshot-v1-8k"
-
     # Hermes assistant configuration.
     # Live provider credentials must come from environment/secrets only.
     HERMES_ASSISTANT_ENABLED: bool = False
@@ -89,17 +87,37 @@ class Settings(BaseSettings):
             and self.HERMES_AUTH_TOKEN.strip()
         )
     
-    SECRET_KEY: str = "your-secret-key"
+    # Development receives an ephemeral secret; production must inject one.
+    SECRET_KEY: str = ""
     
     # CORS配置
-    ALLOWED_ORIGINS: str = "*"
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
     
     # 日志配置
-    LOG_LEVEL: str = "DEBUG"
+    LOG_LEVEL: str = "INFO"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    @property
+    def CORS_ORIGINS(self) -> list[str]:
+        """Return explicit origins; wildcard CORS is allowed only in debug mode."""
+        origins = [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+        if "*" in origins and not self.DEBUG:
+            return []
+        return origins
+
+    @model_validator(mode="after")
+    def apply_safe_environment_defaults(self):
+        """Use an ephemeral dev secret and reject unsafe production settings."""
+        is_production = self.ENVIRONMENT.strip().lower() in {"prod", "production", "release"}
+        if is_production:
+            if self.DB_PASSWORD in {"", "password", "replace-with-a-strong-password"}:
+                raise ValueError("DB_PASSWORD must be configured in production")
+            if self.DB_USER.strip().lower() == "root":
+                raise ValueError("DB_USER must not be root in production")
+            if len(self.SECRET_KEY) < 32 or self.SECRET_KEY.startswith("replace-with-"):
+                raise ValueError("SECRET_KEY must be a stable random value in production")
+        elif not self.SECRET_KEY:
+            self.SECRET_KEY = token_urlsafe(48)
+        return self
 
 @lru_cache
 def get_settings():

@@ -66,7 +66,7 @@ export const ANALYSIS_TAG_LABELS: Record<DatasetAnalysisTag, string> = {
   attribution: "归因分析",
   ab_test: "A/B 检验",
   regression: "回归分析",
-  semantic: "语义分析",
+  text_data: "文本数据",
   data_quality: "数据质量",
 };
 
@@ -137,7 +137,7 @@ const ANALYSIS_PROFILE_MAP: Record<string, DatasetAnalysisTag> = {
   attribution: "attribution",
   "group comparison": "ab_test",
   regression: "regression",
-  semantic: "semantic",
+  semantic: "text_data",
 };
 
 function normalizeToken(value: unknown): string {
@@ -294,7 +294,7 @@ function inferAnalysisTags(
   }
   if (businessCategory === "marketing" || businessCategory === "order") tags.add("attribution");
   if (dataType === "experiment_table" || businessCategory === "experiment") tags.add("ab_test");
-  if (dataType === "text_table" || businessCategory === "review_text") tags.add("semantic");
+  if (dataType === "text_table" || businessCategory === "review_text") tags.add("text_data");
   if (
     ["user", "order"].includes(businessCategory) ||
     dataType === "metrics_table" ||
@@ -465,7 +465,7 @@ export function groupDatasetsByAnalysisTag<T extends DatasetLike>(datasets: T[])
     "attribution",
     "ab_test",
     "regression",
-    "semantic",
+    "text_data",
     "data_quality",
   ];
   const groups = new Map<DatasetAnalysisTag, T[]>();

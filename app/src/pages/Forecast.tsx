@@ -110,7 +110,7 @@ const DEFAULT_PROMOTIONS: PromotionEvent[] = [
 ];
 
 // 支持导入自定义营销日历
-let CUSTOM_PROMOTIONS: PromotionEvent[] = [];
+const CUSTOM_PROMOTIONS: PromotionEvent[] = [];
 
 // 强制使用 CUSTOM_PROMOTIONS 变量
 void CUSTOM_PROMOTIONS;

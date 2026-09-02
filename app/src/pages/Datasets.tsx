@@ -378,7 +378,7 @@ export function Datasets() {
     if (!editingId || !editingName.trim()) return;
 
     // 检查文件名是否合法
-    if (!/[\w一-龥\-_\.]+$/.test(editingName)) {
+    if (!/[\w一-龥_.-]+$/.test(editingName)) {
       toast.error('文件名包含非法字符');
       return;
     }

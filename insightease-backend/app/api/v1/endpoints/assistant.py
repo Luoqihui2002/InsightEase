@@ -4,7 +4,8 @@ AI Data Assistant endpoints.
 Metadata-first, read-only. No LLM calls. No data modification.
 """
 
-from typing import Optional
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -17,9 +18,10 @@ from app.api.v1.endpoints.auth import get_current_active_user
 from app.api.v1.endpoints.datasets import read_csv_with_auto_header
 from app.services.assistant_profile_service import profile_dataset
 from app.services.relationship_inference_service import infer_relationships
-from app.schemas.ai import InferRelationshipsRequest, InferRelationshipsResponse
+from app.schemas.assistant import InferRelationshipsRequest, InferRelationshipsResponse
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/profile-dataset", response_model=ResponseModel[dict])
@@ -60,8 +62,11 @@ async def profile_dataset_endpoint(
             df = pd.read_excel(file_path)
         else:
             raise HTTPException(status_code=400, detail="不支持的文件格式")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"读取文件失败: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to read dataset %s for assistant profiling", dataset_id)
+        raise HTTPException(status_code=500, detail="读取数据集失败")
 
     # Generate profile
     try:
@@ -71,8 +76,9 @@ async def profile_dataset_endpoint(
             name=dataset.filename or dataset_id,
             include_examples=include_examples
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"分析数据集失败: {str(e)}")
+    except Exception:
+        logger.exception("Failed to profile dataset %s", dataset_id)
+        raise HTTPException(status_code=500, detail="生成数据概览失败")
 
     return ResponseModel(data=profile)
 
@@ -123,8 +129,9 @@ async def infer_relationships_endpoint(
             else:
                 profile_warnings.append(f"数据集 {dataset.filename} 格式不支持，已跳过")
                 continue
-        except Exception as e:
-            profile_warnings.append(f"读取数据集 {dataset.filename} 失败: {str(e)}")
+        except Exception:
+            logger.exception("Failed to read dataset %s during relationship inference", dataset.id)
+            profile_warnings.append(f"读取数据集 {dataset.filename} 失败")
             continue
 
         try:
@@ -135,8 +142,9 @@ async def infer_relationships_endpoint(
                 include_examples=False
             )
             profiles[str(dataset.id)] = profile
-        except Exception as e:
-            profile_warnings.append(f"分析数据集 {dataset.filename} 失败: {str(e)}")
+        except Exception:
+            logger.exception("Failed to profile dataset %s during relationship inference", dataset.id)
+            profile_warnings.append(f"分析数据集 {dataset.filename} 失败")
             continue
 
     if missing_ids:
@@ -158,8 +166,9 @@ async def infer_relationships_endpoint(
             include_value_overlap=request.include_value_overlap,
             max_candidates=request.max_candidates
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"关系推断失败: {str(e)}")
+    except Exception:
+        logger.exception("Relationship inference failed")
+        raise HTTPException(status_code=500, detail="关系推断失败")
 
     # Merge warnings
     all_warnings = profile_warnings + inference_result.get("warnings", [])
