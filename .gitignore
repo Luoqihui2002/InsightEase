@@ -8,10 +8,13 @@
 node_modules/
 dist/
 build/
+__pycache__/
+*.py[cod]
 
 # 编辑器配置
 .vscode/
 .idea/
+.DS_Store
 
 # 日志
 *.log

@@ -4,11 +4,12 @@ InsightEase 当前主线是后端托管的数据分析平台与 metadata-first A
 
 ```text
 Dataset 上传与目录
-  -> Dataset Profile / Relationship Set
-  -> AI Workbench 生成可确认的规则型分析计划
-  -> 专用分析页调用后端 Analysis API
+  -> Dataset Profile / 人工确认 Relationship Set
+  -> Hermes metadata-first 计划（失败时确定性降级）
+  -> 确定性 Join Preview / 显式创建派生 Dataset
+  -> 用户在专用分析页手动启动 Analysis API
   -> ResultView / SafeResultSummary
-  -> 后端 Hermes Result Explainer（失败时确定性降级）
+  -> 后端 Hermes Result Explainer（失败时安全降级）
 ```
 
 ## 目录
@@ -49,7 +50,7 @@ uvicorn app.main:app --reload
 - `/api/v1/assistant/*` 提供 metadata-first profile 与关系推断。
 - `/api/v1/assistant/hermes/*` 是唯一模型运行时边界。
 - 分析执行必须由用户在对应页面确认后启动。
-- 当前不支持自动 SQL、自动 join、自动多表执行或源数据集修改。
+- 当前不支持自动 SQL、LLM/自动 Join、自动分析或源数据集修改；已确认的 2–3 表 JoinPlan 可由后端确定性预览，并在用户显式确认后创建新 Dataset。
 - 旧 `/api/v1/ai/*`、`aiApi`/legacy intent-execution service 与 `/app/smart-analysis` 已退役。
 
 ## 验证

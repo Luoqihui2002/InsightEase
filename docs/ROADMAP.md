@@ -1,7 +1,7 @@
 # InsightEase Roadmap
 
 **Version**: 2026-09
-**Current focus**: V1.0 P0C complete -> P0D demo and E2E closure
+**Current focus**: P0D offline closure complete; real Hermes + browser E2E remain V1.0 release gates
 
 This roadmap is forward-looking. Historical implementation details remain available in `docs/CURRENT_PROGRESS.md`, `docs/CHANGELOG.md`, and `docs/phase-logs/`.
 

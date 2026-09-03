@@ -138,7 +138,7 @@ def build_deterministic_fallback_plan(
         readiness = "needs_join"
         next_action = "create_analysis_dataset"
         next_actions = [
-            AssistantNextAction(type="warning", label="需要创建多表分析数据集（P0C）")
+            AssistantNextAction(type="warning", label="需要创建多表分析数据集")
         ]
     else:
         readiness = "ready_single_table"
@@ -153,7 +153,10 @@ def build_deterministic_fallback_plan(
 
     warnings = [warning]
     if len(required_ids) > 1:
-        warnings.append("Multiple source datasets require a future analysis-dataset step; no join has been executed.")
+        warnings.append(
+            "Multiple source datasets require the user-confirmed Analysis Dataset Builder; "
+            "no join has been executed yet."
+        )
 
     return AssistantAnalysisPlan(
         id=f"fallback-{uuid4()}",

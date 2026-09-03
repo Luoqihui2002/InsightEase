@@ -175,6 +175,7 @@ def build_join_preview(
             len(result) / base_rows,
             step.expected_cardinality,
             relationship.risk_level,
+            step.join_type,
         )
         step_metrics.append(
             {
@@ -494,6 +495,7 @@ def _step_risk(
     row_multiplier: float,
     expected: str,
     relationship_risk: str,
+    join_type: str,
 ) -> tuple[str, list[str]]:
     risk = "low"
     warnings = []
@@ -517,8 +519,13 @@ def _step_risk(
         risk = "medium"
         warnings.append(f"Join 使当前结果行数扩大 {row_multiplier:.2f} 倍。")
     if metrics["match_rate"] < 0.5:
-        risk = "high"
-        warnings.append("左侧 Join key 匹配率低于 50%。")
+        if join_type == "inner":
+            risk = "high"
+            warnings.append("INNER JOIN 左侧 key 匹配率低于 50%，大量基础记录将被丢弃。")
+        else:
+            if RISK_ORDER[risk] < RISK_ORDER["medium"]:
+                risk = "medium"
+            warnings.append("LEFT JOIN 左侧 key 匹配率低于 50%；未匹配的基础记录将被保留为空值。")
     elif metrics["match_rate"] < 0.8 and RISK_ORDER[risk] < RISK_ORDER["medium"]:
         risk = "medium"
         warnings.append("左侧 Join key 存在较多未匹配记录。")

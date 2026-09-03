@@ -709,7 +709,7 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
   } else if (executionReadiness === 'needs_join') {
     nextActions.push({
       type: 'warning',
-      label: '需要创建多表分析数据集（P0C）',
+      label: '需要创建多表分析数据集',
     });
   } else {
     nextActions.push({

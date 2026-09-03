@@ -153,6 +153,39 @@ def test_partial_match_and_null_keys_are_visible_and_nulls_do_not_match():
     assert result["amount"].notna().sum() == 1
 
 
+def test_low_match_left_join_is_medium_because_base_rows_are_preserved():
+    join_plan = plan()
+    preview, result = build(
+        join_plan,
+        {
+            "users": pd.DataFrame({"user_id": [1, 2, 3, 4], "segment": ["a", "b", "c", "d"]}),
+            "orders": pd.DataFrame({"user_id": [1, 1], "amount": [10, 20]}),
+        },
+    )
+
+    assert len(result) == 5
+    assert preview.step_metrics[0].match_rate == pytest.approx(0.25)
+    assert preview.risk_summary.risk_level == "medium"
+    assert any("基础记录将被保留" in warning for warning in preview.risk_summary.warnings)
+
+
+def test_low_match_inner_join_remains_high_risk():
+    join_plan = plan()
+    join_plan.join_steps[0].join_type = "inner"
+    preview, result = build(
+        join_plan,
+        {
+            "users": pd.DataFrame({"user_id": [1, 2, 3, 4], "segment": ["a", "b", "c", "d"]}),
+            "orders": pd.DataFrame({"user_id": [1, 1], "amount": [10, 20]}),
+        },
+    )
+
+    assert len(result) == 2
+    assert preview.step_metrics[0].match_rate == pytest.approx(0.25)
+    assert preview.risk_summary.risk_level == "high"
+    assert any("大量基础记录将被丢弃" in warning for warning in preview.risk_summary.warnings)
+
+
 def test_unconfirmed_or_mismatched_relationship_snapshot_is_rejected():
     join_plan = plan()
     join_plan.confirmed_relationships[0].id = "different-edge"

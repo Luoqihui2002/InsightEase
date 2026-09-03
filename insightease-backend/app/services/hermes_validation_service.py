@@ -357,7 +357,7 @@ def _normalized_next_actions(readiness: str, analysis_type: str) -> tuple[str, l
         return "create_analysis_dataset", [
             AssistantNextAction(
                 type="warning",
-                label="需要创建多表分析数据集（P0C）",
+                label="需要创建多表分析数据集",
             )
         ]
     if readiness == "unsupported":

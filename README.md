@@ -1,690 +1,155 @@
 # InsightEase
 
-> AI-assisted statistics and analytics platform for dataset understanding, relationship-aware analysis planning, structured result rendering, and safe AI result follow-up.
+> An agentic business analytics platform that separates LLM reasoning from deterministic data execution.
 
-![InsightEase Landing](docs/assets/interview/hero-landing.png)
+![InsightEase](docs/assets/interview/hero-landing.png)
 
-## Overview
+InsightEase helps an analyst turn a natural-language business question into a reviewable data plan, a safely constructed analysis dataset, a deterministic analysis, and a bounded AI explanation. It is designed for questions that span uploaded CSV/Excel tables without turning the model into an automatic SQL or execution agent.
 
-**InsightEase** is an AI-assisted data analysis platform designed for business analytics, experimentation, forecasting, attribution, path analysis, and statistical exploration.
+The flagship demo asks:
 
-The platform helps users move from raw uploaded datasets to structured analytical insights through an end-to-end workflow:
+> 最近一个月新客转化表现为什么下降？请比较不同营销渠道的转化表现，并帮我定位主要原因。
 
-```text
-Upload datasets
-→ Understand dataset structure
-→ Classify and organize datasets
-→ Infer relationships between tables
-→ Generate AI-assisted analysis plans
-→ Execute statistical / business analysis
-→ Render structured results
-→ Bring results back to AI Workbench for explanation and next-step suggestions
+Hermes proposes an advisory `AnalysisPlan` from bounded metadata. InsightEase validates every referenced dataset, field, and relationship; a user reviews the relationships and Join risk; pandas executes only the confirmed JoinPlan; existing analysis modules produce a structured ResultView; and Hermes sees only a bounded `SafeResultSummary` for explanation.
+
+## Core architecture
+
+```mermaid
+flowchart TD
+    Q[User question] --> HP[Hermes metadata-only planner]
+    HP --> V[Schema + semantic validation]
+    V -->|invalid / unavailable| F[Visible deterministic fallback]
+    V --> AP[Advisory AnalysisPlan]
+    F --> AP
+    AP --> RS[Human-confirmed Relationship Set]
+    RS --> JP[Deterministic JoinPlan]
+    JP --> PR[Cardinality + match + grain + risk preview]
+    PR --> UC{Explicit user confirmation}
+    UC -->|confirm| DD[Derived dataset + lineage]
+    UC -->|cancel| STOP[No write]
+    DD --> MA[Manual analysis start]
+    MA --> RV[Structured ResultView]
+    RV --> SS[Bounded SafeResultSummary]
+    SS --> HE[Hermes result explanation]
 ```
 
-Unlike a simple AI chat interface, InsightEase uses a bounded, metadata-first assistant architecture. The AI Workbench does not blindly consume raw data or automatically execute analysis. It works with dataset metadata, confirmed relationship context, safe result summaries, and explicit user actions.
+Safety properties:
 
----
+- Relationship inference is metadata-based and requires review.
+- A Relationship Set is allowed planning context, not an execution plan.
+- Hermes cannot execute joins, analyses, SQL, or source mutations.
+- Join Preview reports actual cardinality, match/null/duplicate rates, row multiplier, grain shift, and risk before persistence.
+- Preview creates no dataset; confirmation creates a new derived dataset with source lineage.
+- Analysis pages are prefilled but never auto-run.
+- Result explanation receives a bounded summary instead of raw dataset rows or the full result payload.
+- Invalid or unavailable live output falls back visibly; the UI never disguises fallback as Hermes Live.
 
-## Product Preview
+## Flagship demo and ground truth
 
-### Dashboard
+The public, synthetic pack lives in [`manual-test-data/demo-v1`](manual-test-data/demo-v1/README.md). It is generated with seed `20260903` and contains users, orders, marketing touchpoints, and event logs.
 
-The dashboard provides a high-level overview of uploaded datasets, analysis tasks, storage distribution, recent activity, and analysis type distribution.
+Its fixed truth is:
 
-![Dashboard Overview](docs/assets/interview/dashboard-overview.png)
+- overall new-customer CVR falls from **24.0% to 18.8%**;
+- social_ads traffic share rises from **15% to 40%** despite lower conversion;
+- social_ads CVR falls from **16% to 10%**;
+- its main within-channel leak is checkout → payment success;
+- users LEFT JOIN orders is a real 1:N grain shift and produces **2,054 rows from 2,000 users**.
 
-### Dataset Upload
+See the generated [`GROUND_TRUTH.md`](manual-test-data/demo-v1/GROUND_TRUTH.md), [demo script](docs/interview/FLAGSHIP_DEMO_SCRIPT.md), and [E2E acceptance record](docs/qa/P0D_E2E_ACCEPTANCE.md).
 
-Users can upload CSV / Excel files. The backend parses schema information, stores metadata, and makes datasets available for downstream analysis.
+## Product surfaces
 
-![Upload Data](docs/assets/interview/upload-data.png)
+### Dataset catalog and profiling
 
-### Dataset Catalog
-
-The Dataset Catalog supports dataset search, grouped views, business-topic classification, data-type labels, analysis-use tags, and quality scores.
+Upload owned CSV/Excel files, inspect bounded previews and schema profiles, search/group datasets, and review quality and analysis-use hints.
 
 ![Dataset Catalog](docs/assets/interview/dataset-catalog.png)
 
-### Dataset Preview
+### Relationship-aware AI Workbench
 
-Users can expand datasets to inspect bounded previews and schema-level information before running analysis.
+Build a topic-scoped Relationship Set, distinguish connected and reference tables, ask a business question, and inspect required/candidate datasets, fields, metrics, assumptions, readiness, and provider source.
 
-![Dataset Preview](docs/assets/interview/dataset-preview.png)
+![Relationship Set](docs/assets/interview/ai-workbench-relationship-set.png)
 
----
+![Analysis Plan](docs/assets/interview/ai-workbench-analysis-plan.png)
 
-## Core Features
+### Deterministic data preparation and analysis
 
-### 1. Dataset Upload and Management
+For a two- or three-table plan, the Analysis Dataset Builder constructs JoinPlan steps only from confirmed equality relationships. The backend bounds input/output sizes, blocks unsafe expansion, preserves source files, and records derivation lineage. Users then manually run an existing workflow such as statistics, attribution, forecast, path analysis, data overview, or preprocessing.
 
-InsightEase supports the full dataset lifecycle from upload to downstream analysis.
+![Analysis Result](docs/assets/interview/attribution-result.png)
 
-Key capabilities:
+### Bounded AI follow-up
 
-- CSV / Excel upload
-- Dataset metadata extraction
-- Dataset list and preview
-- Search and grouped dataset views
-- Business-category and analysis-use labels
-- Quality score display
-- Dataset download and deletion
+ResultView can be explicitly brought back to AI Workbench. Module-specific metrics, small previews, and caveats form `SafeResultSummary`; full raw results and source rows stay outside the assistant boundary.
 
-The Dataset Catalog is designed as a deterministic metadata layer. It can classify datasets by business topic, data type, and likely analysis usage using filename, schema fields, row/column counts, and exposed metadata.
+![Result Follow-up](docs/assets/interview/ai-workbench-result-followup.png)
 
----
+## Technology
 
-### 2. Data Preprocessing
+- Frontend: React 19, TypeScript, Vite, Tailwind CSS, shadcn/Radix, ECharts.
+- Backend: FastAPI, Pydantic, SQLAlchemy, pandas, MySQL.
+- Storage: local disk or optional OSS for files; MySQL for metadata/history.
+- Assistant: Hermes-compatible live planning and explanation behind the backend, strict contracts and semantic validation, deterministic fallback.
 
-The DataWorkshop / preprocessing module supports common data cleaning workflows before analysis.
+V1 uses bounded in-process dataframe execution. It is not an autonomous SQL agent, distributed engine, database discovery platform, or enterprise governance product.
 
-![DataWorkshop Preview](docs/assets/interview/data-workshop-preview.png)
+## Local development
 
-Supported operations include:
+Prerequisites: Node.js/npm, Python, and a reachable MySQL instance.
 
-- Missing value handling
-- Duplicate handling
-- Outlier handling
-- Standardization options
-- Preview-before-save workflow
-- Save processed result as a new dataset
-
-The design follows a backend-processing-first model: preprocessing is previewed and saved through backend APIs rather than being silently executed in the browser.
-
----
-
-### 3. Statistical and Business Analysis Modules
-
-InsightEase provides multiple analysis modules for different business and statistical use cases.
-
-Current modules include:
-
-- Descriptive statistics
-- Visualization analysis
-- Forecasting
-- Attribution analysis
-- Path analysis
-- Data overview and field profiling
-- Data preprocessing
-- Analysis history management
-
-#### Statistics ResultView
-
-![Statistics ResultView](docs/assets/interview/statistics-resultview.png)
-
-#### Forecast Analysis
-
-![Forecast Result](docs/assets/interview/forecast-result.png)
-
-#### Attribution Analysis
-
-![Attribution Result](docs/assets/interview/attribution-result.png)
-
-#### Path Analysis
-
-![Path Analysis Result](docs/assets/interview/path-analysis-result.png)
-
----
-
-## AI Workbench
-
-AI Workbench is the main assistant shell of InsightEase.
-
-It connects dataset context, relationship context, analysis history, structured planning, and result follow-up into a unified interface.
-
-### Relationship-aware Context
-
-Users can create and manage **Relationship Sets**, which represent topic-scoped dataset graphs.
-
-A Relationship Set may include:
-
-- connected dataset nodes
-- confirmed relationship edges
-- isolated / reference tables
-- high-risk relationship warnings
-
-![AI Workbench Relationship Set](docs/assets/interview/ai-workbench-relationship-set.png)
-
-Relationship Sets are used as **allowed context** for planning. They do not automatically join datasets or execute analysis.
-
----
-
-### AI-assisted Analysis Planning
-
-Users can ask natural-language business questions, and AI Workbench converts them into structured analysis plans.
-
-With the live runtime enabled, bounded metadata is sent through the InsightEase backend to Hermes and the returned plan is validated against the exact dataset, field, and Relationship Set context. Invalid or unavailable live responses fall back to the deterministic planner.
-
-![AI Workbench Analysis Plan](docs/assets/interview/ai-workbench-analysis-plan.png)
-
-The generated plan distinguishes:
-
-- required datasets
-- candidate datasets
-- suggested fields
-- assumptions
-- warnings
-- recommended target analysis module
-
-The assistant can prefill target analysis pages, but the user must still review the configuration and manually start the analysis.
-
-**Hermes live planning is advisory. Hermes proposes analysis requirements; InsightEase deterministically constructs and validates JoinPlans from exact confirmed Relationship Set edges. No LLM executes joins. Join preview and risk checks occur before any derived dataset is saved, and derived datasets require explicit user confirmation.**
-
-For multi-table plans, AI Workbench now supports a bounded 2–3 table Analysis Dataset Builder. It detects cardinality and grain changes, reports match/null/duplicate rates and row multiplication, blocks unsafe expansion, stores multi-source lineage on the derived Dataset, and then lets the user explicitly continue to an existing analysis page. It never mutates sources or auto-runs the analysis.
-
----
-
-### Safe Result Follow-up
-
-Analysis results can be brought back into AI Workbench for explanation, risk identification, next-step suggestions, and report drafting.
-
-![AI Workbench Result Follow-up](docs/assets/interview/ai-workbench-result-followup.png)
-
-The result follow-up flow is based on `SafeResultSummary`, a bounded summary contract. It avoids sending full raw result tables or raw dataset rows into the assistant context.
-
----
-
-## End-to-End Product Workflow
-
-```mermaid
-flowchart TD
-    A[Upload CSV / Excel] --> B[Backend Parse & Store]
-    B --> C[Dataset Catalog]
-    C --> C1[Search / Group / Classify]
-    C --> C2[Dataset Understanding]
-
-    C --> D[DataWorkshop]
-    D --> D1[Transform Preview]
-    D1 --> D2[Save as New Dataset]
-
-    C --> E[Relationship Inference]
-    E --> E1[Review / Confirm / Reject]
-    E1 --> E2[Relationship Set Topic Graph]
-
-    C --> F[AI Workbench]
-    E2 --> F
-    D2 --> F
-
-    F --> F1[Context Panel]
-    F1 --> F1A[Dataset Context]
-    F1 --> F1B[Relationship Set Context]
-    F1 --> F1C[Analysis History Context]
-
-    F --> G[Generate Analysis Plan]
-    G --> G1[Required Datasets]
-    G --> G2[Candidate Datasets]
-    G --> G3[Suggested Fields]
-    G --> G4[Warnings / Assumptions]
-
-    G --> H{Analysis Type}
-
-    H -->|Single-table| I[Prefill Analysis Page]
-    I --> J[Statistics / Forecast / Attribution / Path / Data Overview]
-    J --> K[Manual Start Analysis]
-    K --> L[Backend Analysis Execution]
-    L --> M[ResultView / Charts / Tables]
-
-    H -->|Multi-table| N[Deterministic Join Builder]
-    N --> N1[Bounded Preview / Risk Checks]
-    N1 --> N2[Explicitly Confirmed Derived Dataset]
-    N2 --> I
-
-    M --> O[Safe Result Summary]
-    O --> P[Bring to AI Workbench]
-    P --> Q[Result Follow-up / Explanation]
-    Q --> R[Next Steps / Report Draft / Business Suggestions]
-```
-
----
-
-## System Architecture
-
-```mermaid
-flowchart TB
-    subgraph FE[Frontend]
-        FE1[Dataset Catalog]
-        FE2[DataWorkshop]
-        FE3[Analysis Pages]
-        FE4[AI Workbench]
-        FE5[History / Dashboard]
-        FE6[ResultView & ResultChartRenderer]
-    end
-
-    subgraph STATE[Frontend State]
-        S1[React Hooks]
-        S2[Assistant Context Store]
-        S3[Session Storage]
-        S4[Local UI Preferences]
-    end
-
-    subgraph API[Backend API - FastAPI]
-        A1[Auth API]
-        A2[Dataset API]
-        A3[Transform API]
-        A4[Analysis API]
-        A5[Assistant API]
-        A6[Hermes Assistant API]
-        A7[Analysis Dataset Builder API]
-    end
-
-    subgraph ASSISTANT[Assistant Layer]
-        B1[Dataset Profiler]
-        B2[Table Classifier]
-        B3[Relationship Inference Engine]
-        B4[Analysis Planner]
-        B5[Safe Result Summary Builder]
-        B6[Result Explainer]
-        B7[Assistant Runtime Adapter]
-        B8[Safe Tool Registry]
-    end
-
-    subgraph RUNTIME[Runtime Providers]
-        R1[Rule-based Runtime - Default / Fallback]
-        R2[Hermes Dry-run Runtime - Opt-in]
-        R3[Hermes Live Result Explainer]
-        R4[Hermes Live Plan Adapter - Opt-in]
-    end
-
-    subgraph EXEC[Execution Layer]
-        E1[pandas Transform Executor]
-        E2[Background Analysis Tasks]
-        E3[Statistics / Forecast / Attribution / Path / Data Overview Services]
-        E4[Join Preview / Derived Dataset Builder]
-    end
-
-    subgraph DATA[Data Layer]
-        D1[MySQL Metadata]
-        D2[Local Disk / OSS Storage]
-        D3[Analysis History]
-        D4[Derived Dataset Metadata]
-    end
-
-    FE1 --> A2
-    FE2 --> A3
-    FE3 --> A4
-    FE4 --> A5
-    FE4 --> A6
-    FE5 --> A4
-    FE6 --> FE3
-
-    FE4 --> STATE
-    FE3 --> STATE
-
-    A2 --> D1
-    A2 --> D2
-
-    A3 --> E1
-    E1 --> D1
-    E1 --> D2
-
-    A4 --> E2
-    E2 --> E3
-    E3 --> D3
-
-    A5 --> ASSISTANT
-    A6 --> RUNTIME
-    B7 --> R1
-    B7 --> R2
-    B7 --> R3
-    B7 --> R4
-    RUNTIME --> B8
-
-    A7 --> E4
-    E4 --> D4
-    E4 --> D2
-```
-
----
-
-## AI Analysis Pipeline
-
-```mermaid
-flowchart TD
-    A[User Question in AI Workbench] --> B[Context Assembly]
-
-    B --> B1[Selected Dataset]
-    B --> B2[Dataset Catalog Metadata]
-    B --> B3[Dataset Profile]
-    B --> B4[Active Relationship Set]
-    B --> B5[Analysis History Summary]
-    B --> B6[Safe Result Summary]
-
-    B1 --> C[Assistant Runtime Adapter]
-    B2 --> C
-    B3 --> C
-    B4 --> C
-    B5 --> C
-    B6 --> C
-
-    C --> D{Runtime Mode}
-
-    D -->|Default| E[Rule-based Runtime]
-    D -->|Dry-run| F[Hermes Dry-run Runtime]
-    D -->|Live Result Explain| G[Hermes Result Explainer]
-    D -->|Live Planning| H[Hermes Plan Analysis Runtime]
-
-    E --> I[Structured Analysis Plan]
-    F --> I
-    H --> I
-
-    G --> J[Bounded Result Explanation]
-
-    I --> K[Required Datasets]
-    I --> L[Candidate Datasets]
-    I --> M[Suggested Fields]
-    I --> N[Warnings / Assumptions]
-    I --> O[Next Actions]
-
-    O --> P{Navigation Target}
-    P -->|Single-table page| Q[Prefill Analysis Page]
-    P -->|Multi-table question| R[Stop at needs_join - P0C Handoff]
-    P -->|Need clarification| S[Ask User to Confirm Dataset / Relationship]
-
-    Q --> T[User Reviews Prefill]
-    T --> U[Manual Start Analysis]
-
-    R --> V[User-confirmed Join Plan]
-    V --> W[Join Preview / Derived Dataset]
-    W --> Q
-
-    U --> X[Backend Analysis Task]
-    X --> Y[Structured Analysis Result]
-    Y --> Z[ResultView]
-
-    Z --> AA[Safe Result Summary]
-    AA --> AB[Bring Result Back to AI Workbench]
-    AB --> AC[Explain / Risks / Next Steps / Report Draft]
-```
-
----
-
-## Relationship Sets and Multi-table Context
-
-```mermaid
-flowchart LR
-    subgraph CATALOG[Dataset Catalog]
-        U[Users Table]
-        O[Orders Table]
-        P[Products Table]
-        E[Event Log Table]
-        M[Marketing Touchpoints]
-        F[Forecast Metrics Table]
-    end
-
-    subgraph PROFILE[Deterministic Metadata Layer]
-        P1[Column Role Detection]
-        P2[Field Type and Role Detection]
-        P3[Table Classification]
-        P4[Quality Warnings]
-    end
-
-    U --> PROFILE
-    O --> PROFILE
-    P --> PROFILE
-    E --> PROFILE
-    M --> PROFILE
-    F --> PROFILE
-
-    PROFILE --> R[Relationship Inference Engine]
-
-    R --> R1[orders.user_id -> users.user_id]
-    R --> R2[orders.product_id -> products.product_id]
-    R --> R3[event_log.user_id -> users.user_id]
-    R --> R4[touchpoints.user_id -> users.user_id]
-    R --> R5[touchpoints.order_id -> orders.order_id]
-
-    R1 --> REVIEW[Relationship Review UI]
-    R2 --> REVIEW
-    R3 --> REVIEW
-    R4 --> REVIEW
-    R5 --> REVIEW
-
-    REVIEW --> C1[Confirm]
-    REVIEW --> C2[Reject]
-    REVIEW --> C3[High-risk Warning]
-
-    C1 --> SET[Relationship Set]
-    SET --> SET1[Connected Dataset Nodes]
-    SET --> SET2[Confirmed Relationship Edges]
-    SET --> SET3[Isolated / Reference Tables]
-    SET --> SET4[Risk Metadata]
-
-    SET --> PLAN[AI Workbench Planner]
-    PLAN --> PLAN1[Single-table Analysis Plan]
-    PLAN --> PLAN2[Multi-table Analysis Plan]
-
-    PLAN2 --> JOIN[Deterministic Join Builder]
-    JOIN --> JOIN1[Bounded Preview / Risk Checks]
-    JOIN1 --> JOIN2[Confirmed Derived Dataset]
-    JOIN2 --> TARGET[Target Analysis Module]
-```
-
----
-
-## Safety Boundaries
-
-InsightEase is designed around safe AI-assisted analysis rather than uncontrolled agent execution.
-
-Current boundaries:
-
-- No silent joins
-- No automatic analysis execution
-- No arbitrary SQL execution from AI
-- No source dataset mutation
-- No raw dataset rows sent to AI by default
-- Relationship Sets are context graphs, not execution plans
-- Result follow-up uses bounded `SafeResultSummary`
-- Execute/write actions require explicit user confirmation
-
----
-
-## Tech Stack
-
-### Frontend
-
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui
-- Radix UI
-- ECharts
-- Axios
-- React hooks + local/session storage for UI state
-
-### Backend
-
-- FastAPI
-- Python 3.11
-- pandas
-- SQLAlchemy
-- MySQL
-- Local disk / OSS storage
-- BackgroundTasks for analysis execution
-
-### AI / Assistant Layer
-
-- Assistant Runtime Adapter
-- Rule-based runtime by default
-- Hermes dry-run runtime opt-in
-- Hermes live structured planning opt-in with deterministic fallback
-- Hermes live result explanation boundary
-- Safe Tool Registry
-- Safe Result Summary
-- Metadata-first planning context
-
----
-
-## Project Status
-
-This project is under active development.
-
-Completed capabilities include:
-
-- Dataset upload and management
-- Dataset Catalog search and grouped views
-- Data preprocessing preview and save workflow
-- Multiple analysis modules
-- Unified ResultView rollout
-- ResultChartRenderer for basic chart rendering
-- Analysis History Catalog
-- AI Workbench shell
-- Relationship Set management
-- Relationship-aware analysis planning
-- Prefill navigation to analysis pages
-- Safe result handoff to AI Workbench
-- Deterministic result follow-up
-- Hermes dry-run / live-planning / live-result-explainer safety boundary
-- Validated single-table prefill and multi-table `needs_join` handoff
-- Deterministic 2–3 table Join Builder with bounded preview and risk checks
-- Explicitly confirmed derived Datasets with multi-source lineage
-
-Planned next-stage capabilities:
-
-- AI error explainer
-- Fixed P0D demo datasets and browser E2E closure
-- Real Hermes smoke test and demo polish
-- Productization, permissions, audit logs, and large-dataset handling
-- Dashboard builder and report generation
-
----
-
-## Demo Scenarios
-
-### 1. Dataset Catalog to Forecast Plan
-
-```text
-Datasets
-→ Group by analysis usage
-→ Find forecast dataset
-→ Open AI Workbench
-→ Ask: "预测未来销售额趋势"
-→ Generate forecast plan
-→ Navigate to Forecast page with prefilled dataset
-```
-
-### 2. Relationship Set to Channel Conversion Plan
-
-```text
-AI Workbench
-→ Create Relationship Set from users / orders / event log / marketing touchpoints
-→ Ask: "分析各渠道转化率"
-→ Review required datasets and candidate datasets
-→ Navigate to Attribution or Statistics only after required datasets are confirmed
-```
-
-### 3. Result to AI Workbench Follow-up
-
-```text
-Run Statistics / Forecast / Attribution / PathAnalysis
-→ Click "带到 AI 工作台"
-→ AI Workbench receives SafeResultSummary
-→ Ask: "帮我解释这个结果"
-→ Ask: "有哪些异常或风险？"
-→ Ask: "整理成报告文字"
-```
-
----
-
-## More Screenshots
-
-### History Catalog
-
-![History Catalog](docs/assets/interview/history-catalog.png)
-
-### Visualization Analysis
-
-![Visualization Analysis](docs/assets/interview/visualization-analysis.png)
-
-### Settings and Backend Processing Mode
-
-![Settings](docs/assets/interview/settings-architecture-status.png)
-
----
-
-## Local Development
-
-> The exact local startup command may vary depending on frontend/backend environment configuration.
-
-### Frontend
-
-```bash
-cd app
-npm install
-# Optional: set VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_live in an uncommitted local env file.
-npm run dev
-```
-
-### Backend
+Backend:
 
 ```bash
 cd insightease-backend
-pip install -r requirements.txt
-# Copy .env.example to an uncommitted local env file and inject Hermes secrets there.
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+cp .env.example .env
+# Configure local MySQL credentials; inject Hermes secrets only through this uncommitted environment.
 uvicorn app.main:app --reload
 ```
 
-Live planning requires `HERMES_ASSISTANT_ENABLED=true`, `HERMES_ASSISTANT_MODE=live`, a backend-only provider URL/token, and the explicit frontend runtime setting above. Without those settings, planning remains deterministic.
-
-### Build Check
+Frontend:
 
 ```bash
 cd app
-npx tsc --noEmit
+npm ci
+# For a configured real provider, set VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_live in .env.local.
+npm run dev
+```
+
+Live planning and explanation additionally require backend-only `HERMES_ASSISTANT_ENABLED=true`, `HERMES_ASSISTANT_MODE=live`, provider base URL/token, and a supported model. `disabled` and `dry_run` do not satisfy live acceptance.
+
+## Verification
+
+```bash
+python3 manual-test-data/demo-v1/scripts/generate_demo_data.py
+insightease-backend/.venv/bin/python manual-test-data/demo-v1/scripts/validate_demo_data.py
+
+cd app
+npm run lint
 npm run build
+
+cd ../insightease-backend
+.venv/bin/python -m pytest -q
 ```
 
----
+Release/demo operators should also follow the [environment check](docs/qa/P0D_DEMO_ENV_CHECK.md) and [reset procedure](docs/qa/P0D_DEMO_RESET.md). Automated checks do not replace the real-provider browser E2E.
 
-## Screenshot File Checklist
+## Current release evidence
 
-Place interview/demo screenshots under:
+- P0C baseline: frontend build passed; lint had zero errors and 355 historical warnings; backend had 105 passed and 6 skipped tests.
+- P0D offline evidence: deterministic generation, pandas reference validation, and the product Join engine all agree on the flagship data.
+- The 2026-09-03 P0D environment had no configured Hermes provider or reachable MySQL/backend/frontend runtime, so the real-provider browser gate and new `01`–`08` screenshot sequence remain open. The honest readiness decision is recorded as **V1.0 NOT READY** until those gates are rerun.
 
-```text
-docs/assets/interview/
-```
+## Project documentation
 
-Recommended file names:
+- [Current architecture](docs/CURRENT_ARCHITECTURE.md)
+- [Known limitations](docs/KNOWN_LIMITATIONS.md)
+- [Interview guide](docs/interview/INSIGHTEASE_INTERVIEW_GUIDE.md)
+- [Resume bullets](docs/interview/RESUME_BULLETS.md)
+- [P0D phase log](docs/phase-logs/V1_0_P0D_E2E_DEMO_PORTFOLIO_FINALIZATION.md)
 
-```text
-hero-landing.png
-dashboard-overview.png
-upload-data.png
-dataset-catalog.png
-dataset-preview.png
-history-catalog.png
-visualization-analysis.png
-data-workshop-preview.png
-statistics-resultview.png
-attribution-result.png
-forecast-result.png
-path-analysis-result.png
-settings-architecture-status.png
-ai-workbench-relationship-set.png
-ai-workbench-analysis-plan.png
-ai-workbench-result-followup.png
-```
-
----
-
-## Repository Structure
-
-```text
-InsightEase/
-  app/                         # Frontend application
-  insightease-backend/          # Backend API and analysis services
-  docs/                         # Architecture, roadmap, design docs, phase logs
-  docs/assets/interview/        # README screenshots
-  manual-test-data/             # Demo and QA datasets
-```
-
----
-
-## Notes
-
-This repository includes both product code and detailed development documentation.
-
-- Root `README.md`: project showcase for visitors and interviewers.
-- `docs/README.md`: internal documentation index for developers and AI coding assistants.
-- `docs/design/`: architecture and product design contracts.
-- `docs/phase-logs/`: phase-by-phase development records.
-- `docs/qa/`: reusable QA recipes and demo scenarios.
+Historical design and phase records remain under `docs/`; they explain how the boundaries evolved but do not override this README or the current architecture document.

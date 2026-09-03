@@ -3,16 +3,17 @@
 ## 📋 部署前准备
 
 ### 1. 环境要求
-- **服务器**: 阿里云ECS / 腾讯云CVM / AWS EC2 等
+- **服务器**: 支持 Python 或容器运行时的 Linux/Windows 主机
 - **操作系统**: Ubuntu 20.04+ / CentOS 7+ / Windows Server 2019+
 - **内存**: 建议 2GB+
 - **Docker**: 20.10+
 - **Docker Compose**: 1.29+
 
-### 2. 已购买的服务
-- ✅ 阿里云RDS MySQL数据库
-- ✅ 云服务器ECS
-- （可选）域名和SSL证书
+### 2. 外部依赖
+- 可达的 MySQL 实例（本仓库的 compose 文件不创建数据库）
+- 可写的本地存储目录，或可选的对象存储
+- 可选的域名与 TLS 证书
+- 可选的 Hermes-compatible provider；凭据仅由部署环境注入
 
 ---
 
@@ -64,7 +65,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 ```bash
 cp .env.example .env
 # 编辑 .env 文件，修改以下配置：
-# - DB_PASSWORD: 你的RDS数据库密码
+# - DB_PASSWORD: 你的数据库密码
 # - SECRET_KEY: 随机密钥（用于JWT签名）
 # - ALLOWED_ORIGINS: 你的前端域名（生产环境建议限制）
 ```
@@ -90,7 +91,7 @@ docker-compose logs -f backend
 
 ### 数据库配置
 ```env
-DB_HOST=db.example.internal
+DB_HOST=mysql.example.internal
 DB_PORT=3306
 DB_USER=insightease_app
 DB_PASSWORD=replace-with-a-strong-password
@@ -189,7 +190,7 @@ docker-compose up -d
 # 备份上传的文件
 tar -czvf backup-$(date +%Y%m%d).tar.gz data/
 
-# 备份数据库（使用阿里云RDS自动备份功能）
+# 通过你的 MySQL 托管服务或标准 MySQL 工具备份数据库
 ```
 
 ---
@@ -209,9 +210,9 @@ docker-compose logs backend
 ### 2. 数据库连接失败
 ```bash
 # 测试数据库连接
-mysql -h db.example.internal -u insightease_app -p
+mysql -h mysql.example.internal -u insightease_app -p
 
-# 检查RDS白名单设置（添加服务器IP）
+# 检查数据库网络访问控制与 TLS 配置
 ```
 
 ### 3. 文件上传失败

@@ -6,7 +6,7 @@
 
 ## 当前阶段状态
 
-**V1.0 P0C Multi-table Analysis Dataset Builder 已完成；下一阶段仅为 P0D Demo & E2E Closure。**
+**V1.0 P0D 已完成离线数据、Join 校验与作品集材料；真实 Hermes + Browser E2E 仍阻塞，因此当前为 V1.0 NOT READY。**
 
 - 旧 Kimi `/api/v1/ai/*` 与 SmartAnalysis mock 链路已移除 ✅
 - `Semantic` 已校正为 `Data Overview` ✅
@@ -15,8 +15,9 @@
 - 单表计划仅人工确认后 prefill；多表计划由 `needs_join` 显式进入 Join Builder ✅
 - `needs_join` 已接入 deterministic JoinPlan、Preview、风险检查、显式确认与 Derived Dataset lineage ✅
 - 2–3 表 `left` / `inner` pandas Join、N:N / 行数爆炸防护与既有分析页 prefill 已完成 ✅
-- `npm run lint` / `npm run build` — 通过 ✅
-- 后端完整 pytest — 105 passed，6 个 live integration 用例按设计跳过 ✅
+- P0D 固定种子旗舰数据、Ground Truth、pandas/Product Join 对照与面试材料已完成 ✅
+- 当前环境未配置 Hermes live，且 MySQL/Backend/Frontend 不可达；AC1–AC8 Browser evidence 待补 ⛔
+- 自动化回归结果见 `docs/phase-logs/V1_0_P0D_E2E_DEMO_PORTFOLIO_FINALIZATION.md`
 
 ---
 
@@ -36,6 +37,7 @@
 | V1.0 P0A | 架构与安全收口 | ✅ 完成 |
 | V1.0 P0B | Hermes Live Analysis Planning | ✅ 完成 |
 | V1.0 P0C | Multi-table Analysis Dataset Builder | ✅ 完成 |
+| V1.0 P0D | E2E Demo & Portfolio Finalization | ⛔ NOT READY（live/browser gate） |
 
 ---
 

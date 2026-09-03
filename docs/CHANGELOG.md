@@ -1,5 +1,14 @@
 # InsightEase 变更日志
 
+## V1.0 P0D：E2E Demo & Portfolio Finalization（2026-09-03）
+
+- 新增固定 seed `20260903` 的公开旗舰数据包（users/orders/marketing touchpoints/event log）、生成式 Ground Truth 与 pandas 参考校验。
+- 新增真实 1:N flagship Join 回归：users LEFT JOIN orders 为 2,000 → 2,054 行、15 列、1.027×，与产品 Join 引擎一致。
+- 修正低匹配 LEFT JOIN 风险语义：保留基础记录时为 medium + 明确空值提示；低匹配 INNER JOIN 仍为 high；N:N/基数不符/行爆炸规则不变。
+- 清理运行时 P0C/future wording，并将 README 收敛为一张当前 V1 架构图与准确边界。
+- 新增环境检查、Demo reset、逐步 E2E evidence、2–4 分钟脚本、Known Limitations、30s/2m/5m 面试叙事、Q1–Q10/STAR 深挖和中英文简历 bullets。
+- 当前环境 Hermes disabled 且无可达 MySQL/前后端服务；未伪造 live/browser/screenshots 证据，最终状态为 `V1.0 NOT READY`，未进入 P1。
+
 ## V1.0 P0C：Multi-table Analysis Dataset Builder（2026-09-03）
 
 - 将 P0B `needs_join` 计划接入确定性 JoinPlan Builder；只使用 active Relationship Set 中 exact confirmed edge，支持 2–3 表与 `left` / `inner`。
