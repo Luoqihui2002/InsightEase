@@ -1,7 +1,7 @@
 # InsightEase Roadmap
 
 **Version**: 2026-09
-**Current focus**: V1.0 P0B complete -> P0C multi-table analysis dataset builder
+**Current focus**: V1.0 P0C complete -> P0D demo and E2E closure
 
 This roadmap is forward-looking. Historical implementation details remain available in `docs/CURRENT_PROGRESS.md`, `docs/CHANGELOG.md`, and `docs/phase-logs/`.
 
@@ -223,9 +223,11 @@ Phase 4B can close when:
 - Hermes live can generate structured analysis plans from bounded metadata context.
 - Deterministic fallback remains available.
 - No automatic joins, SQL, analysis execution, or dataset mutation are introduced.
-- Multi-table execution is designed but implemented under Phase 5.
+- Multi-table execution is implemented under P0C / Phase 5 with explicit confirmation.
 
 ## P0C / Phase 5: Multi-table Analysis Execution Layer
+
+**Status: completed 2026-09-03.** P0C delivered the contract, preview service, persisted derived Dataset, lineage, risk model, explicit confirmation, and analysis-page prefill as one bounded V1 slice. The earlier 5A–5E breakdown below is retained as planning history.
 
 ### Goal
 
@@ -235,7 +237,7 @@ Turn Relationship Sets and multi-table analysis plans into user-confirmed, analy
 
 AI Workbench can already identify relevant datasets and relationships. Current analysis modules mostly operate on a single dataset. Relationship Sets are context graphs, not joined data.
 
-The missing bridge is:
+The bridge delivered by P0C is:
 
 ```text
 Relationship Set subset
@@ -433,15 +435,16 @@ These items are not primary roadmap phases right now but can be revisited when t
 
 ## Next Recommended Sequence
 
-Recommended order:
+Recommended order after P0C:
 
 ```text
-4B-11A Hermes Live Readiness Review
--> 4B-11B Hermes Result Explainer Live Adapter
--> 4B-11C Hermes Plan Analysis Live Adapter
--> Phase 5A Join Builder Contract and Frontend Mock
+P0D fixed demo datasets
+-> browser E2E scenario
+-> real Hermes smoke test
+-> UI polish and bug fixes
+-> demo recording and interview narrative
 ```
 
 Reason:
 
-Finish the Phase 4 Hermes advisory loop first, then enter Phase 5 multi-table execution with a clear confirmation and safety model.
+P0D must not add new core architecture. It validates and presents the now-complete agentic analytics chain.

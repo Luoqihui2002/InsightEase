@@ -1,6 +1,6 @@
 # InsightEase 当前架构
 
-**版本**: 2026-04-28
+**版本**: 2026-09-03
 **状态**: Backend Processing-first，Browser-local 栈已移除
 
 ---
@@ -69,15 +69,19 @@
   -> 默认规则型 planner，或显式启用 backend-only Hermes live planner
   -> Hermes 输出经过 strict schema + dataset/field/relationship validation
   -> 失败时 deterministic fallback，计划标明来源和 execution readiness
-  -> 单表计划经用户确认后 prefill；多表计划停在 needs_join
+  -> 单表计划经用户确认后 prefill
+  -> 多表计划由 InsightEase 构建 deterministic JoinPlan
+     -> 用户点击 Preview -> backend pandas Join + cardinality/risk checks
+     -> 用户明确确认 -> derived Dataset + multi-source lineage
+     -> 用户点击继续 -> 既有分析页 prefill（不会自动执行）
   -> 用户进入对应分析页并手动启动分析（不会自动执行）
   -> 后端 Analysis API 执行并返回结构化 ResultView 数据
   -> SafeResultSummary 经后端边界交给 Hermes 做结果解释
 ```
 
 **涉及文件**:
-- 前端: `app/src/pages/AIWorkspace.tsx`, `app/src/lib/assistant/analysisPlannerMock.ts`, `app/src/lib/assistant/safeResultSummary.ts`, `app/src/api/assistant.ts`
-- 后端: `insightease-backend/app/api/v1/endpoints/assistant.py`, `analysis.py`, `hermes.py`
+- 前端: `app/src/pages/AIWorkspace.tsx`, `app/src/components/assistant/JoinBuilderPanel.tsx`, `app/src/lib/assistant/joinPlanBuilder.ts`, `app/src/lib/assistant/safeResultSummary.ts`, `app/src/api/assistant.ts`
+- 后端: `insightease-backend/app/api/v1/endpoints/assistant.py`, `join.py`, `analysis.py`, `hermes.py`; services `join_service.py`, `dataset_io_service.py`
 
 Legacy `/api/v1/ai/*`、浏览器端 `aiApi`/intent recognition/execution service 和 SmartAnalysis mock 页面均已退役。浏览器不会直接持有或调用模型凭据。
 
@@ -121,7 +125,7 @@ Legacy `/api/v1/ai/*`、浏览器端 `aiApi`/intent recognition/execution servic
 | 数据库 | MySQL (aiomysql) |
 | 文件存储 | 本地磁盘 / 阿里云 OSS（切换）|
 | 数据处理 | pandas |
-| Assistant | Metadata-first deterministic/live planner + backend-only Hermes result explainer |
+| Assistant | Metadata-first deterministic/live planner + deterministic user-confirmed Join executor + backend-only Hermes result explainer |
 | 任务 | BackgroundTasks |
 
 ---

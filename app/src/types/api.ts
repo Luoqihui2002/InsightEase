@@ -29,6 +29,11 @@ export interface Dataset {
   schema: FieldSchema[];
   quality_score?: number;
   ai_summary?: string;
+  parent_dataset_id?: string;
+  source_dataset_ids?: string[];
+  derivation_type?: string;
+  derivation_plan?: Record<string, unknown>;
+  derivation_risk_summary?: Record<string, unknown>;
   status: 'uploaded' | 'scanning' | 'ready' | 'error';
   created_at: string;
 }

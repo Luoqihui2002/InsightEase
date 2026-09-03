@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.storage import storage
+from app.services.dataset_io_service import check_dataset_file_size, load_dataset_dataframe
 from app.core.transform_executor import (
     execute_operations,
     build_column_stats,
@@ -39,48 +40,9 @@ MAX_OUTPUT_ROWS = 1_000_000
 MAX_FILE_SIZE_MB = 100
 
 
-def _read_dataset_to_df(dataset: Dataset) -> pd.DataFrame:
-    """Read a dataset file into a pandas DataFrame, handling both local and OSS storage."""
-    from app.api.v1.endpoints.datasets import read_csv_with_auto_header
-
-    storage_path = dataset.storage_path
-    ext = Path(dataset.filename).suffix.lower()
-
-    if storage_path.startswith("oss://"):
-        # OSS: download to temp file
-        import asyncio
-        file_content = asyncio.get_event_loop().run_until_complete(storage.read(storage_path))
-        tmp = tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=ext)
-        tmp.write(file_content)
-        tmp_path = tmp.name
-        tmp.close()
-        try:
-            if ext == ".csv":
-                return read_csv_with_auto_header(tmp_path, low_memory=False)
-            else:
-                return pd.read_excel(tmp_path)
-        finally:
-            os.remove(tmp_path)
-    else:
-        # Local file
-        if storage_path.startswith("./"):
-            backend_root = Path(__file__).resolve().parents[4]
-            storage_path = str(backend_root / storage_path.lstrip("./").replace("/", os.sep))
-
-        if ext == ".csv":
-            return read_csv_with_auto_header(storage_path, low_memory=False)
-        else:
-            return pd.read_excel(storage_path)
-
-
 def _check_file_size(dataset: Dataset) -> None:
     """Check if source file exceeds V1 limit."""
-    size_mb = dataset.file_size / (1024 * 1024)
-    if size_mb > MAX_FILE_SIZE_MB:
-        raise HTTPException(
-            status_code=413,
-            detail=f"源文件大小 {size_mb:.1f} MB 超过 V1 限制 {MAX_FILE_SIZE_MB} MB",
-        )
+    check_dataset_file_size(dataset, MAX_FILE_SIZE_MB)
 
 
 async def preview_transform(
@@ -100,7 +62,7 @@ async def preview_transform(
     if len(operations) > MAX_OPERATIONS:
         raise HTTPException(status_code=422, detail=f"操作链长度不能超过 {MAX_OPERATIONS}")
 
-    df = _read_dataset_to_df(dataset)
+    df = await load_dataset_dataframe(dataset)
 
     try:
         result_df, summary = execute_operations(df, operations)
@@ -142,7 +104,7 @@ async def execute_transform(
     if len(operations) > MAX_OPERATIONS:
         raise HTTPException(status_code=422, detail=f"操作链长度不能超过 {MAX_OPERATIONS}")
 
-    df = _read_dataset_to_df(dataset)
+    df = await load_dataset_dataframe(dataset)
     input_rows = len(df)
 
     try:

@@ -7,6 +7,7 @@ Reusable manual QA recipes and demo scenario scripts live in `docs/qa/`:
 - `AI_WORKBENCH_QA_RECIPES.md` covers Dataset Catalog, Relationship Sets, planner narrowing, prefill navigation, Context Panel, result handoff, deterministic follow-up, and Hermes dry-run safety.
 - `AI_WORKBENCH_DEMO_SCENARIOS.md` provides concise demo scripts for forecast planning, channel conversion planning, result follow-up, and safety regression checks.
 - `P0B_HERMES_LIVE_PLANNING_QA.md` verifies live/fallback source display, clarification, single-table confirmation, multi-table `needs_join`, and zero automatic execution.
+- `P0C_MULTI_TABLE_JOIN_BUILDER_QA.md` verifies deterministic Join preview, risk/confirmation boundaries, lineage, and derived-dataset prefill.
 
 本文档中心是 InsightEase 项目的唯一事实来源。
 

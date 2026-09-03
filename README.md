@@ -167,7 +167,9 @@ The generated plan distinguishes:
 
 The assistant can prefill target analysis pages, but the user must still review the configuration and manually start the analysis.
 
-**Hermes live planning is advisory. Plans require user confirmation. Multi-table execution is not yet implemented. Relationship Sets are context graphs, not executed joins.**
+**Hermes live planning is advisory. Hermes proposes analysis requirements; InsightEase deterministically constructs and validates JoinPlans from exact confirmed Relationship Set edges. No LLM executes joins. Join preview and risk checks occur before any derived dataset is saved, and derived datasets require explicit user confirmation.**
+
+For multi-table plans, AI Workbench now supports a bounded 2–3 table Analysis Dataset Builder. It detects cardinality and grain changes, reports match/null/duplicate rates and row multiplication, blocks unsafe expansion, stores multi-source lineage on the derived Dataset, and then lets the user explicitly continue to an existing analysis page. It never mutates sources or auto-runs the analysis.
 
 ---
 
@@ -221,9 +223,9 @@ flowchart TD
     K --> L[Backend Analysis Execution]
     L --> M[ResultView / Charts / Tables]
 
-    H -->|Multi-table| N[Join Builder - Future Phase]
-    N --> N1[Join Preview]
-    N1 --> N2[Temporary / Saved Derived Dataset]
+    H -->|Multi-table| N[Deterministic Join Builder]
+    N --> N1[Bounded Preview / Risk Checks]
+    N1 --> N2[Explicitly Confirmed Derived Dataset]
     N2 --> I
 
     M --> O[Safe Result Summary]
@@ -261,7 +263,7 @@ flowchart TB
         A4[Analysis API]
         A5[Assistant API]
         A6[Hermes Assistant API]
-        A7[Future Join Builder API]
+        A7[Analysis Dataset Builder API]
     end
 
     subgraph ASSISTANT[Assistant Layer]
@@ -286,7 +288,7 @@ flowchart TB
         E1[pandas Transform Executor]
         E2[Background Analysis Tasks]
         E3[Statistics / Forecast / Attribution / Path / Data Overview Services]
-        E4[Future Join Preview / Derived Dataset Builder]
+        E4[Join Preview / Derived Dataset Builder]
     end
 
     subgraph DATA[Data Layer]
@@ -450,9 +452,9 @@ flowchart LR
     PLAN --> PLAN1[Single-table Analysis Plan]
     PLAN --> PLAN2[Multi-table Analysis Plan]
 
-    PLAN2 --> JOIN[Future Join Builder]
-    JOIN --> JOIN1[Join Preview]
-    JOIN --> JOIN2[Temporary / Saved Derived Dataset]
+    PLAN2 --> JOIN[Deterministic Join Builder]
+    JOIN --> JOIN1[Bounded Preview / Risk Checks]
+    JOIN1 --> JOIN2[Confirmed Derived Dataset]
     JOIN2 --> TARGET[Target Analysis Module]
 ```
 
@@ -533,13 +535,14 @@ Completed capabilities include:
 - Deterministic result follow-up
 - Hermes dry-run / live-planning / live-result-explainer safety boundary
 - Validated single-table prefill and multi-table `needs_join` handoff
+- Deterministic 2–3 table Join Builder with bounded preview and risk checks
+- Explicitly confirmed derived Datasets with multi-source lineage
 
 Planned next-stage capabilities:
 
 - AI error explainer
-- Multi-table Join Builder
-- Backend join preview
-- Temporary / saved derived analysis datasets
+- Fixed P0D demo datasets and browser E2E closure
+- Real Hermes smoke test and demo polish
 - Productization, permissions, audit logs, and large-dataset handling
 - Dashboard builder and report generation
 

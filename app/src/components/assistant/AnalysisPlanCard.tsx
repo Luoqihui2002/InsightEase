@@ -16,6 +16,7 @@ import {
   ListChecks,
   ExternalLink,
   Info,
+  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { saveAnalysisPrefill } from '@/lib/assistant/prefillNavigation';
@@ -24,6 +25,7 @@ import type { AssistantAnalysisPlan, RecommendedAnalysisType } from '@/types/ass
 interface AnalysisPlanCardProps {
   plan: AssistantAnalysisPlan;
   onNavigate?: (target: string) => void;
+  onCreateAnalysisDataset?: (plan: AssistantAnalysisPlan) => void;
 }
 
 const CANDIDATE_CONFIDENCE_LABELS: Record<'low' | 'medium' | 'high', string> = {
@@ -82,11 +84,16 @@ const FIELD_ROLE_LABELS: Record<string, string> = {
 /*  component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
+export function AnalysisPlanCard({ plan, onNavigate, onCreateAnalysisDataset }: AnalysisPlanCardProps) {
   const navigate = useNavigate();
   const datasetIds = plan.required_dataset_ids;
   const canNavigate =
     plan.execution_readiness === 'ready_single_table' && datasetIds.length === 1;
+  const canCreateAnalysisDataset =
+    plan.execution_readiness === 'needs_join' &&
+    Boolean(plan.relationship_set_id) &&
+    plan.required_relationships.length >= datasetIds.length - 1 &&
+    plan.required_relationships.every((relationship) => relationship.status === 'confirmed');
 
   const handleNavigate = (target?: string) => {
     if (target && canNavigate) {
@@ -426,10 +433,27 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
           {plan.execution_readiness === 'ready_single_table'
             ? '点击确认后仅打开目标页面并带入建议配置，不会自动运行分析。'
             : plan.execution_readiness === 'needs_join'
-              ? '该计划需要多表分析数据集；P0B 不执行 join，后续由 P0C Join Builder 承接。'
+              ? '该计划需要先预览 Join 风险，并经你确认后创建一个新的分析数据集。'
               : '请先补充计划所需信息；当前不会创建或执行任何分析。'}
         </p>
         <div className="flex items-center gap-2 flex-wrap">
+          {plan.execution_readiness === 'needs_join' && onCreateAnalysisDataset ? (
+            <button
+              type="button"
+              onClick={() => onCreateAnalysisDataset(plan)}
+              disabled={!canCreateAnalysisDataset}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                canCreateAnalysisDataset
+                  ? 'bg-[var(--neon-cyan)]/10 text-[var(--neon-cyan)] border border-[var(--neon-cyan)]/25 hover:bg-[var(--neon-cyan)]/20'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-not-allowed opacity-70'
+              )}
+              title={canCreateAnalysisDataset ? undefined : '需要当前 Relationship Set 中的完整已确认关系'}
+            >
+              <Database className="w-3.5 h-3.5" />
+              创建分析数据集
+            </button>
+          ) : null}
           {plan.next_actions.map((action) => {
             const actionKey = `${action.type}:${action.target ?? ''}:${action.label}`;
             if (action.type === 'navigate' && action.target) {
@@ -453,6 +477,7 @@ export function AnalysisPlanCard({ plan, onNavigate }: AnalysisPlanCardProps) {
               );
             }
             if (action.type === 'warning') {
+              if (plan.execution_readiness === 'needs_join' && onCreateAnalysisDataset) return null;
               return (
                 <span
                   key={actionKey}

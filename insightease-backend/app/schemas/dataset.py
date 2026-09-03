@@ -17,6 +17,11 @@ class DatasetResponse(BaseModel):
     schema: List[FieldSchema]
     quality_score: Optional[int] = None
     ai_summary: Optional[str] = None
+    parent_dataset_id: Optional[str] = None
+    source_dataset_ids: Optional[List[str]] = None
+    derivation_type: Optional[str] = None
+    derivation_plan: Optional[Dict[str, Any]] = None
+    derivation_risk_summary: Optional[Dict[str, Any]] = None
     status: str
     created_at: datetime
     

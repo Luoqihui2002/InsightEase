@@ -53,6 +53,10 @@ class Dataset(Base):
         comment="源数据集ID（transform生成时填充）"
     )
     transform_chain = Column(JSON, nullable=True, comment="transform操作链JSON（审计/复现用）")
+    source_dataset_ids = Column(JSON, nullable=True, comment="派生数据集的全部源数据集ID")
+    derivation_type = Column(String(32), nullable=True, index=True, comment="派生类型，例如 join")
+    derivation_plan = Column(JSON, nullable=True, comment="经确认的结构化派生计划")
+    derivation_risk_summary = Column(JSON, nullable=True, comment="创建时的风险摘要")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -1,5 +1,16 @@
 # InsightEase 变更日志
 
+## V1.0 P0C：Multi-table Analysis Dataset Builder（2026-09-03）
+
+- 将 P0B `needs_join` 计划接入确定性 JoinPlan Builder；只使用 active Relationship Set 中 exact confirmed edge，支持 2–3 表与 `left` / `inner`。
+- 新增独立 preview/write API、共享 storage-backed Dataset reader 与 pandas Join service；Hermes 不执行 Join，也不生成 SQL/代码。
+- Preview 返回基数、匹配/未匹配、空键/重复键、行数倍率、粒度变化、风险与最多 50 行结果，且不保存 Dataset。
+- N:N、预期基数不一致、低匹配和高风险关系会升级风险；超过 1,000,000 行或 5 倍膨胀会在 merge 前阻止。
+- 新增明确创建、高风险二次确认、稳定字段冲突命名和 3 表顺序执行；源数据集从不修改。
+- Joined output 复用 Dataset，并记录多源 ids、JoinPlan、风险、用户、时间、行列数及 source AnalysisPlan id。
+- 创建成功后仅将 derived dataset id prefill 到既有分析页，不自动创建或运行 analysis task。
+- 新增 P0C 自动化测试、手动 QA 与阶段日志；未进入 P0D。
+
 ## V1.0 P0B：Hermes Live Analysis Planning（2026-09-03）
 
 - 将 `/api/v1/assistant/hermes/plan-analysis` 从 dry-run contract 升级为 backend-only Hermes live planning，并复用现有认证、超时和 OpenAI-compatible 客户端。

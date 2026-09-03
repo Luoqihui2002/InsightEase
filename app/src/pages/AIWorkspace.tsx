@@ -24,6 +24,7 @@ import { AIWorkbenchContextPanel } from '@/components/assistant/AIWorkbenchConte
 import { RelationshipReviewPanel } from '@/components/assistant/RelationshipReviewPanel';
 import { AnalysisPlanCard } from '@/components/assistant/AnalysisPlanCard';
 import { GuidedQuickAnalysisPanel } from '@/components/assistant/GuidedQuickAnalysisPanel';
+import { JoinBuilderPanel } from '@/components/assistant/JoinBuilderPanel';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { getAssistantRuntimeProvider } from '@/lib/assistant/assistantRuntimeConfig';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
@@ -323,6 +324,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
   const [generatedPlan, setGeneratedPlan] = useState<AssistantAnalysisPlan | null>(
     restoredSession?.current_plan ?? null
   );
+  const [joinBuilderPlan, setJoinBuilderPlan] = useState<AssistantAnalysisPlan | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
   const [selectedAnalysisHistoryId, setSelectedAnalysisHistoryId] = useState<string | undefined>(
     restoredSession?.selected_analysis_history_id
@@ -1216,6 +1218,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                           <div className="mt-3">
                             <AnalysisPlanCard
                               plan={message.plan}
+                              onCreateAnalysisDataset={setJoinBuilderPlan}
                               onNavigate={(target) => {
                                 window.dispatchEvent(new CustomEvent('companion-navigate', { detail: target }));
                                 onClose();
@@ -1391,6 +1394,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                       {generatedPlan && (
                         <AnalysisPlanCard
                           plan={generatedPlan}
+                          onCreateAnalysisDataset={setJoinBuilderPlan}
                           onNavigate={(target) => {
                             window.dispatchEvent(new CustomEvent('companion-navigate', { detail: target }));
                             onClose();
@@ -1573,6 +1577,19 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
         )}
 
       </motion.div>
+      {joinBuilderPlan ? (
+        <JoinBuilderPanel
+          plan={joinBuilderPlan}
+          relationshipSet={activeRelationshipSet}
+          datasets={datasets}
+          onClose={() => setJoinBuilderPlan(null)}
+          onContinue={(target) => {
+            window.dispatchEvent(new CustomEvent('companion-navigate', { detail: target }));
+            setJoinBuilderPlan(null);
+            onClose();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

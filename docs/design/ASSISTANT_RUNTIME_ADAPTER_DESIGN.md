@@ -90,13 +90,13 @@ Dataset catalog context contract after Phase 4B-9B:
 - Full-library matching is used only for bounded candidate hints when no selected dataset or active graph gives a high-confidence match.
 - When no required dataset is confirmed, the planner/card should ask the user to confirm a dataset instead of creating empty analysis-page prefill navigation.
 
-Multi-table execution gap after Phase 4B-10E:
+Multi-table execution boundary after V1.0 P0C:
 
 - Relationship Sets remain allowed context graphs only.
 - Existing analysis modules mostly require a single analysis dataset.
 - Multi-table plans must not silently join source datasets.
-- Future Join Builder work should transform a user-confirmed subset of source tables into a temporary or saved derived analysis dataset.
-- The runtime may propose a Join Plan, but execution requires explicit user confirmation through Join Builder.
+- The implemented Join Builder transforms a user-confirmed subset of source tables into a persisted derived Dataset.
+- The runtime proposes analysis requirements only. InsightEase constructs the JoinPlan; preview and creation require separate explicit user actions.
 
 ### Factory
 
@@ -228,7 +228,7 @@ V1.0 P0B implementation note:
 
 All assistant capabilities are declared in `ASSISTANT_TOOL_REGISTRY`:
 
-| Tool | Implemented | Requires Confirmation | Side Effect |
+| Operation | Registered as Assistant Tool | Requires Confirmation | Side Effect |
 |------|-------------|----------------------|-------------|
 | profile_dataset | ✅ | No | read |
 | infer_relationships | ✅ | No | read |
@@ -239,12 +239,12 @@ All assistant capabilities are declared in `ASSISTANT_TOOL_REGISTRY`:
 | preview_join | ❌ | Yes | execute |
 | run_analysis | ❌ | Yes | execute |
 
-Future Join Builder tools from Phase 4B-10E:
+Join operations are intentionally not Assistant runtime tools in P0C:
 
-| Tool | Implemented | Requires Confirmation | Side Effect |
+| Operation | Registered as Assistant Tool | Requires Confirmation | Side Effect |
 |------|-------------|----------------------|-------------|
-| create_temp_analysis_dataset | No | Yes | execute |
-| save_joined_dataset | No | Yes | write |
+| preview_join | No (dedicated authenticated API) | Yes | execute |
+| create_joined_dataset | No (dedicated authenticated API) | Yes | write |
 
 **Safety rule**: any tool with `side_effect_level: "execute"` or `"write"` must get explicit user confirmation before running. The UI must not auto-call these.
 
@@ -263,17 +263,17 @@ Future Join Builder tools from Phase 4B-10E:
 
 ---
 
-## Future Join Builder Tool Safety
+## Join Builder Safety After P0C
 
 Phase 4B-10E defines the Multi-table Analysis Dataset Builder design in:
 
 `docs/design/MULTI_TABLE_ANALYSIS_DATASET_BUILDER_DESIGN.md`
 
-Future runtime/tool behavior:
+Implemented boundary:
 
-- `preview_join` may be proposed but requires user confirmation before bounded preview execution.
-- `create_temp_analysis_dataset` requires explicit confirmation and must create a clearly labeled derived dataset with TTL.
-- `save_joined_dataset` requires explicit confirmation and must persist provenance metadata.
+- `preview_join` is a dedicated API invoked only by an explicit UI click and returns a bounded preview without saving.
+- `create_joined_dataset` is a separate dedicated API, requires explicit confirmation, and persists provenance metadata.
+- Neither operation is registered as a Hermes/Assistant runtime tool in P0C.
 - Hermes/LLM must not generate arbitrary SQL for execution.
 - Hermes/LLM must not silently join, save, mutate source datasets, or auto-run target analysis.
 - Many-to-many and high-risk joins require warnings and explicit override.

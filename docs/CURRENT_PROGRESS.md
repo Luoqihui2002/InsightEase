@@ -6,15 +6,17 @@
 
 ## 当前阶段状态
 
-**V1.0 P0B Hermes Live Analysis Planning 已完成；下一阶段为 P0C 多表分析数据集构建。**
+**V1.0 P0C Multi-table Analysis Dataset Builder 已完成；下一阶段仅为 P0D Demo & E2E Closure。**
 
 - 旧 Kimi `/api/v1/ai/*` 与 SmartAnalysis mock 链路已移除 ✅
 - `Semantic` 已校正为 `Data Overview` ✅
 - 报告 ownership、生产配置、CORS 与异常脱敏已加固 ✅
 - Hermes live structured planning、严格上下文校验与 deterministic fallback 已完成 ✅
-- 单表计划仅人工确认后 prefill；多表计划停在 `needs_join`，未执行 Join ✅
+- 单表计划仅人工确认后 prefill；多表计划由 `needs_join` 显式进入 Join Builder ✅
+- `needs_join` 已接入 deterministic JoinPlan、Preview、风险检查、显式确认与 Derived Dataset lineage ✅
+- 2–3 表 `left` / `inner` pandas Join、N:N / 行数爆炸防护与既有分析页 prefill 已完成 ✅
 - `npm run lint` / `npm run build` — 通过 ✅
-- 后端完整 pytest — 92 passed，6 个 live integration 用例按设计跳过 ✅
+- 后端完整 pytest — 105 passed，6 个 live integration 用例按设计跳过 ✅
 
 ---
 
@@ -33,6 +35,7 @@
 | 3G | 文档收口 | ✅ 完成 |
 | V1.0 P0A | 架构与安全收口 | ✅ 完成 |
 | V1.0 P0B | Hermes Live Analysis Planning | ✅ 完成 |
+| V1.0 P0C | Multi-table Analysis Dataset Builder | ✅ 完成 |
 
 ---
 
@@ -47,7 +50,9 @@ Upload CSV/Excel
      -> transform（保存为新数据集）
   -> AI Workbench（bounded metadata -> Hermes live / deterministic fallback）
      -> Structured AnalysisPlan -> 人工确认
-     -> 单表 prefill；多表停在 needs_join
+     -> 单表 prefill；多表 deterministic JoinPlan
+        -> bounded Preview + risk checks
+        -> user confirmation -> derived Dataset + lineage
   -> 既有 Analysis 执行
   -> SafeResultSummary -> Hermes 结果解释
 ```

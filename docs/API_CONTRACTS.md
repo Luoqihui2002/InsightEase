@@ -1,6 +1,6 @@
 # InsightEase API 契约
 
-**版本**: 2026-04-28
+**版本**: 2026-09-03
 **状态**: Backend Processing-first
 
 ---
@@ -359,7 +359,8 @@ AI 对话（流式 SSE）。
 | Datasets | `app/src/api/datasets.ts` |
 | Transform | `app/src/api/workshop.ts` |
 | Analysis | `app/src/api/analysis.ts` |
-| AI | `app/src/api/ai.ts` |
+| Assistant / Hermes | `app/src/api/assistant.ts` |
+| Analysis Dataset Builder | `app/src/api/join.ts` |
 
 通用 request 实例: `app/src/lib/request.ts`
 ---
@@ -378,6 +379,36 @@ There is no backend API change.
 - TTL: 24 hours
 
 The payload carries dataset IDs and suggested field names only. It does not store raw dataset values, does not create backend analysis tasks, and does not auto-run analysis.
+
+---
+
+## Analysis Dataset Builder
+
+### POST /api/v1/assistant/join/preview
+
+Runs an authenticated, bounded deterministic Join preview without storage or database writes.
+
+**Request:** `JoinPreviewRequest { join_plan, max_preview_rows <= 50 }`
+
+**Response:** `ResponseModel<JoinPreview>` with input/output row counts, output columns, bounded rows, per-step match/null/duplicate/cardinality metrics, row multiplier, grain, warnings, and risk level.
+
+### POST /api/v1/assistant/join/create-dataset
+
+Recomputes a confirmed plan and persists one derived Dataset.
+
+**Request:** `CreateJoinedDatasetRequest { join_plan, filename, confirm_create: true, confirm_high_risk }`
+
+**Response:** `ResponseModel<DerivedDatasetMetadata>` with the new Dataset id, source ids, source AnalysisPlan id, row/column counts, risk summary, and creation time.
+
+Rules:
+
+- every source is filtered by the current user and `is_deleted=false`;
+- exactly 2–3 sources and 1–2 ordered steps;
+- only `left` / `inner` and exact confirmed relationship snapshots;
+- preview never saves;
+- blocked joins cannot create; high-risk joins require extra confirmation;
+- requests never contain SQL or executable expressions;
+- source Datasets are never mutated.
 
 ---
 
