@@ -1,12 +1,10 @@
-"""Schemas for Hermes assistant dry-run endpoints.
-
-These schemas define a validation-only backend scaffold. They do not imply
-that a real Hermes provider or LLM integration exists.
-"""
+"""Schemas for the bounded Hermes assistant boundary."""
 
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.assistant import AssistantAnalysisPlan, BoundedPlanningContext
 
 
 HermesMode = Literal["disabled", "dry_run", "live"]
@@ -28,14 +26,18 @@ HermesActionType = Literal[
 ]
 
 
-class HermesSupports(BaseModel):
+class HermesModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class HermesSupports(HermesModel):
     explain_result: bool = False
     plan_analysis: bool = False
     explain_error: bool = False
     tool_calls: bool = False
 
 
-class HermesStatusResponse(BaseModel):
+class HermesStatusResponse(HermesModel):
     enabled: bool
     provider: HermesProvider
     mode: HermesMode
@@ -46,7 +48,7 @@ class HermesStatusResponse(BaseModel):
     message: Optional[str] = None
 
 
-class HermesSafetyFlags(BaseModel):
+class HermesSafetyFlags(HermesModel):
     allow_raw_data: Literal[False]
     allow_auto_run: Literal[False]
     allow_sql_generation: Literal[False]
@@ -57,45 +59,45 @@ class HermesPlanSafetyFlags(HermesSafetyFlags):
     require_user_confirmation_for_execution: Literal[True]
 
 
-class HermesRecommendedAction(BaseModel):
+class HermesRecommendedAction(HermesModel):
     label: str
     action_type: HermesActionType
     target: Optional[str] = None
     reason: Optional[str] = None
 
 
-class HermesExplainResultRequest(BaseModel):
+class HermesExplainResultRequest(HermesModel):
     user_question: str = Field(..., min_length=1, max_length=2000)
     result_summary: Dict[str, Any]
     assistant_context: Optional[Dict[str, Any]] = None
     safety: HermesSafetyFlags
 
 
-class HermesExplainResultResponse(BaseModel):
+class HermesExplainResultResponse(HermesModel):
     answer: str
-    key_findings: List[str] = []
-    risks_and_caveats: List[str] = []
-    suggested_next_steps: List[str] = []
-    recommended_actions: List[HermesRecommendedAction] = []
+    key_findings: List[str] = Field(default_factory=list)
+    risks_and_caveats: List[str] = Field(default_factory=list)
+    suggested_next_steps: List[str] = Field(default_factory=list)
+    recommended_actions: List[HermesRecommendedAction] = Field(default_factory=list)
     confidence: Optional[HermesConfidence] = "low"
     fallback_used: bool = True
 
 
-class HermesPlanAnalysisRequest(BaseModel):
+class HermesPlanAnalysisRequest(HermesModel):
     user_question: str = Field(..., min_length=1, max_length=2000)
-    assistant_context: Dict[str, Any]
+    assistant_context: BoundedPlanningContext
     safety: HermesPlanSafetyFlags
 
 
-class HermesPlanAnalysisResponse(BaseModel):
-    plan: Dict[str, Any]
-    clarifying_questions: List[str] = []
-    warnings: List[str] = []
+class HermesPlanAnalysisResponse(HermesModel):
+    plan: AssistantAnalysisPlan
+    clarifying_questions: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
     confidence: Optional[HermesConfidence] = "low"
     fallback_used: bool = True
 
 
-class HermesAssistantError(BaseModel):
+class HermesAssistantError(HermesModel):
     code: Literal[
         "HERMES_DISABLED",
         "INVALID_SAFETY_FLAGS",
@@ -105,6 +107,8 @@ class HermesAssistantError(BaseModel):
         "INVALID_RESULT_SUMMARY",
         "HERMES_TIMEOUT",
         "HERMES_PROVIDER_ERROR",
+        "INVALID_PLAN_RESPONSE",
+        "UNSUPPORTED_ANALYSIS_TYPE",
     ]
     message: str
     user_message: str

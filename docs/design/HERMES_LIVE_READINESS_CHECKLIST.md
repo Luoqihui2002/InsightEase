@@ -1,11 +1,11 @@
 # Hermes Live Readiness Checklist
 
 **Version**: 2026-05-07
-**Status**: Phase 4B-11B result explainer live adapter implemented; planning remains rule-based/dry-run only
+**Status**: V1.0 P0B live result explanation and live structured planning implemented behind explicit configuration
 
 ## Scope
 
-This checklist reviews whether InsightEase is ready to start implementing future Hermes live adapters without weakening the current safety model.
+This checklist records the safety gates retained by the implemented Hermes live adapters.
 
 It covers:
 
@@ -16,27 +16,26 @@ It covers:
 - fallback and rollback behavior;
 - required config and secrets handling for future live phases.
 
-This phase does not connect a live LLM provider, add credentials, enable live runtime selection, implement joins, execute SQL, auto-run analysis, or mutate datasets.
+Credentials remain backend-only and uncommitted. The live adapter does not implement joins, execute SQL, auto-run analysis, or mutate datasets.
 
 ## Current Runtime State
 
 Current frontend runtime selection is intentionally narrow:
 
 - default provider is `rule_based`;
-- `VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_dry_run` is the only explicit non-default frontend provider;
+- `VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_dry_run` and `hermes_live` are explicit non-default frontend providers;
 - unknown provider values fall back to `rule_based`;
-- no frontend `hermes_live` provider is accepted;
-- the Hermes dry-run runtime calls only `/assistant/hermes/plan-analysis`;
-- dry-run failure, backend disablement, unavailable status, or invalid plan shape falls back to `ruleBasedAssistantRuntime`.
+- both Hermes planning modes call only the authenticated InsightEase backend `/assistant/hermes/plan-analysis`;
+- transport failure or invalid response shape falls back to `ruleBasedAssistantRuntime`; the backend also provides deterministic fallback for provider/schema/context failures.
 
 Current backend state after Phase 4B-11B:
 
 - `HERMES_ASSISTANT_ENABLED` defaults to `false`;
 - `HERMES_ASSISTANT_MODE` defaults to `disabled`;
 - `dry_run` enables validation-only dry-run responses;
-- `live` can call the configured Hermes Agent for result explanation only;
+- `live` can call the configured Hermes Agent for bounded result explanation and advisory structured planning;
 - `live` requires `HERMES_BASE_URL` and `HERMES_AUTH_TOKEN`;
-- `plan-analysis` remains dry-run/local fallback only;
+- `plan-analysis` validates the request, calls live Hermes when configured, validates every response reference, and otherwise returns deterministic fallback;
 - no backend endpoint can run analysis, execute SQL, join datasets, create datasets, or mutate source datasets.
 
 ## Backend Contract Review

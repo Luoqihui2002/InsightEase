@@ -152,6 +152,8 @@ Relationship Sets are used as **allowed context** for planning. They do not auto
 
 Users can ask natural-language business questions, and AI Workbench converts them into structured analysis plans.
 
+With the live runtime enabled, bounded metadata is sent through the InsightEase backend to Hermes and the returned plan is validated against the exact dataset, field, and Relationship Set context. Invalid or unavailable live responses fall back to the deterministic planner.
+
 ![AI Workbench Analysis Plan](docs/assets/interview/ai-workbench-analysis-plan.png)
 
 The generated plan distinguishes:
@@ -164,6 +166,8 @@ The generated plan distinguishes:
 - recommended target analysis module
 
 The assistant can prefill target analysis pages, but the user must still review the configuration and manually start the analysis.
+
+**Hermes live planning is advisory. Plans require user confirmation. Multi-table execution is not yet implemented. Relationship Sets are context graphs, not executed joins.**
 
 ---
 
@@ -272,10 +276,10 @@ flowchart TB
     end
 
     subgraph RUNTIME[Runtime Providers]
-        R1[Rule-based Runtime - Default]
+        R1[Rule-based Runtime - Default / Fallback]
         R2[Hermes Dry-run Runtime - Opt-in]
         R3[Hermes Live Result Explainer]
-        R4[Hermes Live Plan Adapter - Future]
+        R4[Hermes Live Plan Adapter - Opt-in]
     end
 
     subgraph EXEC[Execution Layer]
@@ -352,9 +356,9 @@ flowchart TD
     C --> D{Runtime Mode}
 
     D -->|Default| E[Rule-based Runtime]
-    D -->|Opt-in| F[Hermes Dry-run Runtime]
+    D -->|Dry-run| F[Hermes Dry-run Runtime]
     D -->|Live Result Explain| G[Hermes Result Explainer]
-    D -->|Future| H[Hermes Plan Analysis Runtime]
+    D -->|Live Planning| H[Hermes Plan Analysis Runtime]
 
     E --> I[Structured Analysis Plan]
     F --> I
@@ -370,7 +374,7 @@ flowchart TD
 
     O --> P{Navigation Target}
     P -->|Single-table page| Q[Prefill Analysis Page]
-    P -->|Multi-table question| R[Open Join Builder]
+    P -->|Multi-table question| R[Stop at needs_join - P0C Handoff]
     P -->|Need clarification| S[Ask User to Confirm Dataset / Relationship]
 
     Q --> T[User Reviews Prefill]
@@ -500,6 +504,7 @@ Current boundaries:
 - Assistant Runtime Adapter
 - Rule-based runtime by default
 - Hermes dry-run runtime opt-in
+- Hermes live structured planning opt-in with deterministic fallback
 - Hermes live result explanation boundary
 - Safe Tool Registry
 - Safe Result Summary
@@ -526,11 +531,11 @@ Completed capabilities include:
 - Prefill navigation to analysis pages
 - Safe result handoff to AI Workbench
 - Deterministic result follow-up
-- Hermes dry-run / live-result-explainer safety boundary
+- Hermes dry-run / live-planning / live-result-explainer safety boundary
+- Validated single-table prefill and multi-table `needs_join` handoff
 
 Planned next-stage capabilities:
 
-- Hermes live plan-analysis adapter
 - AI error explainer
 - Multi-table Join Builder
 - Backend join preview
@@ -602,6 +607,7 @@ Run Statistics / Forecast / Attribution / PathAnalysis
 ```bash
 cd app
 npm install
+# Optional: set VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_live in an uncommitted local env file.
 npm run dev
 ```
 
@@ -610,8 +616,11 @@ npm run dev
 ```bash
 cd insightease-backend
 pip install -r requirements.txt
+# Copy .env.example to an uncommitted local env file and inject Hermes secrets there.
 uvicorn app.main:app --reload
 ```
+
+Live planning requires `HERMES_ASSISTANT_ENABLED=true`, `HERMES_ASSISTANT_MODE=live`, a backend-only provider URL/token, and the explicit frontend runtime setting above. Without those settings, planning remains deterministic.
 
 ### Build Check
 

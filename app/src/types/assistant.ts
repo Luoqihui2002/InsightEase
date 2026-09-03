@@ -8,6 +8,8 @@
  * JSON serialization conventions (consistent with Dataset, Analysis, etc.).
  */
 
+import type { SafeResultSummary } from './resultSummary';
+
 export type ColumnRole =
   | "user_id"
   | "device_id"
@@ -203,6 +205,57 @@ export interface InferRelationshipsResponse {
   warnings: string[];
 }
 
+export interface PlanningColumnMetadata {
+  name: string;
+  dtype?: string;
+  semantic_type?: string;
+  role?: string;
+  null_rate?: number;
+  unique_rate?: number;
+}
+
+export interface PlanningDatasetMetadata {
+  id: string;
+  name?: string;
+  filename?: string;
+  schema: PlanningColumnMetadata[];
+  table_type?: string;
+  business_category?: string;
+  data_type?: string;
+  analysis_tags: string[];
+  recommended_analyses: string[];
+  quality_warnings: string[];
+}
+
+export interface PlanningRelationshipMetadata {
+  id?: string;
+  source_dataset_id: string;
+  source_column: string;
+  target_dataset_id: string;
+  target_column: string;
+  relationship_type?: RelationshipType;
+  risk_level?: RelationshipRiskLevel;
+  status: 'confirmed';
+}
+
+export interface BoundedPlanningContext {
+  selected_dataset_ids: string[];
+  selected_dataset_id?: string;
+  datasets: PlanningDatasetMetadata[];
+  relationship_set?: {
+    id: string;
+    name: string;
+    dataset_nodes: Array<{
+      dataset_id: string;
+      dataset_name?: string;
+      role: 'connected' | 'isolated' | 'reference_only';
+      joinable: boolean;
+    }>;
+    relationships: PlanningRelationshipMetadata[];
+  };
+  analysis_history_summary?: SafeResultSummary;
+}
+
 // ---------------------------------------------------------------------------
 // Analysis Plan Types
 // ---------------------------------------------------------------------------
@@ -216,9 +269,26 @@ export type RecommendedAnalysisType =
   | "ab_test"
   | "regression"
   | "smart_process"
-  | "custom_query";
+  | "visualization";
+
+export type AnalysisPlanSource = "hermes_live" | "deterministic_fallback";
+
+export type AnalysisPlanConfidence = "low" | "medium" | "high";
+
+export type AnalysisExecutionReadiness =
+  | "ready_single_table"
+  | "needs_join"
+  | "needs_clarification"
+  | "unsupported";
+
+export type AnalysisPlanNextAction =
+  | "review_plan"
+  | "navigate_analysis"
+  | "create_analysis_dataset"
+  | "clarify";
 
 export interface AnalysisFieldRequirement {
+  dataset_id: string;
   role:
     | "target_metric"
     | "time_column"
@@ -247,22 +317,50 @@ export interface AssistantCandidateDataset {
   confidence: "low" | "medium" | "high";
 }
 
+export interface AnalysisRelationshipRequirement {
+  relationship_id?: string;
+  source_dataset_id: string;
+  source_column: string;
+  target_dataset_id: string;
+  target_column: string;
+  status: "confirmed" | "requires_confirmation";
+  relationship_type?: RelationshipType;
+  risk_level?: RelationshipRiskLevel;
+  reason: string;
+}
+
+export interface AnalysisMetricTarget {
+  name: string;
+  dataset_id: string;
+  field?: string;
+  aggregation?: "count" | "count_distinct" | "sum" | "average" | "min" | "max" | "rate";
+  description: string;
+}
+
 export interface AssistantAnalysisPlan {
   id: string;
   user_question: string;
   interpreted_goal: string;
   recommended_analysis_type: RecommendedAnalysisType;
   required_datasets: string[];
-  required_dataset_ids?: string[];
-  candidate_datasets?: AssistantCandidateDataset[];
+  required_dataset_ids: string[];
+  candidate_dataset_ids: string[];
+  candidate_datasets: AssistantCandidateDataset[];
   required_fields: AnalysisFieldRequirement[];
-  required_relationships?: TableRelationship[];
+  required_relationships: AnalysisRelationshipRequirement[];
+  metrics: AnalysisMetricTarget[];
   relationship_set_id?: string;
   relationship_set_name?: string;
-  reference_dataset_nodes?: RelationshipSetDatasetNode[];
+  reference_dataset_ids: string[];
   assumptions: string[];
   warnings: string[];
+  clarifying_questions: string[];
+  execution_readiness: AnalysisExecutionReadiness;
+  next_action: AnalysisPlanNextAction;
   next_actions: AssistantNextAction[];
+  source: AnalysisPlanSource;
+  confidence: AnalysisPlanConfidence;
+  fallback_used: boolean;
 }
 
 export interface AnalysisPrefillPayload {

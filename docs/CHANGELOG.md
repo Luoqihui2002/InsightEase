@@ -1,5 +1,16 @@
 # InsightEase 变更日志
 
+## V1.0 P0B：Hermes Live Analysis Planning（2026-09-03）
+
+- 将 `/api/v1/assistant/hermes/plan-analysis` 从 dry-run contract 升级为 backend-only Hermes live planning，并复用现有认证、超时和 OpenAI-compatible 客户端。
+- 统一前后端严格 `AnalysisPlan` contract，新增 plan source、execution readiness、dataset-bound fields/metrics、relationship requirements 与 clarification。
+- 新增 bounded planning context：最多 20 个数据集、单表 100 列、总计 500 列、200 条已确认关系、256 KiB 请求；不发送样本行或路径/凭据。
+- 新增模型输出语义校验：拒绝虚构数据集、字段和伪确认关系；多表计划统一停在 `needs_join`。
+- Hermes disabled、超时、provider/JSON/schema/context 失败时安全降级到 deterministic planner，不向前端暴露内部异常。
+- AI Workbench 显示 Hermes Live / Local Fallback 来源，只有用户确认后的 ready single-table 计划可 prefill，且不会自动执行分析。
+- 新增 P0B 自动化覆盖与手动 QA recipe；详细记录见 `phase-logs/V1_0_P0B_HERMES_LIVE_ANALYSIS_PLANNING.md`。
+- 未实现 P0C Join Builder、join preview、derived dataset、SQL/tool execution 或自动分析。
+
 ## V1.0 P0A：架构与安全收口（2026-09-03）
 
 - 退休旧 Kimi `/api/v1/ai/*`、前端旧意图识别/自动执行链和 SmartAnalysis mock 页面。

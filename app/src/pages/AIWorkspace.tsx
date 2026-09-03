@@ -27,6 +27,7 @@ import { GuidedQuickAnalysisPanel } from '@/components/assistant/GuidedQuickAnal
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { getAssistantRuntimeProvider } from '@/lib/assistant/assistantRuntimeConfig';
 import { getAssistantRuntime } from '@/lib/assistant/getAssistantRuntime';
+import type { AssistantContext as AssistantRuntimeContext } from '@/lib/assistant/assistantRuntime';
 import {
   ANALYSIS_TAG_LABELS,
   BUSINESS_CATEGORY_LABELS,
@@ -45,7 +46,7 @@ import {
 } from '@/lib/assistant/resultFollowupResponder';
 import { useAssistantContext } from '@/hooks/useAssistantContext';
 import { useHermesStatus } from '@/hooks/useHermesStatus';
-import type { AssistantAnalysisPlan } from '@/types/assistant';
+import type { AssistantAnalysisPlan, PlanningDatasetMetadata } from '@/types/assistant';
 import { datasetApi } from '@/api';
 import { assistantApi } from '@/api/assistant';
 import type { ApiResponse } from '@/types/api';
@@ -112,6 +113,7 @@ function getHermesDiagnosticLabel(
   status: ReturnType<typeof useHermesStatus>,
   runtimeProvider: ReturnType<typeof getAssistantRuntimeProvider>
 ): string {
+  if (runtimeProvider === 'hermes_live') return 'Hermes Live advisory planning · deterministic fallback enabled';
   if (runtimeProvider === 'hermes_dry_run') return 'Hermes dry-run runtime · fallback enabled';
   if (status.status === 'dry_run') return 'Hermes dry-run 可用 · 当前仍使用规则模式';
   if (status.status === 'live') return 'Hermes live 已配置 · 当前仍使用规则模式';
@@ -392,6 +394,49 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     () => attachedResultSummary ?? selectedAnalysisHistorySummary ?? null,
     [attachedResultSummary, selectedAnalysisHistorySummary]
   );
+  const planningDatasets = useMemo<PlanningDatasetMetadata[]>(
+    () => {
+      const catalogById = new Map(datasetCatalog.map((item) => [item.dataset_id, item]));
+      return datasets.map((dataset) => {
+        const catalog = catalogById.get(dataset.id);
+        return {
+          id: dataset.id,
+          filename: dataset.filename,
+          name: dataset.filename,
+          schema: (dataset.schema ?? []).map((column) => ({
+            name: column.name,
+            dtype: column.dtype,
+            semantic_type: column.semantic_type,
+          })),
+          business_category: catalog?.business_category,
+          data_type: catalog?.data_type,
+          analysis_tags: catalog?.analysis_tags ?? [],
+          recommended_analyses: [],
+          quality_warnings: [],
+        };
+      });
+    },
+    [datasetCatalog, datasets]
+  );
+  const runtimeContext = useMemo<AssistantRuntimeContext>(
+    () => ({
+      selected_dataset_ids: selectedDataset ? [selectedDataset] : [],
+      selected_dataset_id: selectedDataset ?? undefined,
+      confirmed_relationships: activeRelationshipSet?.relationships ?? [],
+      relationship_set: activeRelationshipSet,
+      available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
+      analysis_history_summary: activeResultSummary ?? undefined,
+      dataset_catalog: datasetCatalog,
+      datasets: planningDatasets,
+    }),
+    [
+      activeRelationshipSet,
+      activeResultSummary,
+      datasetCatalog,
+      planningDatasets,
+      selectedDataset,
+    ]
+  );
   const handleSelectAnalysisHistory = useCallback((analysisId?: string) => {
     setSelectedAnalysisHistoryId(analysisId);
     if (analysisId) {
@@ -636,30 +681,10 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     updateCurrentSession(userMessages);
 
     try {
-      const selectedDatasetIds = selectedDataset ? [selectedDataset] : [];
-      const activeSetRelationships = activeRelationshipSet?.relationships ?? [];
-
       const runtime = getAssistantRuntime();
       const response = await runtime.generateAnalysisPlan({
         question,
-        context: {
-          selected_dataset_ids: selectedDatasetIds,
-          selected_dataset_id: selectedDataset ?? undefined,
-          confirmed_relationships: activeSetRelationships,
-          relationship_set: activeRelationshipSet,
-          available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
-          analysis_history_summary: activeResultSummary ?? undefined,
-          dataset_catalog: datasetCatalog,
-          datasets: datasets.map((d) => ({
-            id: d.id,
-            filename: d.filename,
-            name: d.filename,
-            schema: (d.schema || []).map((col: any) => ({
-              name: col?.name || '',
-              semantic_type: col?.semantic_type || col?.type || '',
-            })),
-          })),
-        },
+        context: runtimeContext,
       });
 
       const planMessage: Message = {
@@ -702,7 +727,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     updateCurrentSession(newMessages);
   };
 
-  // 发送消息 — 路由到规则型规划器，不直接调用后端分析
+  // 发送消息 — 路由到 runtime planning boundary，不直接调用分析执行接口
   const consumeWorkbenchHandoff = () => {
     const payload = readAIWorkbenchHandoff();
     if (!payload) return;
@@ -888,30 +913,10 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
     setGeneratedPlan(null);
 
     try {
-      const selectedDatasetIds = selectedDataset ? [selectedDataset] : [];
-      const activeSetRelationships = activeRelationshipSet?.relationships ?? [];
-
       const runtime = getAssistantRuntime();
       const response = await runtime.generateAnalysisPlan({
         question: planQuestion.trim(),
-        context: {
-          selected_dataset_ids: selectedDatasetIds,
-          selected_dataset_id: selectedDataset ?? undefined,
-          confirmed_relationships: activeSetRelationships,
-          relationship_set: activeRelationshipSet,
-          available_dataset_nodes: activeRelationshipSet?.dataset_nodes ?? [],
-          analysis_history_summary: activeResultSummary ?? undefined,
-          dataset_catalog: datasetCatalog,
-          datasets: datasets.map((d) => ({
-            id: d.id,
-            filename: d.filename,
-            name: d.filename,
-            schema: (d.schema || []).map((col: any) => ({
-              name: col?.name || '',
-              semantic_type: col?.semantic_type || col?.type || '',
-            })),
-          })),
-        },
+        context: runtimeContext,
       });
 
       setGeneratedPlan(response.plan);
@@ -1047,7 +1052,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                   className="mt-1 truncate text-[10px] leading-none text-[var(--text-muted)]"
                   title={hermesStatus.message || 'Hermes 状态仅用于诊断，不会改变当前运行时'}
                 >
-                  规则型分析规划 · 选择数据集可获得更具体的建议 · {getHermesDiagnosticLabel(hermesStatus, runtimeProvider)}
+                  {getHermesDiagnosticLabel(hermesStatus, runtimeProvider)}
                 </p>
               </div>
             </div>
@@ -1340,7 +1345,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                     <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                       <div className="rounded-xl bg-[var(--bg-tertiary)]/50 border border-[var(--border-subtle)] p-4">
                         <p className="text-sm text-[var(--text-primary)] mb-3">
-                          输入你的业务问题，我会基于规则匹配生成一个结构化分析路径建议。
+                          输入业务问题，系统会生成一份需要你确认的结构化分析计划。
                         </p>
                         <div className="flex gap-2">
                           <input
@@ -1369,7 +1374,7 @@ export function AIWorkspace({ isOpen, onClose }: AIWorkspaceProps) {
                             '哪些渠道贡献最高？',
                             '未来销售额会怎么变化？',
                             '哪些用户路径流失最多？',
-                            '评论里用户主要在抱怨什么？',
+                            '用什么图展示销售额变化？',
                             '缺失值怎么处理？',
                           ].map((sample) => (
                             <button

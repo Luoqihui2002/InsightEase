@@ -3,8 +3,8 @@
  *
  * Returns the active assistant runtime.
  *
- * Current: ruleBasedAssistantRuntime
- * Future:  hermesAssistantRuntime (when backend Hermes adapter is ready)
+ * Default: ruleBasedAssistantRuntime
+ * Opt-in:  hermesAssistantRuntime (dry-run or live backend mode)
  */
 
 import type { AssistantRuntime } from './assistantRuntime';
@@ -15,7 +15,7 @@ import { ruleBasedAssistantRuntime } from './ruleBasedAssistantRuntime';
 export function getAssistantRuntime(): AssistantRuntime {
   const provider = getAssistantRuntimeProvider();
 
-  if (provider === 'hermes_dry_run') {
+  if (provider === 'hermes_dry_run' || provider === 'hermes_live') {
     return hermesAssistantRuntime;
   }
 

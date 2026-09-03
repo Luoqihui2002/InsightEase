@@ -117,7 +117,7 @@ async def test_status_live_available_does_not_expose_token(monkeypatch):
     assert data["availability"] == "live_available"
     assert data["available"] is True
     assert data["supports"]["explain_result"] is True
-    assert data["supports"]["plan_analysis"] is False
+    assert data["supports"]["plan_analysis"] is True
     assert "secret-token" not in str(data)
 
 

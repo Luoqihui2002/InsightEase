@@ -16,7 +16,7 @@ const ANALYSIS_TYPES: RecommendedAnalysisType[] = [
   'ab_test',
   'regression',
   'smart_process',
-  'custom_query',
+  'visualization',
 ];
 
 function canUseSessionStorage(): boolean {

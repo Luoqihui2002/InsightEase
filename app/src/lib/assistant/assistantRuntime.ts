@@ -3,8 +3,8 @@
  *
  * Abstract boundary between AI Workbench UI and the assistant backend/runtime.
  *
- * Current runtime: ruleBasedAssistantRuntime
- * Future runtimes: hermesAssistantRuntime, llmAssistantRuntime
+ * Default runtime: ruleBasedAssistantRuntime
+ * Opt-in runtime: hermesAssistantRuntime
  *
  * The UI (AIWorkspace) calls AssistantRuntime methods; it does not know
  * which concrete runtime is active.
@@ -14,6 +14,7 @@ import type {
   AssistantAnalysisPlan,
   TableRelationship,
   DatasetProfile,
+  PlanningDatasetMetadata,
   RelationshipSet,
   RelationshipSetDatasetNode,
 } from '@/types/assistant';
@@ -39,7 +40,7 @@ export interface AssistantMessage {
 /* ------------------------------------------------------------------ */
 
 export interface AssistantContext {
-  /** IDs of all datasets the user has access to */
+  /** User-selected dataset IDs included in this request */
   selected_dataset_ids: string[];
   /** Primary dataset the user has selected (if any) */
   selected_dataset_id?: string;
@@ -52,12 +53,7 @@ export interface AssistantContext {
   /** Optional dataset profiles (metadata only) */
   dataset_profiles?: DatasetProfile[];
   /** Optional lightweight dataset schema info for planning */
-  datasets?: Array<{
-    id: string;
-    filename?: string;
-    name?: string;
-    schema?: Array<{ name: string; semantic_type?: string }>;
-  }>;
+  datasets?: PlanningDatasetMetadata[];
   /** Optional deterministic frontend-only catalog metadata for candidate narrowing */
   dataset_catalog?: DatasetCatalogMetadata[];
   /** Optional bounded summary of selected analysis history context; no raw result tables */

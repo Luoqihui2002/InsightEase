@@ -66,8 +66,11 @@
 用户进入 AIWorkspace
   -> 选择数据集 / Relationship Set / 历史结果
   -> Metadata-first Assistant 读取 Dataset Profile 与关系元数据
-  -> 规则型 planner 生成可确认的分析计划（当前默认）
-  -> 用户进入对应分析页并手动启动分析
+  -> 默认规则型 planner，或显式启用 backend-only Hermes live planner
+  -> Hermes 输出经过 strict schema + dataset/field/relationship validation
+  -> 失败时 deterministic fallback，计划标明来源和 execution readiness
+  -> 单表计划经用户确认后 prefill；多表计划停在 needs_join
+  -> 用户进入对应分析页并手动启动分析（不会自动执行）
   -> 后端 Analysis API 执行并返回结构化 ResultView 数据
   -> SafeResultSummary 经后端边界交给 Hermes 做结果解释
 ```
@@ -118,7 +121,7 @@ Legacy `/api/v1/ai/*`、浏览器端 `aiApi`/intent recognition/execution servic
 | 数据库 | MySQL (aiomysql) |
 | 文件存储 | 本地磁盘 / 阿里云 OSS（切换）|
 | 数据处理 | pandas |
-| Assistant | Metadata-first planner + backend-only Hermes result explainer |
+| Assistant | Metadata-first deterministic/live planner + backend-only Hermes result explainer |
 | 任务 | BackgroundTasks |
 
 ---

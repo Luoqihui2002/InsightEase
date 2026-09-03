@@ -1,11 +1,10 @@
 """Hermes assistant endpoints.
 
-These endpoints expose the Hermes assistant API shape and validate safety
-constraints. Result explanation can call live Hermes only when explicitly
-configured; planning remains dry-run only in this phase.
+These endpoints expose bounded result explanation and advisory planning.
+Both capabilities keep deterministic fallback and cannot execute work.
 """
 
-from datetime import datetime
+import logging
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -25,16 +24,20 @@ from app.schemas.hermes import (
 )
 from app.services.hermes_validation_service import (
     HermesValidationError,
+    validate_and_normalize_analysis_plan,
     validate_explain_result_payload,
     validate_plan_analysis_payload,
 )
 from app.services.hermes_live_service import (
     HermesLiveError,
     explain_result_with_live_hermes,
+    plan_analysis_with_live_hermes,
     probe_hermes_health,
 )
+from app.services.hermes_planning_service import build_deterministic_fallback_plan
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/status", response_model=ResponseModel[HermesStatusResponse])
@@ -99,11 +102,11 @@ async def hermes_status():
                     platform=str(platform) if platform else "hermes-agent",
                     supports=HermesSupports(
                         explain_result=True,
-                        plan_analysis=False,
+                        plan_analysis=True,
                         explain_error=False,
                         tool_calls=False,
                     ),
-                    message="Hermes live result explanation is available. Planning remains local/dry-run only.",
+                    message="Hermes live result explanation and advisory planning are available.",
                 )
             )
         except HermesLiveError:
@@ -246,8 +249,7 @@ async def hermes_plan_analysis(
     request: HermesPlanAnalysisRequest,
     current_user: User = Depends(get_current_active_user),
 ):
-    """Validate bounded planning context and return a minimal advisory plan."""
-    _ensure_dry_run_enabled()
+    """Return a validated live plan or a safe deterministic fallback plan."""
     payload = _model_to_dict(request)
 
     try:
@@ -255,61 +257,48 @@ async def hermes_plan_analysis(
     except HermesValidationError as exc:
         raise _validation_http_error(exc) from exc
 
-    context = request.assistant_context
-    selected_dataset_id = context.get("selected_dataset_id")
-    selected_dataset_ids = _safe_string_list(context.get("selected_dataset_ids"))
-    primary_dataset = selected_dataset_id or (selected_dataset_ids[0] if selected_dataset_ids else None)
-    relationship_set = context.get("relationship_set") if isinstance(context.get("relationship_set"), dict) else None
+    mode = _active_mode()
+    if mode == "live" and settings.HERMES_LIVE_CONFIGURED:
+        try:
+            provider_plan = await plan_analysis_with_live_hermes(
+                request=request,
+                base_url=settings.HERMES_BASE_URL or "",
+                auth_token=settings.HERMES_AUTH_TOKEN or "",
+                model=settings.HERMES_MODEL,
+                timeout_ms=settings.HERMES_ASSISTANT_TIMEOUT_MS,
+            )
+            plan = validate_and_normalize_analysis_plan(
+                provider_plan,
+                request.assistant_context,
+                request.user_question,
+            )
+            return ResponseModel(
+                data=HermesPlanAnalysisResponse(
+                    plan=plan,
+                    clarifying_questions=plan.clarifying_questions,
+                    warnings=plan.warnings,
+                    confidence=plan.confidence,
+                    fallback_used=False,
+                )
+            )
+        except (HermesLiveError, HermesValidationError):
+            logger.warning("Hermes live planning failed validation or provider delivery; using fallback")
 
-    warnings = [
-        "Hermes dry-run mode returned a contract-shaped advisory plan only.",
-        "No analysis was executed, no SQL was generated, and no datasets were joined or modified.",
-    ]
-    if relationship_set:
-        warnings.append("Relationship set context was treated as allowed context, not as required datasets.")
-
-    plan = {
-        "id": f"hermes-dry-run-{int(datetime.utcnow().timestamp())}",
-        "user_question": request.user_question,
-        "interpreted_goal": "Dry-run contract validation for future Hermes planning.",
-        "recommended_analysis_type": "custom_query",
-        "required_datasets": [primary_dataset] if primary_dataset else [],
-        "required_dataset_ids": [primary_dataset] if primary_dataset else [],
-        "required_fields": [],
-        "required_relationships": [],
-        "relationship_set_id": relationship_set.get("id") if relationship_set else None,
-        "relationship_set_name": relationship_set.get("name") if relationship_set else None,
-        "reference_dataset_nodes": [],
-        "assumptions": [
-            "This dry-run response does not infer beyond the provided bounded context.",
-            "The deterministic frontend planner remains the default runtime.",
-        ],
-        "warnings": warnings,
-        "next_actions": [
-            {
-                "type": "warning",
-                "label": "Hermes dry-run only",
-                "payload": {"fallback_used": True},
-            }
-        ],
-    }
-
+    fallback_reason = {
+        "live": "Live planner unavailable; local deterministic planning was used.",
+        "dry_run": "Hermes dry-run mode does not call the provider; local deterministic planning was used.",
+        "disabled": "Hermes planning is disabled; local deterministic planning was used.",
+    }[mode]
+    plan = build_deterministic_fallback_plan(request, fallback_reason)
     return ResponseModel(
         data=HermesPlanAnalysisResponse(
             plan=plan,
-            clarifying_questions=[
-                "Please confirm the target analysis module before any future execution.",
-            ],
-            warnings=warnings,
-            confidence="low",
+            clarifying_questions=plan.clarifying_questions,
+            warnings=plan.warnings,
+            confidence=plan.confidence,
             fallback_used=True,
         )
     )
-
-
-def _active_dry_run_mode() -> str:
-    mode = _active_mode()
-    return mode if mode == "dry_run" else "disabled"
 
 
 def _active_mode() -> str:
@@ -321,20 +310,6 @@ def _active_mode() -> str:
     if mode == "live":
         return "live"
     return "disabled"
-
-
-def _ensure_dry_run_enabled() -> None:
-    if _active_dry_run_mode() != "dry_run":
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "HERMES_DISABLED",
-                "message": "Hermes assistant dry-run mode is disabled.",
-                "user_message": "Hermes assistant is disabled. The deterministic frontend fallback is available.",
-                "retryable": False,
-                "fallback_available": True,
-            },
-        )
 
 
 def _validation_http_error(exc: HermesValidationError) -> HTTPException:
@@ -368,7 +343,7 @@ def _fallback_explain_response(
 
 def _model_to_dict(model: Any) -> Dict[str, Any]:
     if hasattr(model, "model_dump"):
-        return model.model_dump()
+        return model.model_dump(by_alias=True)
     return model.dict()
 
 

@@ -1,7 +1,7 @@
 # InsightEase Roadmap
 
-**Version**: 2026-05  
-**Current focus**: Phase 4B closeout -> Hermes live readiness -> Phase 5 multi-table execution planning
+**Version**: 2026-09
+**Current focus**: V1.0 P0B complete -> P0C multi-table analysis dataset builder
 
 This roadmap is forward-looking. Historical implementation details remain available in `docs/CURRENT_PROGRESS.md`, `docs/CHANGELOG.md`, and `docs/phase-logs/`.
 
@@ -12,12 +12,12 @@ InsightEase is an AI-assisted statistics and analysis platform.
 Current product pillars:
 
 - users upload and manage datasets;
-- the platform supports statistical analysis, preprocessing, visualization, forecasting, attribution, path analysis, semantic analysis, and AI-assisted planning;
+- the platform supports statistical analysis, preprocessing, visualization, forecasting, attribution, path analysis, data overview, and AI-assisted planning;
 - AI Workbench is the main assistant shell;
 - Relationship Sets are topic-scoped dataset graphs and allowed context;
 - Safe Result Summary is the boundary for result follow-up and future Hermes result explanation;
-- Hermes live integration is not enabled yet;
-- default assistant runtime remains deterministic rule-based.
+- Hermes live result explanation and structured planning adapters are implemented behind explicit configuration;
+- default assistant runtime remains deterministic rule-based and live planning always has deterministic fallback.
 
 Important safety boundaries:
 
@@ -25,7 +25,7 @@ Important safety boundaries:
 - no automatic analysis execution;
 - no arbitrary SQL execution from AI;
 - no source dataset mutation;
-- no live Hermes/LLM call unless a future phase explicitly enables it;
+- no live Hermes/LLM call unless deployment configuration explicitly enables it;
 - execute/write actions require explicit user confirmation.
 
 ## Phase 4A: Engineering Stabilization Completed
@@ -63,7 +63,7 @@ Key historical groups:
 
 Completed. Future fixes to stabilized surfaces should be tracked under the relevant product phase rather than reopening Phase 4A.
 
-## Phase 4B: AI Workbench & Hermes-ready Assistant In Progress / Near Closure
+## Phase 4B: AI Workbench & Hermes-ready Assistant Completed
 
 ### Goal
 
@@ -142,7 +142,8 @@ Build a safe AI-assisted analysis workbench that can understand datasets, manage
 - Hermes dry-run backend scaffold.
 - Hermes status probe.
 - Hermes dry-run runtime opt-in.
-- Live Hermes remains not implemented.
+- Hermes live SafeResultSummary explanation.
+- Hermes live bounded structured planning with deterministic fallback.
 
 #### QA and Demo Support
 
@@ -151,7 +152,7 @@ Build a safe AI-assisted analysis workbench that can understand datasets, manage
 - End-to-end AI Workbench QA and polish pass.
 - SearchableSelect QA/accessibility polish.
 
-### Remaining Phase 4B Items
+### Phase 4B Closeout and Deferred Items
 
 #### 4B-10F: Roadmap Consolidation and Phase 5 Planning
 
@@ -184,7 +185,9 @@ Rules:
 - no SQL generation;
 - no dataset mutation.
 
-#### 4B-11C: Hermes Plan Analysis Live Adapter
+#### 4B-11C / V1.0 P0B: Hermes Plan Analysis Live Adapter
+
+Status: completed 2026-09-03.
 
 Enable live Hermes planning from bounded dataset/catalog/relationship metadata only.
 
@@ -197,6 +200,8 @@ Rules:
 - no automatic analysis execution;
 - no arbitrary SQL;
 - rule-based runtime remains fallback.
+
+Delivered with a strict shared `AnalysisPlan`, bounded context assembly, provider/schema/semantic validation, source badges, clarification states, single-table confirmation, and multi-table `needs_join` handoff. No execution capability was added.
 
 #### 4B-11D: AI Error Explainer
 
@@ -220,7 +225,7 @@ Phase 4B can close when:
 - No automatic joins, SQL, analysis execution, or dataset mutation are introduced.
 - Multi-table execution is designed but implemented under Phase 5.
 
-## Phase 5: Multi-table Analysis Execution Layer
+## P0C / Phase 5: Multi-table Analysis Execution Layer
 
 ### Goal
 

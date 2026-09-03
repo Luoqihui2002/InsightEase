@@ -1,4 +1,4 @@
-import type { AssistantAnalysisPlan } from './assistant';
+import type { AssistantAnalysisPlan, BoundedPlanningContext } from './assistant';
 import type { SafeResultSummary } from './resultSummary';
 
 export type HermesMode = 'disabled' | 'dry_run' | 'live';
@@ -78,12 +78,12 @@ export interface HermesExplainResultResponse {
 
 export interface HermesPlanAnalysisRequest {
   user_question: string;
-  assistant_context: Record<string, unknown>;
+  assistant_context: BoundedPlanningContext;
   safety: HermesPlanSafetyFlags;
 }
 
 export interface HermesPlanAnalysisResponse {
-  plan: AssistantAnalysisPlan | Record<string, unknown>;
+  plan: AssistantAnalysisPlan;
   clarifying_questions?: string[];
   warnings: string[];
   confidence?: HermesConfidence;

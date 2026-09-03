@@ -138,23 +138,20 @@ const ruleBasedAssistantRuntime: AssistantRuntime = {
 
 ---
 
-## Future Runtime: HermesAssistantRuntime
+## Current Runtime: HermesAssistantRuntime
 
-Placeholder exists at `app/src/lib/assistant/hermesAssistantRuntime.ts`.
+The implementation lives at `app/src/lib/assistant/hermesAssistantRuntime.ts`.
 
-When backend Hermes adapter is ready:
+V1.0 P0B behavior:
 
-1. Implement `hermesAssistantRuntime.generateAnalysisPlan()`
+1. `hermesAssistantRuntime.generateAnalysisPlan()`
    - POST to backend `/assistant/hermes/plan-analysis`
-   - Send `AssistantContext` as JSON
-   - Receive structured plan or tool-call proposal
-2. Update `getAssistantRuntime()` to return Hermes runtime when enabled
-3. UI remains unchanged
+   - Sends a bounded metadata context, never the arbitrary runtime object
+   - Receives one strict structured plan or deterministic backend fallback
+2. `getAssistantRuntime()` selects it only for explicit `hermes_dry_run` / `hermes_live` configuration
+3. UI remains provider-agnostic
 
-Hermes runtime may return:
-- Direct plan (same shape as rule-based)
-- Tool-call proposal (UI shows confirmation dialog)
-- Streaming explanation (UI shows streaming text)
+Hermes planning returns a direct validated plan in the same canonical shape as the rule-based planner. Tool-call proposals and streaming planning are not implemented.
 
 ### Future Hermes Result Explainer Boundary
 
@@ -216,6 +213,14 @@ Phase 4B-8O implementation note:
 - `hermesAssistantRuntime.generateAnalysisPlan()` calls only `/assistant/hermes/plan-analysis`.
 - If the dry-run endpoint is disabled, unavailable, or returns an invalid plan, the runtime falls back to `ruleBasedAssistantRuntime`.
 - Result follow-up remains deterministic and does not call Hermes explain-result.
+
+V1.0 P0B implementation note:
+
+- `VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_live` selects live backend planning.
+- `buildBoundedPlanningContext()` caps and strips the runtime context before transport.
+- Backend parse, Pydantic validation, and context validation occur before a plan reaches the UI.
+- The backend and runtime both retain deterministic fallback.
+- Single-table confirmation only prefills a page; multi-table plans stop at `needs_join`.
 
 ---
 

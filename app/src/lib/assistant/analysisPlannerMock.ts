@@ -139,6 +139,17 @@ const KEYWORD_RULES: KeywordRule[] = [
     nextActionTarget: '/app/data-workshop',
   },
   {
+    type: 'visualization',
+    keywords: ['可视化', '图表', '画图', 'visualization', 'chart'],
+    label: '数据可视化',
+    requiredFieldRoles: [
+      { role: 'dimension', required: false, reason: '可选择一个分类或时间维度。' },
+      { role: 'target_metric', required: false, reason: '可选择一个数值指标。' },
+    ],
+    nextActionLabel: '进入可视化',
+    nextActionTarget: '/app/visualization',
+  },
+  {
     type: 'regression',
     keywords: ['回归', '影响因素', '驱动因素', 'ltv', 'regression', 'drivers', 'retention'],
     label: '回归/驱动因素分析',
@@ -204,10 +215,10 @@ const INTENT_CATALOG_MAP: Record<RecommendedAnalysisType, Omit<AnalysisIntent, '
     preferred_data_types: [],
     preferred_analysis_tags: ['descriptive', 'data_quality'],
   },
-  custom_query: {
+  visualization: {
     preferred_business_categories: [],
     preferred_data_types: [],
-    preferred_analysis_tags: [],
+    preferred_analysis_tags: ['descriptive'],
   },
 };
 
@@ -220,7 +231,7 @@ const INTENT_DATASET_TOKENS: Record<RecommendedAnalysisType, string[]> = {
   regression: ['user', 'customer', 'ltv', 'order', 'metric', 'feature'],
   smart_process: ['quality', 'missing', 'null', 'anomaly', 'outlier'],
   descriptive: [],
-  custom_query: [],
+  visualization: ['chart', 'visualization', 'metric', 'dimension'],
 };
 
 function detectCandidateColumns(
@@ -258,7 +269,7 @@ function findMatchedRule(question: string): KeywordRule {
 
 export function inferAnalysisIntentFromQuestion(question: string): AnalysisIntent {
   const rule = findMatchedRule(question);
-  const base = INTENT_CATALOG_MAP[rule.type] ?? INTENT_CATALOG_MAP.custom_query;
+  const base = INTENT_CATALOG_MAP[rule.type] ?? INTENT_CATALOG_MAP.descriptive;
   return {
     analysis_type: rule.type,
     preferred_business_categories: base.preferred_business_categories,
@@ -562,7 +573,7 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
   const scopedRelationships = (confirmedRelationships ?? []).filter((rel) => {
     if (planningDatasetIds.size === 0) return false;
     return (
-      planningDatasetIds.has(rel.source_dataset_id) ||
+      planningDatasetIds.has(rel.source_dataset_id) &&
       planningDatasetIds.has(rel.target_dataset_id)
     );
   });
@@ -570,23 +581,31 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
   const referenceNodes = activeNodes.filter(
     (node) =>
       node.included_in_context &&
-      planningDatasetIds.has(node.dataset_id) &&
+      !planningDatasetIds.has(node.dataset_id) &&
       (node.role === 'isolated' || node.role === 'reference_only')
   );
 
-  const requiredFields: AnalysisFieldRequirement[] = matchedRule.requiredFieldRoles.map((req) => {
-    const allCandidates = new Set<string>();
-    for (const ds of planningDatasets) {
-      const schema = ds.schema || [];
-      detectCandidateColumns(schema, req.role).forEach((col) => allCandidates.add(col));
-    }
-    return {
-      role: req.role,
-      required: req.required,
-      candidate_columns: Array.from(allCandidates),
-      reason: req.reason,
-    };
-  });
+  const requiredFields: AnalysisFieldRequirement[] = planningDatasets.length > 0
+    ? matchedRule.requiredFieldRoles.map((req) => {
+        let datasetId = planningDatasets[0].id;
+        let candidates: string[] = [];
+        for (const dataset of planningDatasets) {
+          const matches = detectCandidateColumns(dataset.schema || [], req.role);
+          if (matches.length > 0) {
+            datasetId = dataset.id;
+            candidates = matches;
+            break;
+          }
+        }
+        return {
+          dataset_id: datasetId,
+          role: req.role,
+          required: req.required,
+          candidate_columns: candidates,
+          reason: req.reason,
+        };
+      })
+    : [];
 
   const assumptions: string[] = [
     `按问题意图识别为：${matchedRule.label}`,
@@ -656,18 +675,46 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
     planningDatasetIds
   );
 
-  const nextActions: AssistantNextAction[] = [];
+  const clarifyingQuestions: string[] = [];
+  if (planningDatasets.length === 0) {
+    clarifyingQuestions.push('请确认本次分析要使用的目标数据集。');
+  }
+  for (const field of requiredFields) {
+    if (field.required && field.candidate_columns.length === 0) {
+      clarifyingQuestions.push(`请确认 ${field.role} 对应哪个字段。`);
+    }
+  }
+  if (planningDatasets.length > 1 && scopedRelationships.length === 0) {
+    clarifyingQuestions.push('请先在 Relationship Set 中确认这些数据集之间的关键关系。');
+  }
 
-  if (planningDatasets.length > 0) {
+  const executionReadiness = clarifyingQuestions.length > 0
+    ? 'needs_clarification' as const
+    : planningDatasets.length > 1
+      ? 'needs_join' as const
+      : 'ready_single_table' as const;
+  const nextAction = executionReadiness === 'needs_clarification'
+    ? 'clarify' as const
+    : executionReadiness === 'needs_join'
+      ? 'create_analysis_dataset' as const
+      : 'review_plan' as const;
+
+  const nextActions: AssistantNextAction[] = [];
+  if (executionReadiness === 'ready_single_table') {
     nextActions.push({
       type: 'navigate',
-      label: matchedRule.nextActionLabel,
+      label: `确认计划并${matchedRule.nextActionLabel}`,
       target: matchedRule.nextActionTarget,
+    });
+  } else if (executionReadiness === 'needs_join') {
+    nextActions.push({
+      type: 'warning',
+      label: '需要创建多表分析数据集（P0C）',
     });
   } else {
     nextActions.push({
-      type: 'warning',
-      label: '先确认所需数据集',
+      type: 'confirm',
+      label: '补充信息后重新生成计划',
     });
   }
 
@@ -676,12 +723,26 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
     label: '解释字段选择',
   });
 
-  if (warnings.length > 0 && planningDatasets.length > 0) {
-    nextActions.push({
-      type: 'warning',
-      label: '先确认数据集和字段',
-    });
-  }
+  const relationshipRequirements = scopedRelationships.map((relationship) => ({
+    relationship_id: relationship.id,
+    source_dataset_id: relationship.source_dataset_id,
+    source_column: relationship.source_column,
+    target_dataset_id: relationship.target_dataset_id,
+    target_column: relationship.target_column,
+    status: 'confirmed' as const,
+    relationship_type: relationship.relationship_type,
+    risk_level: relationship.risk_level,
+    reason: '已在当前 Relationship Set 中确认。',
+  }));
+
+  const metrics = requiredFields
+    .filter((field) => field.role === 'target_metric')
+    .flatMap((field) => field.candidate_columns.slice(0, 4).map((column) => ({
+      name: column,
+      dataset_id: field.dataset_id,
+      field: column,
+      description: `候选 ${field.role} 指标。`,
+    })));
 
   return {
     id: `plan_${Date.now()}`,
@@ -690,14 +751,22 @@ export function generateMockAnalysisPlan(input: PlannerInput): AssistantAnalysis
     recommended_analysis_type: matchedRule.type,
     required_datasets: planningDatasets.map((d) => datasetDisplayName(d, d.id)),
     required_dataset_ids: planningDatasets.map((d) => d.id),
-    candidate_datasets: candidateDatasets,
+    candidate_dataset_ids: (candidateDatasets ?? []).map((item) => item.dataset_id),
+    candidate_datasets: candidateDatasets ?? [],
     required_fields: requiredFields,
-    required_relationships: scopedRelationships,
+    required_relationships: relationshipRequirements,
+    metrics,
     relationship_set_id: relationshipSet?.id,
     relationship_set_name: relationshipSet?.name,
-    reference_dataset_nodes: referenceNodes,
+    reference_dataset_ids: referenceNodes.map((node) => node.dataset_id),
     assumptions,
     warnings,
+    clarifying_questions: clarifyingQuestions,
+    execution_readiness: executionReadiness,
+    next_action: nextAction,
     next_actions: nextActions,
+    source: 'deterministic_fallback',
+    confidence: planningDatasets.length > 0 ? 'medium' : 'low',
+    fallback_used: true,
   };
 }

@@ -372,6 +372,9 @@ export function GuidedQuickAnalysisPanel({
             id: dataset.id,
             filename: dataset.filename,
             name: dataset.name ?? dataset.filename,
+            analysis_tags: [],
+            recommended_analyses: [],
+            quality_warnings: [],
             schema: (dataset.schema || []).map((col: any) => ({
               name: col?.name || '',
               semantic_type: col?.semantic_type || col?.type || '',

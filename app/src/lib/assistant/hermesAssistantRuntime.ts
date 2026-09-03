@@ -1,11 +1,8 @@
 /**
- * HermesAssistantRuntime dry-run mode.
+ * Hermes planning runtime.
  *
- * This runtime is opt-in only via:
- *   VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_dry_run
- *
- * It calls backend dry-run endpoints only. It does not call live Hermes,
- * LLMs, SQL generation, analysis execution, joins, or dataset mutation.
+ * The browser calls only the InsightEase backend. The backend owns provider
+ * access, schema/context validation, and deterministic fallback.
  */
 
 import { assistantApi } from '@/api/assistant';
@@ -17,44 +14,19 @@ import type {
   AssistantPlanRequest,
   AssistantPlanResponse,
 } from './assistantRuntime';
+import { buildBoundedPlanningContext } from './boundedPlanningContext';
 import { ruleBasedAssistantRuntime } from './ruleBasedAssistantRuntime';
 
-const HERMES_FALLBACK_WARNING = 'Hermes dry-run unavailable; used local rule-based planner.';
+const HERMES_FALLBACK_WARNING = 'Hermes planning unavailable; used local deterministic planning.';
 
 export const hermesAssistantRuntime: AssistantRuntime = {
   mode: 'hermes',
 
   async generateAnalysisPlan(request: AssistantPlanRequest): Promise<AssistantPlanResponse> {
     try {
-      const response = await assistantApi.planAnalysisWithHermesDryRun({
+      const response = await assistantApi.planAnalysisWithHermes({
         user_question: request.question,
-        assistant_context: {
-          selected_dataset_ids: request.context.selected_dataset_ids,
-          selected_dataset_id: request.context.selected_dataset_id,
-          datasets: request.context.datasets,
-          dataset_catalog: request.context.dataset_catalog,
-          relationship_set: request.context.relationship_set
-            ? {
-                id: request.context.relationship_set.id,
-                name: request.context.relationship_set.name,
-                dataset_nodes: request.context.relationship_set.dataset_nodes.map((node) => ({
-                  dataset_id: node.dataset_id,
-                  dataset_name: node.dataset_name ?? node.filename,
-                  role: node.role === 'excluded' ? 'reference_only' : node.role,
-                  joinable: node.joinable,
-                })),
-                relationships: request.context.relationship_set.relationships.map((rel) => ({
-                  source_dataset_id: rel.source_dataset_id,
-                  source_column: rel.source_column,
-                  target_dataset_id: rel.target_dataset_id,
-                  target_column: rel.target_column,
-                  relationship_type: rel.relationship_type,
-                  risk_level: rel.risk_level,
-                })),
-              }
-            : undefined,
-          analysis_history_summary: request.context.analysis_history_summary,
-        },
+        assistant_context: buildBoundedPlanningContext(request.context),
         safety: {
           allow_raw_data: false,
           allow_auto_run: false,
@@ -66,16 +38,17 @@ export const hermesAssistantRuntime: AssistantRuntime = {
 
       const payload = unwrapApiData<HermesPlanAnalysisResponse>(response);
       if (!payload || !isAssistantAnalysisPlan(payload.plan)) {
-        return fallbackToRuleBased(request, ['Hermes dry-run returned an invalid plan; used local rule-based planner.']);
+        return fallbackToRuleBased(request, ['Hermes backend returned an invalid plan; used local deterministic planning.']);
       }
 
+      const mergedWarnings = Array.from(
+        new Set([...payload.plan.warnings, ...(payload.warnings ?? [])])
+      );
+
       return {
-        plan: payload.plan,
+        plan: { ...payload.plan, warnings: mergedWarnings },
         runtime_mode: 'hermes',
-        warnings: [
-          ...(payload.warnings ?? []),
-          ...(payload.fallback_used ? ['Hermes dry-run response only; no live Hermes/LLM call was made.'] : []),
-        ],
+        warnings: payload.warnings ?? [],
       };
     } catch {
       return fallbackToRuleBased(request, [HERMES_FALLBACK_WARNING]);
@@ -90,6 +63,10 @@ async function fallbackToRuleBased(
   const fallback = await ruleBasedAssistantRuntime.generateAnalysisPlan(request);
   return {
     ...fallback,
+    plan: {
+      ...fallback.plan,
+      warnings: Array.from(new Set([...warnings, ...fallback.plan.warnings])),
+    },
     warnings: [...warnings, ...fallback.warnings],
   };
 }
@@ -125,11 +102,109 @@ function isAssistantAnalysisPlan(value: unknown): value is AssistantAnalysisPlan
     typeof candidate.id === 'string' &&
     typeof candidate.user_question === 'string' &&
     typeof candidate.interpreted_goal === 'string' &&
-    typeof candidate.recommended_analysis_type === 'string' &&
+    isSupportedAnalysisType(candidate.recommended_analysis_type) &&
     Array.isArray(candidate.required_datasets) &&
+    Array.isArray(candidate.required_dataset_ids) &&
+    Array.isArray(candidate.candidate_dataset_ids) &&
+    Array.isArray(candidate.candidate_datasets) &&
     Array.isArray(candidate.required_fields) &&
+    Array.isArray(candidate.required_relationships) &&
+    Array.isArray(candidate.metrics) &&
+    Array.isArray(candidate.reference_dataset_ids) &&
     Array.isArray(candidate.assumptions) &&
     Array.isArray(candidate.warnings) &&
-    Array.isArray(candidate.next_actions)
+    Array.isArray(candidate.clarifying_questions) &&
+    Array.isArray(candidate.next_actions) &&
+    candidate.required_fields.every(isRequiredField) &&
+    candidate.candidate_datasets.every(isCandidateDataset) &&
+    candidate.required_relationships.every(isRelationshipRequirement) &&
+    candidate.metrics.every(isMetricTarget) &&
+    candidate.next_actions.every(isNextAction) &&
+    (candidate.source === 'hermes_live' || candidate.source === 'deterministic_fallback') &&
+    (candidate.confidence === 'low' || candidate.confidence === 'medium' || candidate.confidence === 'high') &&
+    typeof candidate.fallback_used === 'boolean' &&
+    (
+      candidate.execution_readiness === 'ready_single_table' ||
+      candidate.execution_readiness === 'needs_join' ||
+      candidate.execution_readiness === 'needs_clarification' ||
+      candidate.execution_readiness === 'unsupported'
+    ) &&
+    (
+      candidate.next_action === 'review_plan' ||
+      candidate.next_action === 'navigate_analysis' ||
+      candidate.next_action === 'create_analysis_dataset' ||
+      candidate.next_action === 'clarify'
+    )
   );
+}
+
+function isRequiredField(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const field = value as Record<string, unknown>;
+  return (
+    typeof field.dataset_id === 'string' &&
+    typeof field.role === 'string' &&
+    typeof field.required === 'boolean' &&
+    Array.isArray(field.candidate_columns) &&
+    typeof field.reason === 'string'
+  );
+}
+
+function isCandidateDataset(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const dataset = value as Record<string, unknown>;
+  return (
+    typeof dataset.dataset_id === 'string' &&
+    Array.isArray(dataset.reasons) &&
+    (dataset.confidence === 'low' || dataset.confidence === 'medium' || dataset.confidence === 'high')
+  );
+}
+
+function isRelationshipRequirement(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const relationship = value as Record<string, unknown>;
+  return (
+    typeof relationship.source_dataset_id === 'string' &&
+    typeof relationship.source_column === 'string' &&
+    typeof relationship.target_dataset_id === 'string' &&
+    typeof relationship.target_column === 'string' &&
+    (relationship.status === 'confirmed' || relationship.status === 'requires_confirmation') &&
+    typeof relationship.reason === 'string'
+  );
+}
+
+function isMetricTarget(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const metric = value as Record<string, unknown>;
+  return (
+    typeof metric.name === 'string' &&
+    typeof metric.dataset_id === 'string' &&
+    typeof metric.description === 'string'
+  );
+}
+
+function isNextAction(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const action = value as Record<string, unknown>;
+  return (
+    (action.type === 'navigate' ||
+      action.type === 'confirm' ||
+      action.type === 'explain' ||
+      action.type === 'warning') &&
+    typeof action.label === 'string'
+  );
+}
+
+function isSupportedAnalysisType(value: unknown): value is AssistantAnalysisPlan['recommended_analysis_type'] {
+  return [
+    'descriptive',
+    'data_overview',
+    'attribution',
+    'forecast',
+    'path_analysis',
+    'ab_test',
+    'regression',
+    'smart_process',
+    'visualization',
+  ].includes(value as AssistantAnalysisPlan['recommended_analysis_type']);
 }

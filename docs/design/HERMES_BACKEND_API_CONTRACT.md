@@ -4,9 +4,9 @@
 
 This document defines the backend API contract for Hermes assistant integration.
 
-Phase 4B-8M implements a dry-run backend scaffold for the contract endpoints. Phase 4B-11B implements live result explanation only. Plan-analysis remains dry-run/local fallback only.
+Phase 4B-8M introduced the dry-run scaffold, Phase 4B-11B added live result explanation, and V1.0 P0B implements live structured plan analysis with strict context validation and deterministic fallback.
 
-No real Hermes provider, LLM call, frontend runtime switch, SQL generation, automatic analysis execution, automatic join, or dataset mutation exists.
+Live Hermes calls exist only behind explicit backend/frontend configuration for advisory planning and bounded result explanation. SQL generation, automatic analysis execution, automatic join, and dataset mutation do not exist.
 
 The contract gives the future frontend `HermesAssistantRuntime` a stable backend boundary while preserving the current deterministic fallback behavior.
 
@@ -51,11 +51,11 @@ POST /api/v1/assistant/hermes/explain-result
 POST /api/v1/assistant/hermes/plan-analysis
 ```
 
-Implemented status after Phase 4B-8M:
+Implemented status after V1.0 P0B:
 
 - `status`: dry-run/disabled scaffold exists.
 - `explain-result`: dry-run scaffold plus live SafeResultSummary explainer adapter exists.
-- `plan-analysis`: validation-only dry-run scaffold exists.
+- `plan-analysis`: live provider adapter, strict schema/context normalization, dry-run/disabled behavior, and deterministic fallback exist.
 
 Optional future endpoints, not fully specified:
 
@@ -108,8 +108,8 @@ Behavior:
 - If Hermes is not configured, return `enabled: false`.
 - If `mode` is `disabled`, all `supports.*` values should be `false`.
 - If `mode` is `dry_run`, the backend may validate payloads and return mock/contract responses without external provider calls.
-- If `mode` is `live`, the backend may call the configured Hermes provider for result explanation only after all safety validation passes.
-- Phase 4B-11B does not allow live `plan-analysis`.
+- If `mode` is `live`, the backend may call the configured Hermes provider for result explanation or planning only after the capability's safety validation passes.
+- Live planning remains advisory and cannot execute or mutate anything.
 - This endpoint must never expose API keys, credentials, provider secrets, storage paths, or internal file paths.
 
 Frontend behavior:
@@ -239,13 +239,14 @@ export interface HermesPlanAnalysisRequest {
   assistant_context: {
     selected_dataset_ids: string[];
     selected_dataset_id?: string;
-    datasets?: Array<{
+    datasets: Array<{
       id: string;
       name?: string;
       filename?: string;
-      schema?: Array<{
+      schema: Array<{
         name: string;
-        type?: string;
+        dtype?: string;
+        semantic_type?: string;
         role?: string;
       }>;
       table_type?: string;
@@ -262,12 +263,14 @@ export interface HermesPlanAnalysisRequest {
         joinable: boolean;
       }>;
       relationships: Array<{
+        id?: string;
         source_dataset_id: string;
         source_column: string;
         target_dataset_id: string;
         target_column: string;
         relationship_type?: string;
         risk_level?: "low" | "medium" | "high";
+        status: "confirmed";
       }>;
     };
     analysis_history_summary?: SafeResultSummary;
@@ -343,7 +346,8 @@ Initial limits:
 - Max columns per safe table: inherit cap, currently 12.
 - Max `SafeResultSummary.explanation_hints` list fields: 8 items each.
 - Max direct `SafeResultSummary.explanation_hints` text fields: 500 characters each.
-- Max datasets in planning context: 50.
+- Max datasets in planning context: 20.
+- Max schema columns across all planning datasets: 500.
 - Max schema columns per dataset: 100.
 - Max relationship edges: 200.
 - Max user question length: 2,000 characters.

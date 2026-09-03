@@ -381,17 +381,15 @@ The payload carries dataset IDs and suggested field names only. It does not stor
 
 ---
 
-## Future Contract: Hermes Assistant Backend API
+## Hermes Assistant Backend API
 
-Phase 4B-8L defines a documentation-only contract for future Hermes assistant endpoints.
-
-Phase 4B-8M adds dry-run backend scaffolding for these endpoints. Phase 4B-11B adds live Hermes result explanation only; plan-analysis remains dry-run/local fallback only.
+Phase 4B-8L defined the contract, Phase 4B-8M added dry-run scaffolding, Phase 4B-11B added live result explanation, and V1.0 P0B adds live structured planning with strict context validation and deterministic fallback.
 
 Design source:
 
 - `docs/design/HERMES_BACKEND_API_CONTRACT.md`
 
-Future endpoints:
+Implemented endpoints:
 
 ```text
 GET  /api/v1/assistant/hermes/status
@@ -406,13 +404,15 @@ Contract rules:
 - `explain-result` may receive `SafeResultSummary`, optional bounded `explanation_hints`, metadata-only assistant context, user question, and explicit safety flags.
 - In live mode, `explain-result` may call the configured backend-only Hermes Agent through `HERMES_BASE_URL`; the browser never calls Hermes directly.
 - `plan-analysis` may receive dataset metadata, active relationship-set metadata, optional safe result summary, user question, and explicit safety flags.
+- In live mode, `plan-analysis` may call Hermes, but the response must pass strict Pydantic and dataset/field/relationship context validation before it reaches the UI.
+- A valid multi-table plan returns `execution_readiness=needs_join`; it does not execute a Join.
 - Hermes must not receive raw uploaded rows, full raw result tables, unbounded `result_data`, credentials, secrets, or storage paths.
 - `explanation_hints` are derived summaries only, capped by list/string limits, and must not include raw rows, raw result payloads, secrets, file paths, SQL, or mutation instructions.
 - Hermes must not auto-run analysis, auto-join datasets, generate executable SQL, create datasets, or mutate datasets.
 - Frontend must fallback to `ruleBasedAssistantRuntime` and deterministic `resultFollowupResponder` when Hermes is disabled, unavailable, or fails.
 - Default backend config keeps Hermes disabled; frontend runtime behavior remains deterministic by default.
 
-Feature flags planned for future backend implementation:
+Backend feature flags:
 
 ```text
 HERMES_ASSISTANT_ENABLED=false

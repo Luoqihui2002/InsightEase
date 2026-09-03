@@ -27,8 +27,7 @@ export const assistantApi = {
     request.post<ApiResponse<InferRelationshipsResponse>>('/assistant/infer-relationships', payload),
 
   /**
-   * Check future Hermes assistant backend availability.
-   * Dry-run scaffold only; callers must keep deterministic fallback behavior.
+   * Check Hermes backend availability and advisory capabilities.
    */
   getHermesStatus: () =>
     request.get<ApiResponse<HermesStatusResponse>>('/assistant/hermes/status'),
@@ -52,9 +51,11 @@ export const assistantApi = {
     }),
 
   /**
-   * Validate and dry-run future Hermes planning payloads.
-   * Does not execute analysis, generate SQL, or switch the active runtime.
+   * Request a live-or-fallback advisory plan through the backend boundary.
+   * The endpoint never executes analysis, transforms, joins, SQL, or writes.
    */
-  planAnalysisWithHermesDryRun: (payload: HermesPlanAnalysisRequest) =>
-    request.post<ApiResponse<HermesPlanAnalysisResponse>>('/assistant/hermes/plan-analysis', payload),
+  planAnalysisWithHermes: (payload: HermesPlanAnalysisRequest) =>
+    request.post<ApiResponse<HermesPlanAnalysisResponse>>('/assistant/hermes/plan-analysis', payload, {
+      timeout: 65000,
+    }),
 };

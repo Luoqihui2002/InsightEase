@@ -1,4 +1,4 @@
-"""Live Hermes Agent client for bounded result explanation.
+"""Live Hermes Agent client for bounded assistant capabilities.
 
 This module is intentionally small and isolated. It calls only the remote
 Hermes Agent from the backend, never from the browser, and it accepts only the
@@ -13,9 +13,13 @@ from typing import Any, Dict, List
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from pydantic import ValidationError
+
+from app.schemas.assistant import AssistantAnalysisPlan
 from app.schemas.hermes import (
     HermesExplainResultRequest,
     HermesExplainResultResponse,
+    HermesPlanAnalysisRequest,
     HermesRecommendedAction,
 )
 
@@ -98,6 +102,87 @@ async def explain_result_with_live_hermes(
     return parse_hermes_explain_response(raw_response)
 
 
+async def plan_analysis_with_live_hermes(
+    *,
+    request: HermesPlanAnalysisRequest,
+    base_url: str,
+    auth_token: str,
+    model: str,
+    timeout_ms: int,
+) -> AssistantAnalysisPlan:
+    """Call live Hermes with bounded metadata and parse a strict advisory plan."""
+    context = request.assistant_context.model_dump(exclude_none=True, by_alias=True)
+    payload = {
+        "model": model,
+        "temperature": 0.1,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You are the planning layer of InsightEase. Reason only over the bounded "
+                    "metadata provided. Produce an advisory analysis plan and nothing executable. "
+                    "Never claim datasets have been joined, analysis has run, SQL has been generated "
+                    "or executed, datasets have been changed, or results have been computed. Use only "
+                    "dataset IDs, fields, and relationships in the context. Distinguish required, "
+                    "candidate, and reference datasets. Every required_fields item must include its "
+                    "dataset_id. A relationship may be status=confirmed only when the exact edge is in "
+                    "relationship_set.relationships; otherwise use status=requires_confirmation. If "
+                    "multiple datasets are required, use execution_readiness=needs_join and "
+                    "next_action=create_analysis_dataset. If metadata is missing, return bounded "
+                    "clarifying_questions instead of inventing it. The supported analysis types are: "
+                    "descriptive, data_overview, attribution, forecast, path_analysis, ab_test, "
+                    "regression, smart_process, visualization. Return strict JSON matching the "
+                    "AssistantAnalysisPlan schema. Set source=hermes_live and fallback_used=false."
+                ),
+            },
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "user_question": request.user_question,
+                        "assistant_context": context,
+                        "safety": request.safety.model_dump(),
+                        "required_output_fields": [
+                            "id",
+                            "user_question",
+                            "interpreted_goal",
+                            "recommended_analysis_type",
+                            "required_datasets",
+                            "required_dataset_ids",
+                            "candidate_dataset_ids",
+                            "candidate_datasets",
+                            "required_fields",
+                            "required_relationships",
+                            "metrics",
+                            "reference_dataset_ids",
+                            "assumptions",
+                            "warnings",
+                            "clarifying_questions",
+                            "execution_readiness",
+                            "next_action",
+                            "next_actions",
+                            "source",
+                            "confidence",
+                            "fallback_used",
+                        ],
+                    },
+                    ensure_ascii=False,
+                    default=str,
+                ),
+            },
+        ],
+    }
+
+    raw_response = await _request_json(
+        "POST",
+        _join_url(base_url, "chat/completions"),
+        payload,
+        auth_token,
+        timeout_ms,
+    )
+    return parse_hermes_plan_response(raw_response)
+
+
 def parse_hermes_explain_response(value: Any) -> HermesExplainResultResponse:
     """Parse direct or OpenAI-compatible Hermes responses into the safe schema."""
     candidate = _extract_response_candidate(value)
@@ -129,6 +214,20 @@ def parse_hermes_explain_response(value: Any) -> HermesExplainResultResponse:
         confidence=confidence,
         fallback_used=False,
     )
+
+
+def parse_hermes_plan_response(value: Any) -> AssistantAnalysisPlan:
+    """Parse direct or OpenAI-compatible provider output into the strict plan schema."""
+    candidate = _extract_response_candidate(value)
+    if isinstance(candidate, dict) and isinstance(candidate.get("plan"), dict):
+        candidate = candidate["plan"]
+    if not isinstance(candidate, dict):
+        raise HermesLiveError("Hermes planning response did not contain a JSON object.")
+
+    try:
+        return AssistantAnalysisPlan.model_validate(candidate)
+    except ValidationError as exc:
+        raise HermesLiveError("Hermes planning response failed schema validation.") from exc
 
 
 def _extract_response_candidate(value: Any) -> Any:
