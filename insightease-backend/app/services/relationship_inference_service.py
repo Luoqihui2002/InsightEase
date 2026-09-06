@@ -345,23 +345,29 @@ def _score_table_type_signal(
 # Cardinality inference
 # ---------------------------------------------------------------------------
 
-def _infer_cardinality(s_unique_rate: float, t_unique_rate: float) -> str:
-    """Infer relationship type based on uniqueness rates."""
-    s_unique = s_unique_rate >= 0.9
-    t_unique = t_unique_rate >= 0.9
-    s_low = s_unique_rate < 0.5
-    t_low = t_unique_rate < 0.5
+def _infer_cardinality(
+    s_unique_count: int | None, t_unique_count: int | None,
+    s_non_null_count: int, t_non_null_count: int,
+) -> str:
+    """Infer non-null key cardinality from exact counts, never rounded rates."""
+    for unique_count, non_null_count in (
+        (s_unique_count, s_non_null_count), (t_unique_count, t_non_null_count),
+    ):
+        if (
+            unique_count is None or non_null_count <= 0
+            or unique_count <= 0 or unique_count > non_null_count
+        ):
+            return "unknown"
 
+    s_unique = s_unique_count == s_non_null_count
+    t_unique = t_unique_count == t_non_null_count
     if s_unique and t_unique:
         return "one_to_one"
-    elif s_low and t_unique:
+    if t_unique:
         return "many_to_one"
-    elif s_unique and t_low:
+    if s_unique:
         return "one_to_many"
-    elif s_low and t_low:
-        return "many_to_many"
-    else:
-        return "unknown"
+    return "many_to_many"
 
 
 # ---------------------------------------------------------------------------
@@ -548,8 +554,10 @@ def infer_relationships(
 
         # Cardinality
         cardinality = _infer_cardinality(
-            source_col.get("uniqueRate", 0),
-            target_col.get("uniqueRate", 0),
+            source_col.get("uniqueCount"),
+            target_col.get("uniqueCount"),
+            source_profile.get("rowCount", 0) - source_col.get("nullCount", 0),
+            target_profile.get("rowCount", 0) - target_col.get("nullCount", 0),
         )
 
         rel_id = f"rel_{source_id}_{source_col_name}__{target_id}_{target_col_name}"

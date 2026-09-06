@@ -125,14 +125,27 @@ async def plan_analysis_with_live_hermes(
                     "or executed, datasets have been changed, or results have been computed. Use only "
                     "dataset IDs, fields, and relationships in the context. Distinguish required, "
                     "candidate, and reference datasets. Every required_fields item must include its "
-                    "dataset_id. A relationship may be status=confirmed only when the exact edge is in "
+                    "dataset_id, and that ID must be in required_dataset_ids even when required=false. "
+                    "candidate_columns lists actual schema column names that fulfill the field role, "
+                    "for both required and optional fields; leave it empty only if no matching column "
+                    "exists in the supplied dataset schema. "
+                    "Every metrics.dataset_id and both endpoints of every required_relationships item "
+                    "must also belong to required_dataset_ids. Required and candidate dataset IDs must "
+                    "be disjoint. Describe optional candidate-table fields and future relationships in "
+                    "candidate_datasets.reasons, not in required_fields or required_relationships. "
+                    "Ask clarifying_questions for missing information that blocks a valid advisory plan; "
+                    "put non-blocking provisional choices in assumptions for user review. "
+                    "A relationship may be status=confirmed only when the exact edge is in "
                     "relationship_set.relationships; otherwise use status=requires_confirmation. If "
                     "multiple datasets are required, use execution_readiness=needs_join and "
                     "next_action=create_analysis_dataset. If metadata is missing, return bounded "
                     "clarifying_questions instead of inventing it. The supported analysis types are: "
                     "descriptive, data_overview, attribution, forecast, path_analysis, ab_test, "
                     "regression, smart_process, visualization. Return strict JSON matching the "
-                    "AssistantAnalysisPlan schema. Set source=hermes_live and fallback_used=false."
+                    "AssistantAnalysisPlan schema supplied in required_output_schema, including all "
+                    "nested field names, types, enum values, and additionalProperties restrictions. "
+                    "Return one concise JSON object without markdown or surrounding commentary. "
+                    "Set source=hermes_live and fallback_used=false."
                 ),
             },
             {
@@ -142,6 +155,7 @@ async def plan_analysis_with_live_hermes(
                         "user_question": request.user_question,
                         "assistant_context": context,
                         "safety": request.safety.model_dump(),
+                        "required_output_schema": AssistantAnalysisPlan.model_json_schema(),
                         "required_output_fields": [
                             "id",
                             "user_question",

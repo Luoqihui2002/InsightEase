@@ -56,6 +56,7 @@ export const assistantApi = {
    */
   planAnalysisWithHermes: (payload: HermesPlanAnalysisRequest) =>
     request.post<ApiResponse<HermesPlanAnalysisResponse>>('/assistant/hermes/plan-analysis', payload, {
-      timeout: 65000,
+      // Allow the 120-second live planning budget plus transport overhead.
+      timeout: 125000,
     }),
 };

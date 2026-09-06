@@ -308,6 +308,14 @@ async def test_provider_receives_only_bounded_metadata(monkeypatch, base_url):
 
     user_content = captured["payload"]["messages"][1]["content"]
     forwarded_context = json.loads(user_content)["assistant_context"]
+    output_schema = json.loads(user_content)["required_output_schema"]
+    assert output_schema["additionalProperties"] is False
+    assert output_schema["properties"]["required_datasets"]["items"]["type"] == "string"
+    assert output_schema["properties"]["confidence"]["enum"] == ["low", "medium", "high"]
+    field_schema = output_schema["$defs"]["AnalysisFieldRequirement"]
+    assert "candidate_columns" in field_schema["properties"]
+    assert "role" in field_schema["required"]
+    assert field_schema["additionalProperties"] is False
     assert response.source == "hermes_live"
     assert "revenue" in user_content
     serialized_context = json.dumps(forwarded_context)
@@ -347,3 +355,40 @@ def test_planning_context_rejects_dataset_cap_overflow():
         validate_plan_analysis_payload(payload)
 
     assert exc.value.code == "CONTEXT_TOO_LARGE"
+
+
+@pytest.mark.parametrize("changes", [
+    {"required_datasets": [{"id": "sales", "name": "Sales"}]},
+    {"confidence": 0.95},
+    {"required_fields": [{"dataset_id": "sales", "field": "revenue", "usage": "metric"}]},
+])
+def test_provider_invented_output_shapes_remain_rejected(changes):
+    with pytest.raises(HermesLiveError, match="schema validation"):
+        parse_hermes_plan_response({"choices": [{"message": {"content": json.dumps({**_plan(), **changes})}}]})
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("reference_kind", ["field", "metric", "relationship"])
+async def test_candidate_dataset_references_still_trigger_fallback(monkeypatch, reference_kind):
+    hermes = _endpoint_module()
+    _enable_live(monkeypatch, hermes)
+    plan_data = _plan()
+    plan_data["candidate_dataset_ids"] = ["users"]
+    if reference_kind == "field":
+        # Even an optional field must belong to a required dataset.
+        candidate_field = _plan(multi=True)["required_fields"][1]
+        candidate_field["required"] = False
+        plan_data["required_fields"].append(candidate_field)
+    elif reference_kind == "metric":
+        plan_data["metrics"][0].update(dataset_id="users", field="channel")
+    else:
+        plan_data["required_relationships"] = _plan(multi=True)["required_relationships"]
+
+    async def fake_live(**kwargs):
+        return AssistantAnalysisPlan.model_validate(plan_data)
+
+    monkeypatch.setattr(hermes, "plan_analysis_with_live_hermes", fake_live)
+    response = await hermes.hermes_plan_analysis(_request(multi=True), current_user=object())
+    assert response.data.plan.source == "deterministic_fallback"
+    assert response.data.plan.fallback_used is True
+    assert response.data.fallback_used is True
