@@ -94,7 +94,7 @@ async def explain_result_with_live_hermes(
 
     raw_response = await _request_json(
         "POST",
-        _join_url(base_url, "chat/completions"),
+        _join_url(base_url, "v1/chat/completions"),
         payload,
         auth_token,
         timeout_ms,
@@ -175,7 +175,7 @@ async def plan_analysis_with_live_hermes(
 
     raw_response = await _request_json(
         "POST",
-        _join_url(base_url, "chat/completions"),
+        _join_url(base_url, "v1/chat/completions"),
         payload,
         auth_token,
         timeout_ms,

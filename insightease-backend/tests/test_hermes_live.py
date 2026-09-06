@@ -64,7 +64,7 @@ def _endpoint_module():
 def test_settings_accept_live_hermes_env(monkeypatch):
     monkeypatch.setenv("HERMES_ASSISTANT_ENABLED", "true")
     monkeypatch.setenv("HERMES_ASSISTANT_MODE", "live")
-    monkeypatch.setenv("HERMES_BASE_URL", "http://127.0.0.1:8642/v1")
+    monkeypatch.setenv("HERMES_BASE_URL", "http://127.0.0.1:8642")
     monkeypatch.setenv("HERMES_AUTH_TOKEN", "secret-token")
     monkeypatch.setenv("HERMES_MODEL", "hermes-agent")
     monkeypatch.setenv("HERMES_ASSISTANT_TIMEOUT_MS", "60000")
@@ -73,7 +73,7 @@ def test_settings_accept_live_hermes_env(monkeypatch):
 
     assert settings.HERMES_ASSISTANT_ENABLED is True
     assert settings.HERMES_ASSISTANT_MODE_SAFE == "live"
-    assert settings.HERMES_BASE_URL == "http://127.0.0.1:8642/v1"
+    assert settings.HERMES_BASE_URL == "http://127.0.0.1:8642"
     assert settings.HERMES_AUTH_TOKEN == "secret-token"
     assert settings.HERMES_MODEL == "hermes-agent"
     assert settings.HERMES_ASSISTANT_TIMEOUT_MS == 60000
@@ -106,7 +106,7 @@ async def test_status_live_available_does_not_expose_token(monkeypatch):
 
     monkeypatch.setattr(hermes.settings, "HERMES_ASSISTANT_ENABLED", True)
     monkeypatch.setattr(hermes.settings, "HERMES_ASSISTANT_MODE", "live")
-    monkeypatch.setattr(hermes.settings, "HERMES_BASE_URL", "http://127.0.0.1:8642/v1")
+    monkeypatch.setattr(hermes.settings, "HERMES_BASE_URL", "http://127.0.0.1:8642")
     monkeypatch.setattr(hermes.settings, "HERMES_AUTH_TOKEN", "secret-token")
     monkeypatch.setattr(hermes, "probe_hermes_health", fake_probe)
 
@@ -335,7 +335,7 @@ async def test_live_explain_failure_returns_fallback(monkeypatch):
 
     monkeypatch.setattr(hermes.settings, "HERMES_ASSISTANT_ENABLED", True)
     monkeypatch.setattr(hermes.settings, "HERMES_ASSISTANT_MODE", "live")
-    monkeypatch.setattr(hermes.settings, "HERMES_BASE_URL", "http://127.0.0.1:8642/v1")
+    monkeypatch.setattr(hermes.settings, "HERMES_BASE_URL", "http://127.0.0.1:8642")
     monkeypatch.setattr(hermes.settings, "HERMES_AUTH_TOKEN", "secret-token")
     monkeypatch.setattr(hermes, "explain_result_with_live_hermes", fail_live)
 
@@ -374,10 +374,15 @@ def test_openai_compatible_hermes_response_is_validated():
 
 
 @pytest.mark.anyio
-async def test_live_explain_request_forwards_explanation_hints(monkeypatch):
+@pytest.mark.parametrize("base_url", ["http://127.0.0.1:8642", "http://127.0.0.1:8642/"])
+async def test_live_explain_request_forwards_explanation_hints(monkeypatch, base_url):
     captured = {}
 
     async def fake_request_json(method, url, payload, auth_token, timeout_ms):
+        assert method == "POST"
+        assert url == "http://127.0.0.1:8642/v1/chat/completions"
+        assert auth_token == "secret-token"
+        assert timeout_ms == 1000
         captured["payload"] = payload
         return {
             "choices": [
@@ -403,7 +408,7 @@ async def test_live_explain_request_forwards_explanation_hints(monkeypatch):
 
     response = await explain_result_with_live_hermes(
         request=request,
-        base_url="http://127.0.0.1:8642/v1",
+        base_url=base_url,
         auth_token="secret-token",
         model="hermes-agent",
         timeout_ms=1000,
@@ -413,3 +418,23 @@ async def test_live_explain_request_forwards_explanation_hints(monkeypatch):
     assert "explanation_hints" in user_content
     assert "Forecast horizon: 30 periods" in user_content
     assert response.answer == "Uses hints"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("base_url", ["http://127.0.0.1:8642", "http://127.0.0.1:8642/"])
+async def test_live_health_uses_unversioned_endpoint(monkeypatch, base_url):
+    from app.services.hermes_live_service import probe_hermes_health
+
+    async def fake_request_json(method, url, payload, auth_token, timeout_ms):
+        assert method == "GET"
+        assert url == "http://127.0.0.1:8642/health"
+        assert payload is None
+        assert auth_token == "secret-token"
+        assert timeout_ms == 1000
+        return {"status": "ok"}
+
+    monkeypatch.setattr("app.services.hermes_live_service._request_json", fake_request_json)
+    response = await probe_hermes_health(
+        base_url=base_url, auth_token="secret-token", timeout_ms=1000,
+    )
+    assert response == {"status": "ok"}

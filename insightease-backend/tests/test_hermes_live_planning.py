@@ -173,7 +173,7 @@ def _endpoint_module():
 def _enable_live(monkeypatch, hermes):
     monkeypatch.setattr(hermes.settings, "HERMES_ASSISTANT_ENABLED", True)
     monkeypatch.setattr(hermes.settings, "HERMES_ASSISTANT_MODE", "live")
-    monkeypatch.setattr(hermes.settings, "HERMES_BASE_URL", "http://127.0.0.1:8642/v1")
+    monkeypatch.setattr(hermes.settings, "HERMES_BASE_URL", "http://127.0.0.1:8642")
     monkeypatch.setattr(hermes.settings, "HERMES_AUTH_TOKEN", "secret-token")
 
 
@@ -285,17 +285,22 @@ async def test_malformed_provider_plan_triggers_endpoint_fallback(monkeypatch):
 
 
 @pytest.mark.anyio
-async def test_provider_receives_only_bounded_metadata(monkeypatch):
+@pytest.mark.parametrize("base_url", ["http://127.0.0.1:8642", "http://127.0.0.1:8642/"])
+async def test_provider_receives_only_bounded_metadata(monkeypatch, base_url):
     captured = {}
 
     async def fake_request_json(method, url, payload, auth_token, timeout_ms):
+        assert method == "POST"
+        assert url == "http://127.0.0.1:8642/v1/chat/completions"
+        assert auth_token == "secret-token"
+        assert timeout_ms == 1000
         captured["payload"] = payload
         return {"choices": [{"message": {"content": json.dumps(_plan())}}]}
 
     monkeypatch.setattr("app.services.hermes_live_service._request_json", fake_request_json)
     response = await plan_analysis_with_live_hermes(
         request=_request(),
-        base_url="http://127.0.0.1:8642/v1",
+        base_url=base_url,
         auth_token="secret-token",
         model="hermes-agent",
         timeout_ms=1000,

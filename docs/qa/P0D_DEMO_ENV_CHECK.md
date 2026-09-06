@@ -26,6 +26,44 @@ Frontend `.env.local` (uncommitted):
 VITE_ASSISTANT_RUNTIME_PROVIDER=hermes_live
 ```
 
+## Hermes Gateway endpoint contract and cross-device setup
+
+Use the Gateway root as `HERMES_BASE_URL` (no `/v1` suffix). The backend probes
+`GET /health` and sends both planning and explanation to `POST /v1/chat/completions`.
+For the verified server setup, the model is `deepseek-v4-flash`; the Gateway Bearer
+credential belongs only in backend `HERMES_AUTH_TOKEN`.
+
+`127.0.0.1` refers to the machine running the backend. On a personal computer,
+first establish an SSH tunnel to the existing Gateway server, using your actual
+SSH destination (the placeholder below must be replaced):
+
+```powershell
+ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:8642:127.0.0.1:8642 ubuntu@<gateway-server>
+```
+
+Keep the tunnel open and use `HERMES_BASE_URL=http://127.0.0.1:8642` locally.
+If the backend runs in a container, its loopback is separate and needs an
+appropriate host/tunnel address. Do not expose the Gateway publicly to solve this.
+
+When resuming an older checkout, preserve the existing local `.env` privately,
+then migrate its supported settings against `.env.example`. In particular,
+`KIMI_API_KEY` was removed in P0A and causes settings validation to fail if retained
+in the active `.env`. Do not weaken settings validation to accept obsolete keys.
+
+After status is `live_available`, sign in and upload the four demo CSVs. Confirm
+and activate the users-to-orders relationship, then ask the flagship question in
+Workbench. Inspect `/api/v1/assistant/hermes/plan-analysis` and require:
+
+- `data.plan.source=hermes_live`;
+- `data.fallback_used=false` and `data.plan.fallback_used=false`;
+- valid dataset, field, and confirmed relationship references;
+- `data.plan.execution_readiness=needs_join` for the multi-table case;
+- no Join, analysis execution, SQL, or mutation until explicit user action.
+
+Record elapsed time, model, validation outcome, and fallback state. Capture token
+usage only if available in provider-side diagnostics, without secrets or raw rows.
+A successful plain-text Gateway reply alone does not pass structured-plan acceptance.
+
 ## Preflight checklist
 
 | Check | Expected evidence |
