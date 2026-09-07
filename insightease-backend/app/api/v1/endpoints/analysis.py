@@ -21,7 +21,24 @@ from app.services.sequence_mining_service import SequenceMiningService
 from app.api.v1.endpoints.auth import get_current_active_user
 from app.api.v1.endpoints.datasets import read_csv_with_auto_header
 
+from app.schemas.capability import CapabilityPreflightRequest, CompileOutcome
+from app.services.capability_execution_service import (
+    ANALYSIS_TYPE as CAPABILITY_ANALYSIS_TYPE, preflight_owned,
+    prepare_capability_run, execute_capability_artifact,
+)
+from app.services.conversion_diagnosis_service import DiagnosisError
+
 router = APIRouter()
+
+
+@router.post("/capability-preflight", response_model=ResponseModel[CompileOutcome])
+async def capability_preflight(
+    request: CapabilityPreflightRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Read-only H1 compiler; no provider call and no Analysis creation."""
+    return ResponseModel(data=await preflight_owned(request, db, current_user.id))
 
 
 # Common string tokens that should be treated as missing values across the platform.
@@ -85,6 +102,15 @@ async def execute_analysis_task(analysis_id: str, dataset_id: str,
     
     async with AsyncSessionLocal() as db:
         try:
+            if analysis_type == CAPABILITY_ANALYSIS_TYPE:
+                try:
+                    result_data = await execute_capability_artifact(dataset_id, params, db, user_id)
+                except DiagnosisError as exc:
+                    await update_analysis_status(db, analysis_id, "failed",
+                        result_data={"status": exc.status, "code": exc.code}, error_msg=exc.code)
+                    return
+                await update_analysis_status(db, analysis_id, "completed", result_data=result_data)
+                return
             # 获取数据集
             result = await db.execute(
                 select(Dataset).where(Dataset.id == dataset_id, Dataset.is_deleted == False)
@@ -718,6 +744,11 @@ async def create_analysis(
     if not result.scalar_one_or_none():
         raise HTTPException(404, detail="数据集不存在")
     
+    if payload.analysis_type == CAPABILITY_ANALYSIS_TYPE:
+        payload.params = await prepare_capability_run(
+            payload.dataset_id, payload.params, db, current_user.id,
+        )
+
     # 创建分析任务
     analysis = Analysis(
         id=str(uuid.uuid4()),
