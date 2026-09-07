@@ -402,11 +402,12 @@ def test_owned_lineage_adapter_uses_saved_plan_and_base_data(users, monkeypatch)
         confirmed_relationships=[{"id": "edge", "source_dataset_id": "base", "source_field": "user_id", "target_dataset_id": "orders", "target_field": "user_id", "status": "confirmed", "expected_cardinality": "one_to_many", "risk_level": "high"}],
         selected_fields={"base": list(COLUMNS.values()), "orders": ["user_id", "order_id"]}, requires_confirmation=True,
     )
-    base = SimpleNamespace(id="base", parent_dataset_id=None, derivation_type=None, transform_chain=None)
+    base = SimpleNamespace(id="base", schema=[], parent_dataset_id=None, derivation_type=None, derivation_plan=None, source_dataset_ids=None, transform_chain=None)
     derived = SimpleNamespace(id="users", schema=[], derivation_type="join", derivation_plan=plan.model_dump(mode="json"), parent_dataset_id="base", source_dataset_ids=["base", "orders"])
     joined = users.merge(pd.read_csv(DATA / "orders.csv")[["user_id", "order_id"]], how="left", on="user_id")
     monkeypatch.setattr(boundary, "_owned", AsyncMock(side_effect=lambda id, db, owner: base if id == "base" else derived))
-    monkeypatch.setattr(boundary, "load_dataset_dataframe", AsyncMock(side_effect=lambda ds: users if ds.id == "base" else joined))
+    from app.services.dataset_io_service import CapabilityDatasetFrames
+    monkeypatch.setattr(boundary, "load_capability_dataset_frames", AsyncMock(side_effect=lambda ds: CapabilityDatasetFrames(users, users) if ds.id == "base" else CapabilityDatasetFrames(joined, joined)))
     loaded = asyncio.run(boundary.load_authoritative_input("users", None, "owner"))
     req, _ = derived_request_source(users)
     assert compile_candidate(req, loaded).executable

@@ -1,5 +1,33 @@
 # P0D-H1 — Capability & Execution Implementation
 
+## H1.1 状态更新 — 2026-09-07
+
+**原 H1 worker PASS 已被独立 source audit 的 FAIL 推翻；H1 仍为 FIX REQUIRED，H2 BLOCKED。**
+下方原 H1 实施与验证记录完整保留，属于历史时点；其中 CURRENT/PASS 和类型处理描述不能作为当前放行依据。
+独立审计报告与决策登记原文不修改。
+
+本轮 F01 修复已实现：`authoritative-input-fingerprint@1` 统一绑定执行实际依赖的主输入和 base
+内容、schema 语义、字段绑定、粒度、JoinPlan/lineage、关系快照、投影和规范化策略。
+非空 derived `transform_chain` 明确 unsupported。后台从 owned 数据重新生成 fingerprint，
+状态不匹配在调用诊断 recipe 前拒绝；原两个 create → BackgroundTasks 反例均已加入回归。
+display name、description、UI label、样例等明确非语义字段不参与 fingerprint。
+
+F02 产品策略已定为 `conversion-normalization@1`：原生 bool、numeric 0/1，以及去首尾空白、
+大小写不敏感的文本 true/false/1/0 可确定性映射；混合有效值允许，其他文本、空串、null、2/−1 拒绝。
+CSV token / Excel 原始逻辑 cell 在 capability input adapter 规范化并记录 policy/version、
+类型计数、logical hash 与 normalization_applied；不能依赖 pandas 的类型推断来宣称原始类型。
+`conversion_diagnosis_service` 仍仅接收 canonical bool/0/1，原严格算子断言不放宽。
+这项明确的 reader 边界策略取代原记录中对源文本一概拒绝的主张。
+
+旧保存的 ExecutionSpec 缺少新必需 fingerprint 时被拒绝，需重新 preflight；不迁移或改写历史结果。
+详细合同、变更清单、测试矩阵及限制见
+[H1.1 Execution Integrity Verification](../qa/P0D_H1_1_EXECUTION_INTEGRITY_VERIFICATION.md)。
+
+**P0D-H1.1 REMEDIATION: READY FOR INDEPENDENT RE-AUDIT**。
+F01/F02 待原 clean-room auditor 复审关闭；本轮不宣布 H1 FINAL PASS，不开始 H2。
+
+## 原 H1 历史记录（保留）
+
 日期：2026-09-07。本文描述 H1 CURRENT；H0 是审计时点记录与后续阶段提案。
 
 ## Implemented

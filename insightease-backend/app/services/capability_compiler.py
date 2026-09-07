@@ -1,10 +1,4 @@
 """Compile typed goals against trusted, server-loaded data. Never executes writes."""
-from dataclasses import dataclass, field
-from hashlib import sha256
-import json
-
-import pandas as pd
-
 from app.schemas.capability import (
     CapabilityPreflightRequest, ColumnProvenance, CompileOutcome, VersionedDatasetRef,
     ExecutionSpec, FrozenFieldBinding, OperatorParameters,
@@ -13,32 +7,27 @@ from app.services.capability_registry import CAPABILITIES, CORE_ROLES, GOAL_EVID
 from app.services.conversion_diagnosis_service import DiagnosisError, diagnose_conversion, project_users
 
 
-def canonical_hash(value) -> str:
-    return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+from app.services.capability_input_service import (
+    AuthoritativeInput, canonical_hash, frame_version, prepare_input,
+)
 
 
-def frame_version(frame: pd.DataFrame) -> str:
-    """Version parsed values, column order/types and row order; never export raw data."""
-    digest = sha256()
-    digest.update(json.dumps([(str(c), str(t)) for c, t in zip(frame.columns, frame.dtypes)]).encode())
-    digest.update(pd.util.hash_pandas_object(frame, index=False).values.tobytes())
-    return digest.hexdigest()
-
-
-@dataclass
-class AuthoritativeInput:
-    """Internal-only adapter output, not accepted in any HTTP/provider schema."""
-    dataset_id: str
-    frame: pd.DataFrame
-    grain: str
-    metadata_version: str
-    provenance: dict[str, ColumnProvenance] = field(default_factory=dict)
-    base_frame: pd.DataFrame | None = None
-    base_dataset_id: str | None = None
-
-    @property
-    def version(self):
-        return canonical_hash({"frame": frame_version(self.frame), "metadata": self.metadata_version})
+def _validate_base_population(source, bindings, prepared):
+    if source.grain != "user_order_detail":
+        return
+    if prepared.base_frame is None or source.base_dataset_id is None:
+        raise DiagnosisError("UNPROVEN_BASE_POPULATION")
+    by_role = {b.role: b for b in bindings}
+    if any(r not in by_role or by_role[r].provenance is None for r in CORE_ROLES):
+        raise DiagnosisError("UNPROVEN_COLUMN_PROVENANCE")
+    if any(by_role[r].provenance.source_dataset_id != source.base_dataset_id for r in CORE_ROLES):
+        raise DiagnosisError("POPULATION_FIELDS_MUST_ORIGINATE_AT_BASE")
+    base_columns = {r: by_role[r].provenance.source_column for r in CORE_ROLES}
+    columns = {r: by_role[r].column for r in CORE_ROLES}
+    base = project_users(prepared.base_frame, base_columns, "unique_user")
+    derived = project_users(prepared.frame, columns, "user_order_detail")
+    if not base.equals(derived):
+        raise DiagnosisError("BASE_POPULATION_MISMATCH")
 
 
 def compile_candidate(request: CapabilityPreflightRequest, source: AuthoritativeInput) -> CompileOutcome:
@@ -70,7 +59,12 @@ def compile_candidate(request: CapabilityPreflightRequest, source: Authoritative
         return CompileOutcome(status="unsupported", code="OPTIONAL_ROLE_NOT_IMPLEMENTED")
     if source.grain not in cap.accepted_grains or source.grain != plan.population_spec.grain:
         return CompileOutcome(status="unsupported", code="GRAIN_MISMATCH")
-    source_version = source.version
+    try:
+        prepared = prepare_input(source, plan.field_bindings)
+    except DiagnosisError as exc:
+        return CompileOutcome(status=exc.status, code=exc.code)
+    fingerprint = prepared.fingerprint
+    source_version = fingerprint.input.artifact_ref.version
     for binding in plan.field_bindings:
         if binding.dataset_ref.dataset_id != source.dataset_id:
             return CompileOutcome(status="needs_clarification", code="INPUT_DATASET_MISMATCH")
@@ -85,29 +79,21 @@ def compile_candidate(request: CapabilityPreflightRequest, source: Authoritative
             return CompileOutcome(status="data_invalid", code="COLUMN_PROVENANCE_MISMATCH")
     columns = {role: bindings[role].column for role in CORE_ROLES}
     try:
-        if source.grain == "user_order_detail":
-            if source.base_frame is None or source.base_dataset_id is None:
-                raise DiagnosisError("UNPROVEN_BASE_POPULATION")
-            base_columns = {r: bindings[r].provenance.source_column for r in CORE_ROLES}
-            if any(bindings[r].provenance.source_dataset_id != source.base_dataset_id for r in CORE_ROLES):
-                raise DiagnosisError("POPULATION_FIELDS_MUST_ORIGINATE_AT_BASE")
-            base = project_users(source.base_frame, base_columns, "unique_user")
-            derived = project_users(source.frame, columns, "user_order_detail")
-            if not base.equals(derived):
-                raise DiagnosisError("BASE_POPULATION_MISMATCH")
-        result = diagnose_conversion(source.frame, columns, plan.comparison_spec, source.grain)
+        _validate_base_population(source, plan.field_bindings, prepared)
+        result = diagnose_conversion(prepared.frame, columns, plan.comparison_spec, source.grain)
     except DiagnosisError as exc:
         return CompileOutcome(status=exc.status, code=exc.code)
     if result.decomposition.coverage.status != "complete":
         return CompileOutcome(status="unsupported", code="CHANNEL_ENTER_EXIT_REQUIRES_POLICY", missing_evidence=("mix_within_decomposition",))
     refs = [VersionedDatasetRef(dataset_id=source.dataset_id, version=source_version)]
-    if source.base_frame is not None:
-        refs.append(VersionedDatasetRef(dataset_id=source.base_dataset_id, version=frame_version(source.base_frame)))
+    if fingerprint.base is not None:
+        refs.append(fingerprint.base.artifact_ref)
     frozen_bindings = tuple(FrozenFieldBinding(dataset_ref=refs[0], column=b.column, role=b.role, provenance=b.provenance) for b in plan.field_bindings)
     plan_hash = canonical_hash(request.model_dump(mode="json"))
-    metadata_version = canonical_hash({"input": source.metadata_version, "registry": REGISTRY_VERSION, "capability": cap.model_dump(mode="json")})
+    metadata_version = canonical_hash({"input": fingerprint.model_dump(mode="json"), "registry": REGISTRY_VERSION, "capability": cap.model_dump(mode="json")})
     spec = ExecutionSpec(
         execution_spec_id=canonical_hash({"plan": plan_hash, "inputs": [r.model_dump() for r in refs], "metadata": metadata_version}),
+        authoritative_input_fingerprint=fingerprint,
         capability_ref=plan.capability_ref, operator_ref=cap.deterministic_operator,
         input_refs=tuple(refs), field_bindings=frozen_bindings,
         population_spec=plan.population_spec, comparison_spec=plan.comparison_spec,
@@ -118,10 +104,20 @@ def compile_candidate(request: CapabilityPreflightRequest, source: Authoritative
 
 
 def execute_frozen(request: CapabilityPreflightRequest, spec: ExecutionSpec, source: AuthoritativeInput):
-    """Recompile against current owned input; client/persisted spec is never trusted."""
+    """Compare authoritative state before invoking any diagnosis recipe."""
+    prepared = prepare_input(source, request.candidate.field_bindings)
+    # Preserve existing structured population validation errors, without invoking
+    # the analysis operator. Schema-only mutations still reach the stale check.
+    _validate_base_population(source, request.candidate.field_bindings, prepared)
+    if spec.authoritative_input_fingerprint != prepared.fingerprint:
+        raise DiagnosisError("EXECUTION_SPEC_STALE_OR_MODIFIED", "stale")
     outcome = compile_candidate(request, source)
     if not outcome.executable:
         raise DiagnosisError(outcome.code, outcome.status)
     if spec != outcome.execution_spec:
         raise DiagnosisError("EXECUTION_SPEC_STALE_OR_MODIFIED", "stale")
-    return diagnose_conversion(source.frame, {b.role: b.column for b in spec.field_bindings}, spec.comparison_spec, source.grain)
+    result = diagnose_conversion(
+        prepared.frame, {b.role: b.column for b in spec.field_bindings},
+        spec.comparison_spec, source.grain,
+    )
+    return result.model_copy(update={"normalization_records": prepared.fingerprint.normalization_records})

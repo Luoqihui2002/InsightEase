@@ -12,7 +12,8 @@ from app.services.capability_compiler import (
     AuthoritativeInput, canonical_hash, compile_candidate, execute_frozen,
 )
 from app.services.conversion_diagnosis_service import DiagnosisError
-from app.services.dataset_io_service import load_dataset_dataframe
+from app.services.dataset_io_service import load_capability_dataset_frames
+from app.services.capability_input_service import semantic_metadata
 
 ANALYSIS_TYPE = "conversion_decline_diagnosis"
 
@@ -38,15 +39,15 @@ async def _owned(dataset_id, db, user_id):
 
 async def load_authoritative_input(dataset_id: str, db, user_id: str) -> AuthoritativeInput:
     dataset = await _owned(dataset_id, db, user_id)
-    frame = await load_dataset_dataframe(dataset)
-    metadata = {
-        "dataset_id": dataset.id, "schema": dataset.schema,
-        "derivation_type": dataset.derivation_type,
-        "derivation_plan": dataset.derivation_plan,
-        "parent_dataset_id": dataset.parent_dataset_id,
-        "source_dataset_ids": dataset.source_dataset_ids,
-    }
-    source = AuthoritativeInput(dataset.id, frame, "unique_user", canonical_hash(metadata))
+    # An unregistered transform on a persisted LEFT Join is never interpreted.
+    if dataset.derivation_type == "join" and getattr(dataset, "transform_chain", None) not in (None, []):
+        raise DiagnosisError("UNSUPPORTED_DERIVED_TRANSFORM_LINEAGE", "unsupported")
+    frames = await load_capability_dataset_frames(dataset)
+    metadata = semantic_metadata(dataset)
+    source = AuthoritativeInput(
+        dataset.id, frames.frame, "unique_user", canonical_hash(metadata),
+        metadata=metadata, logical_frame=frames.logical_frame,
+    )
     if dataset.derivation_type == "join":
         try:
             plan = JoinPlan.model_validate(dataset.derivation_plan)
@@ -57,17 +58,20 @@ async def load_authoritative_input(dataset_id: str, db, user_id: str) -> Authori
         if dataset.parent_dataset_id != plan.base_dataset_id or set(dataset.source_dataset_ids or ()) != set(plan.included_dataset_ids):
             raise DiagnosisError("INVALID_SAVED_JOIN_LINEAGE")
         base = await _owned(plan.base_dataset_id, db, user_id)
-        if base.parent_dataset_id or base.derivation_type or base.transform_chain:
+        if base.parent_dataset_id or base.derivation_type or base.transform_chain not in (None, []):
             raise DiagnosisError("NESTED_POPULATION_LINEAGE_UNSUPPORTED", "unsupported")
         source.grain = "user_order_detail"
         source.base_dataset_id = base.id
-        source.base_frame = await load_dataset_dataframe(base)
+        base_frames = await load_capability_dataset_frames(base)
+        source.base_frame = base_frames.frame
+        source.base_logical_frame = base_frames.logical_frame
+        source.base_metadata = semantic_metadata(base)
         # P0C preserves base column names. Right columns are deliberately not
         # accepted as population attributes; no guessing from collision prefixes.
         fields = set(plan.selected_fields.get(base.id, ()))
         fields.update(s.left_field for s in plan.join_steps if s.left_dataset_id == base.id)
         source.provenance = {c: ColumnProvenance(source_dataset_id=base.id, source_column=c) for c in fields if c in source.frame and c in source.base_frame}
-    elif dataset.parent_dataset_id or dataset.derivation_type or dataset.transform_chain:
+    elif dataset.parent_dataset_id or dataset.derivation_type or dataset.transform_chain not in (None, []):
         raise DiagnosisError("UNSUPPORTED_POPULATION_LINEAGE", "unsupported")
     return source
 

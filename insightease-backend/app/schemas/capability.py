@@ -137,12 +137,68 @@ class OperatorParameters(Contract):
     channel_enter_exit: Literal["decomposition_unavailable"] = "decomposition_unavailable"
 
 
+class ConversionNormalizationPolicy(Contract):
+    policy_id: Literal["conversion-normalization"] = "conversion-normalization"
+    version: Name = "1"
+    true_strings: tuple[str, ...] = ("true", "1")
+    false_strings: tuple[str, ...] = ("false", "0")
+    strip_whitespace: bool = True
+    case_insensitive: bool = True
+    missing_policy: Literal["data_invalid"] = "data_invalid"
+    normalized_semantic_type: Literal["binary_0_1"] = "binary_0_1"
+
+
+class ConversionNormalizationRecord(Contract):
+    dataset_id: Name
+    column: Name
+    policy: ConversionNormalizationPolicy
+    reader_contract: Name
+    source_logical_hash: Name
+    boolean_count: int
+    numeric_count: int
+    string_count: int
+    normalization_applied: bool
+
+
+class DatasetSemanticState(Contract):
+    dataset_id: Name
+    frame_hash: Name
+    schema_semantic_hash: Name
+    bound_field_semantics_hash: Name
+    grain: Name
+    row_semantics_hash: Name
+    derivation_type: Name | None
+    derivation_fingerprint: Name
+    transform_chain_fingerprint: Name
+    lineage_source_dataset_ids: tuple[Name, ...]
+    base_dataset_id: Name | None
+    relationship_snapshot_fingerprint: Name
+
+
+class DatasetInputFingerprint(Contract):
+    artifact_ref: VersionedDatasetRef
+    semantic_state: DatasetSemanticState
+
+
+class AuthoritativeInputFingerprint(Contract):
+    fingerprint_schema_version: Literal["authoritative-input-fingerprint@1"] = "authoritative-input-fingerprint@1"
+    input: DatasetInputFingerprint
+    base: DatasetInputFingerprint | None
+    # Current execution dependencies, not a claim to reread historical right tables.
+    source_dataset_refs: tuple[VersionedDatasetRef, ...]
+    projection_semantics: Name
+    normalization_policy: ConversionNormalizationPolicy
+    reader_contract: Name
+    normalization_records: tuple[ConversionNormalizationRecord, ...]
+
+
 class ExecutionSpec(Contract):
     schema_version: Literal["execution-spec@1"] = "execution-spec@1"
     execution_spec_id: Name
     version: Literal["1"] = "1"
     capability_ref: CapabilityRef
     operator_ref: OperatorRef
+    authoritative_input_fingerprint: AuthoritativeInputFingerprint
     input_refs: tuple[VersionedDatasetRef, ...] = Field(min_length=1, max_length=2)
     field_bindings: tuple[FrozenFieldBinding, ...] = Field(min_length=4, max_length=4)
     population_spec: PopulationSpec
@@ -258,3 +314,4 @@ class ConversionDiagnosisResult(Contract):
     quality_flags: tuple[Name, ...]
     input_grain_summary: InputGrainSummary
     optional_branches: OptionalBranches
+    normalization_records: tuple[ConversionNormalizationRecord, ...] = ()
