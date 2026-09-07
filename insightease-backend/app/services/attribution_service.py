@@ -298,6 +298,9 @@ class AttributionService:
     def _generate_summary(user_journeys, results):
         """生成归因汇总统计"""
         summary = {
+            # H2 stores aggregate operands; never infer exact counts from rounded means.
+            "represented_record_count": sum(j["touchpoint_count"] for j in user_journeys),
+            "represented_user_count": len(user_journeys),
             "avg_touchpoints_per_journey": round(
                 sum(j["touchpoint_count"] for j in user_journeys) / len(user_journeys), 2
             ) if user_journeys else 0,

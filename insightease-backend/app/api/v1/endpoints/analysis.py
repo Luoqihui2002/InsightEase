@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.models import Analysis, Dataset, User
 from app.schemas.base import ResponseModel
 from app.schemas.analysis import AnalysisCreate, AnalysisResponse
+from app.schemas.evidence import EvidencePack, SafeResultSummaryV2
 from app.services.analysis_service import AnalysisService
 from app.services.visualization_service import VisualizationService
 from app.services.prediction_service import PredictionService
@@ -851,6 +852,33 @@ async def get_analysis(
     if not analysis:
         raise HTTPException(404, detail="分析任务不存在")
     return ResponseModel(data=analysis)
+
+
+@router.get("/{analysis_id}/evidence", response_model=ResponseModel[EvidencePack])
+async def get_analysis_evidence(
+    analysis_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Server-owned evidence derived from the persisted result; accepts no evidence body."""
+    from app.services.evidence_service import read_owned_evidence
+    return ResponseModel(data=await read_owned_evidence(analysis_id, db, current_user.id))
+
+
+@router.get("/{analysis_id}/safe-summary-v2", response_model=ResponseModel[SafeResultSummaryV2])
+async def get_analysis_safe_summary_v2(
+    analysis_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Future explanation input; no provider calls or H3 active-result state."""
+    from app.services.evidence_service import read_owned_evidence, build_safe_result_summary_v2
+    from app.services.evidence_common import EvidenceError
+    pack = await read_owned_evidence(analysis_id, db, current_user.id)
+    try:
+        return ResponseModel(data=build_safe_result_summary_v2(pack))
+    except EvidenceError as exc:
+        raise HTTPException(422, detail={"code": exc.code}) from exc
 
 
 @router.get("/{analysis_id}/result")
