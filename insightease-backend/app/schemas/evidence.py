@@ -68,29 +68,34 @@ class MetricDefinition(EvidenceContract):
     label: Text
     unit: Unit
     formula_id: Text
+    lifecycle: Literal['active', 'reserved'] = 'active'
 
 
 class Grain(EvidenceContract):
+    semantic_ref: Ref
     entity: Literal['user', 'represented_user']
     keys: tuple[Text, ...] = Field(min_length=1, max_length=4)
-    row_semantics: Literal['unique_registered_user', 'joined_or_source_input_records']
+    row_semantics: Literal['unique_selected_user', 'joined_or_source_input_records']
 
 
 class Population(EvidenceContract):
-    entity_type: Literal['registered_user', 'represented_user']
+    semantic_ref: Ref
+    entity_type: Literal['user', 'represented_user']
     entity_key: Text
+    population_kind: Literal['selected_cohort_population', 'represented_population']
     cohort_basis: Literal['bound_cohort_labels', 'not_recorded']
     cohort_field: Text | None
     cohort_values: tuple[Text, ...] = Field(max_length=2)
     time_window: Literal['cohort_labels_only_dates_not_recorded', 'not_recorded']
     filter_scope: Literal['all_input_users_in_selected_cohorts', 'represented_input_users']
     new_customer_only: None = None  # H1 does not independently establish registration eligibility.
+    registration_status_verified: bool | None
     population_role: Literal['baseline', 'current', 'comparison', 'represented']
     channel: Text | None = None
 
 
 class Dimension(EvidenceContract):
-    name: Literal['acquisition_channel', 'model']
+    name: Literal['acquisition_channel', 'model', 'touchpoint']
     value: Text
 
 
@@ -148,6 +153,7 @@ class EvidenceBase(EvidenceContract):
     population: Population
     dimensions: tuple[Dimension, ...] = Field(max_length=2)
     provenance: Provenance
+    support_taxonomy_ref: Ref
     support_scope: tuple[Support, ...] = Field(min_length=1, max_length=8)
     cannot_support: tuple[Limitation, ...] = Field(min_length=1, max_length=12)
     quality_flags: tuple[Text, ...] = Field(max_length=24)

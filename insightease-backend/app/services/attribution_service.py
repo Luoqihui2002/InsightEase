@@ -317,7 +317,20 @@ class AttributionService:
                 "model": model_name,
                 "model_name": AttributionService.ATTRIBUTION_MODELS.get(model_name, model_name),
                 "top3": [
-                    {"touchpoint": tp, "percentage": data["percentage"]}
+                    {
+                        "touchpoint": tp,
+                        "value": data["value"],
+                        "percentage": data["percentage"],
+                        "rank": 1 + sum(
+                            candidate["value"] > data["value"]
+                            for candidate in model_result.values()
+                        ),
+                        "ties": sorted(
+                            candidate_name
+                            for candidate_name, candidate in model_result.items()
+                            if candidate["value"] == data["value"]
+                        ),
+                    }
                     for tp, data in top3
                 ]
             })

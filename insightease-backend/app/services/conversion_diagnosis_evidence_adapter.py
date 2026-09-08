@@ -6,7 +6,7 @@ from app.schemas.evidence import (
     ChannelTerm, ComparisonEvidence, Coverage, DecompositionEvidence, Dimension, Grain,
     Population, QualityEvidence, RankingEvidence, RankingMember, RateObservation, Ratio, Ref,
 )
-from app.services.evidence_common import close, common, quantity, require
+from app.services.evidence_common import close, common, finalize_evidence, quantity, require
 from app.services.evidence_definitions import METRICS
 
 RANK_METRICS = {
@@ -89,27 +89,32 @@ def validate_result(result: ConversionDiagnosisResult, spec: ExecutionSpec):
 def adapt_conversion(result, spec, provenance):
     validate_result(result, spec)
     fields = {b.role: b.column for b in spec.field_bindings}
-    flags = tuple(sorted(set((*result.quality_flags, 'registration_population_assumed', 'calendar_window_not_recorded'))))
-    grain = Grain(entity='user', keys=(fields['entity_id'],), row_semantics='unique_registered_user')
+    flags = tuple(sorted(set((*result.quality_flags, 'new_customer_qualification_not_verified',
+                              'registration_population_not_verified', 'calendar_window_not_recorded'))))
+    grain = Grain(semantic_ref=Ref(id='selected-user-grain', version='1'), entity='user',
+                  keys=(fields['entity_id'],), row_semantics='unique_selected_user')
     def population(role, cohort=None, channel=None):
-        return Population(entity_type='registered_user', entity_key=fields['entity_id'],
+        return Population(semantic_ref=Ref(id='selected-cohort-population', version='1'),
+                          entity_type='user', entity_key=fields['entity_id'],
+                          population_kind='selected_cohort_population',
                           cohort_basis='bound_cohort_labels', cohort_field=fields['cohort'],
                           cohort_values=(cohort,) if cohort else (spec.comparison_spec.baseline, spec.comparison_spec.current),
                           time_window='cohort_labels_only_dates_not_recorded', filter_scope=spec.population_spec.scope,
+                          new_customer_only=None, registration_status_verified=False,
                           population_role=role, channel=channel)
     overall = result.overall_comparison
     def observation(cell, role, channel=None):
         if cell is None:
             return None
         prefix = 'channel_' if channel is not None else ''
-        numerator = 'channel_converted_count' if prefix else 'converted_customer_count'
-        denominator = 'channel_user_count' if prefix else 'new_customer_count'
+        numerator = 'channel_converted_count' if prefix else 'selected_cohort_converted_user_count'
+        denominator = 'channel_user_count' if prefix else 'selected_cohort_user_count'
         share = None
         if channel is not None:
             total = overall.baseline if role == 'baseline' else overall.current
             share = Ratio(definition_ref=METRICS['channel_share'], value=cell.share, numerator=quantity('channel_user_count', cell.user_count),
-                          denominator=quantity('new_customer_count', total.user_count))
-        return RateObservation(definition_ref=METRICS['channel_cvr' if channel is not None else 'new_customer_cvr'],
+                          denominator=quantity('selected_cohort_user_count', total.user_count))
+        return RateObservation(definition_ref=METRICS['channel_cvr' if channel is not None else 'selected_cohort_conversion_rate'],
                                value=cell.cvr, numerator=quantity(numerator, cell.converted_user_count),
                                denominator=quantity(denominator, cell.user_count), share=share,
                                population=population(role, cell.cohort, channel))
@@ -137,9 +142,10 @@ def adapt_conversion(result, spec, provenance):
                                 mix_effect=result.decomposition.mix_effect_pp, within_effect=result.decomposition.within_effect_pp,
                                 reconciliation_residual=result.decomposition.reconciliation_residual_pp, members=tuple(terms))
     rankings = [RankingEvidence(**base(RANK_METRICS[r.ranking_metric], 'ranking', ('descriptive_contribution',), r.coverage.status),
-                ranking_metric=RANK_METRICS[r.ranking_metric], ranking_universe=r.ranking_universe, direction=r.direction,
+                ranking_metric=RANK_METRICS[r.ranking_metric], ranking_universe=tuple(sorted(r.ranking_universe)), direction=r.direction,
                 included_count=len(r.items), total_count=len(r.ranking_universe), transport_coverage='complete',
-                members=tuple(RankingMember(rank=i.rank, ties=i.ties, entity=i.channel, value=i.value, unit=r.unit) for i in r.items))
+                members=tuple(RankingMember(rank=i.rank, ties=tuple(sorted(i.ties)), entity=i.channel,
+                                            value=i.value, unit=r.unit) for i in r.items))
                 for r in sorted(result.rankings, key=lambda r: r.ranking_metric)]
     records = result.normalization_records
     primary = next((r for r in records if r.dataset_id == spec.input_refs[0].dataset_id), None)
@@ -153,4 +159,5 @@ def adapt_conversion(result, spec, provenance):
     coverage = Coverage(core=result.coverage.status, overall='complete', channels=result.coverage.status,
                         decomposition=result.decomposition.coverage.status, funnel=result.optional_branches.funnel.status, transport='complete')
     # Required core and its limitations first; optional rank units yield before channels.
-    return [overall_ev, dec, quality, *channels, *rankings], coverage, flags
+    units = [overall_ev, dec, quality, *channels, *rankings]
+    return [finalize_evidence(unit) for unit in units], coverage, flags

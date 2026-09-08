@@ -4,7 +4,7 @@ import copy
 import json
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from unittest.mock import AsyncMock
 
 import httpx
@@ -14,13 +14,14 @@ from fastapi import FastAPI
 from pydantic import ValidationError
 
 from app.schemas.capability import CapabilityPreflightRequest, ComparisonSpec
-from app.schemas.evidence import EvidencePack, FORBIDDEN, SafeResultSummaryV2
+from app.schemas.evidence import EvidencePack, FORBIDDEN, RankingMember, SafeResultSummaryV2
 from app.services.capability_registry import CORE_EVIDENCE, CORE_OUTPUT, CORE_ROLES
 from app.services.capability_compiler import AuthoritativeInput, compile_candidate, execute_frozen
 from app.services.capability_input_service import canonical_hash
 from app.services.conversion_diagnosis_service import diagnose_conversion
 from app.services.attribution_service import AttributionService
-from app.services.evidence_common import EvidenceError
+from app.services.evidence_common import (EvidenceError, collect_semantic_dependencies,
+                                          evidence_pack_identity_material, finalize_evidence)
 from app.services.evidence_definitions import METRICS
 from app.services.evidence_service import build_evidence_pack, build_safe_result_summary_v2
 
@@ -68,10 +69,15 @@ def test_golden_population_denominators_channels_decomposition_rankings(users):
     assert (overall.baseline.denominator.value, overall.baseline.numerator.value, overall.baseline.value) == (1000, 240, .24)
     assert (overall.current.denominator.value, overall.current.numerator.value, overall.current.value) == (1000, 188, .188)
     assert overall.delta == pytest.approx(-5.2)
-    assert overall.baseline.definition_ref.metric_id == 'new_customer_cvr'
+    assert overall.baseline.definition_ref.metric_id == 'selected_cohort_conversion_rate'
     assert overall.baseline.definition_ref.version == '1'
+    assert overall.baseline.denominator.definition_ref.metric_id == 'selected_cohort_user_count'
+    assert overall.baseline.numerator.definition_ref.metric_id == 'selected_cohort_converted_user_count'
     assert overall.grain.keys == ('user_id',)
-    assert overall.grain.row_semantics == 'unique_registered_user'
+    assert overall.grain.row_semantics == 'unique_selected_user'
+    assert overall.population.entity_type == 'user'
+    assert overall.population.population_kind == 'selected_cohort_population'
+    assert overall.population.registration_status_verified is False
     assert overall.population.cohort_values == ('previous_month', 'recent_month')
     assert overall.population.new_customer_only is None  # H1 assumption, not invented registration filtering.
     assert overall.population.time_window == 'cohort_labels_only_dates_not_recorded'
@@ -136,9 +142,11 @@ def test_true_metric_unsupported_scope_and_top3_values(users):
     assert mean.provenance.input_refs[0].version is None
     for ranking in summary.rankings:
         model = ranking.dimensions[0].value
-        expected = sorted(a.result_data['models'][model].items(), key=lambda row: (-row[1]['value'], row[0]))[:3]
+        expected = list(a.result_data['models'][model].items())[:3]
         assert [(m.entity, m.value) for m in ranking.members[:3]] == [(name, value['value']) for name, value in expected]
         assert [m.rank for m in ranking.members[:3]] == [1, 2, 3]
+        assert ranking.included_count == 3 and ranking.total_count == 5
+        assert ranking.transport_coverage == 'partial'
     assert [(m.entity, m.value) for m in summary.rankings[0].members[:3]] == [('organic', 150), ('search_ads', 128), ('social_ads', 64)]
     assert users.groupby('acquisition_channel').converted.sum().to_dict()['social_ads'] == 64
     assert '3 items' not in summary.model_dump_json()
@@ -206,7 +214,7 @@ def test_provenance_hash_stability_time_excluded(users):
     assert first.content_hash == second.content_hash and first.pack_id == second.pack_id
     assert first.evidence == second.evidence and first.produced_at != second.produced_at
     data = first.model_dump(mode='json', exclude={'produced_at', 'pack_id', 'content_hash'})
-    assert canonical_hash(data) == first.content_hash
+    assert canonical_hash(evidence_pack_identity_material(data)) == first.content_hash
 
 
 @pytest.mark.parametrize('component', ['execution_spec_id', 'fingerprint', 'policy', 'result_version'])
@@ -266,11 +274,15 @@ def test_unit_budget_keeps_atomic_core_and_reports_omissions():
 
 
 def test_summary_top20_keeps_global_rank_and_marks_transport(users):
-    a = legacy_artifact(users)
-    values = {f'c{i:02}': {'value': float(30-i), 'percentage': round((30-i)/465*100, 2)} for i in range(30)}
-    a.result_data['models'] = {'linear': values}
-    a.result_data['summary']['model_comparison'] = [dict(model='linear', top3=[dict(touchpoint=n, percentage=e['percentage']) for n, e in list(values.items())[:3]])]
-    pack = build_evidence_pack(a)
+    pack = build_evidence_pack(legacy_artifact(users))
+    source = evidence(pack, 'ranking')[0]
+    members = tuple(RankingMember(rank=index + 1, ties=(f'c{index:02}',), entity=f'c{index:02}',
+                                  value=float(30 - index), unit='allocated_value') for index in range(30))
+    ranking = finalize_evidence(source.model_copy(update={
+        'members': members, 'ranking_universe': tuple(f'c{index:02}' for index in range(30)),
+        'included_count': 30, 'total_count': 30, 'transport_coverage': 'complete',
+    }))
+    pack = pack.model_copy(update={'evidence': tuple(e for e in pack.evidence if e.evidence_type != 'ranking') + (ranking,)})
     summary = build_safe_result_summary_v2(pack)
     ranking, = summary.rankings
     assert ranking.members[0].entity == 'c00' and ranking.members[-1].entity == 'c19'
@@ -433,3 +445,194 @@ def test_pack_byte_budget_drops_optional_units_before_rejecting_core(users, monk
     a = artifact(users)
     del a.params['execution_spec']
     with pytest.raises(EvidenceError): build_evidence_pack(a)
+
+
+def test_f01_unbound_new_user_flag_cannot_upgrade_population_identity(users):
+    frame = users[list(COLUMNS.values())].copy()
+    frame['new_user_flag'] = 0
+    pack = build_evidence_pack(artifact(frame))
+    overall, = evidence(pack, 'comparison', 'cvr_delta_pp')
+    assert (overall.baseline.denominator.value, overall.baseline.numerator.value, overall.baseline.value) == (1000, 240, .24)
+    assert (overall.current.denominator.value, overall.current.numerator.value, overall.current.value) == (1000, 188, .188)
+    assert overall.delta == pytest.approx(-5.2)
+    for unit in pack.evidence:
+        definition_ids = {dependency['id'] for dependency in collect_semantic_dependencies(unit)
+                          if dependency['kind'] == 'metric_definition'}
+        assert not any(identifier.startswith('new_customer') for identifier in definition_ids)
+        assert unit.population.entity_type == 'user'
+        assert unit.population.population_kind == 'selected_cohort_population'
+        assert unit.population.registration_status_verified is False
+        assert unit.grain.row_semantics == 'unique_selected_user'
+        assert unit.grain.entity == 'user'
+
+
+@pytest.mark.parametrize('mutation', [
+    'wrong_order', 'wrong_entity', 'wrong_value', 'wrong_percentage',
+    'duplicate_entity', 'missing_member', 'extra_member', 'wrong_rank', 'tie_mismatch',
+])
+def test_f02_persisted_legacy_top3_contradictions_fail_closed(users, mutation):
+    a = legacy_artifact(users)
+    top = a.result_data['summary']['model_comparison'][0]['top3']
+    if mutation == 'wrong_order':
+        top.reverse()
+    elif mutation == 'wrong_entity':
+        top[0]['touchpoint'] = 'imaginary'
+    elif mutation == 'wrong_value':
+        top[0]['value'] += 1
+    elif mutation == 'wrong_percentage':
+        top[0]['percentage'] += 1
+    elif mutation == 'duplicate_entity':
+        top[1] = copy.deepcopy(top[0])
+    elif mutation == 'missing_member':
+        top.pop()
+    elif mutation == 'extra_member':
+        top.append(copy.deepcopy(top[-1]))
+    elif mutation == 'wrong_rank':
+        top[0]['rank'] += 1
+    else:
+        top[0]['ties'] = []
+    with pytest.raises(EvidenceError, match='RESULT_CONTRACT_INCONSISTENT'):
+        build_evidence_pack(a)
+
+
+def test_f02_missing_legacy_top3_does_not_invent_authoritative_ranking(users):
+    a = legacy_artifact(users)
+    del a.result_data['summary']['model_comparison']
+    pack = build_evidence_pack(a)
+    assert not evidence(pack, 'ranking')
+    assert 'legacy_ranking_not_recorded' in pack.quality_summary
+    assert pack.coverage.channels == 'unavailable' and pack.coverage.transport == 'partial'
+    assert evidence(pack, 'metric', 'represented_record_mean')
+    allocations = evidence(pack, 'metric', 'allocated_conversion_value')
+    assert len(allocations) == sum(len(entries) for entries in a.result_data['models'].values())
+    assert all({dimension.name for dimension in unit.dimensions} == {'model', 'touchpoint'} for unit in allocations)
+
+
+def _unit_key(unit):
+    return (unit.evidence_type, unit.metric_id, tuple((d.name, d.value) for d in unit.dimensions))
+
+
+@pytest.mark.parametrize('metric_id', [
+    'cvr_delta_pp', 'selected_cohort_conversion_rate',
+    'selected_cohort_converted_user_count', 'selected_cohort_user_count',
+    'channel_cvr', 'channel_converted_count', 'channel_user_count', 'channel_share',
+])
+def test_f03_every_nested_metric_definition_version_changes_dependent_evidence_ids(users, monkeypatch, metric_id):
+    from app.services import conversion_diagnosis_evidence_adapter as adapter
+    from app.services import evidence_common
+    before = build_evidence_pack(artifact(users))
+    definitions = dict(METRICS)
+    definitions[metric_id] = definitions[metric_id].model_copy(update={'version': 'h2-1.1-mutation'})
+    replacement = MappingProxyType(definitions)
+    monkeypatch.setattr(evidence_common, 'METRICS', replacement)
+    monkeypatch.setattr(adapter, 'METRICS', replacement)
+    after = build_evidence_pack(artifact(users))
+    before_by_key = {_unit_key(unit): unit for unit in before.evidence}
+    after_by_key = {_unit_key(unit): unit for unit in after.evidence}
+    affected = {
+        _unit_key(unit) for unit in before.evidence
+        if metric_id in {dependency['id'] for dependency in collect_semantic_dependencies(unit)
+                         if dependency['kind'] == 'metric_definition'}
+    }
+    assert affected
+    for key in before_by_key:
+        assert (before_by_key[key].evidence_id != after_by_key[key].evidence_id) == (key in affected)
+
+
+def test_f03_semantic_dependency_inventory_includes_nested_and_contract_refs(users):
+    pack = build_evidence_pack(artifact(users))
+    overall, = evidence(pack, 'comparison', 'cvr_delta_pp')
+    dependencies = collect_semantic_dependencies(overall)
+    metric_ids = {item['id'] for item in dependencies if item['kind'] == 'metric_definition'}
+    ref_ids = {item['id'] for item in dependencies if item['kind'] == 'definition_ref'}
+    assert metric_ids == {
+        'cvr_delta_pp', 'selected_cohort_conversion_rate',
+        'selected_cohort_converted_user_count', 'selected_cohort_user_count',
+    }
+    assert {'selected-cohort-population', 'selected-user-grain', 'evidence-support-taxonomy',
+            'ConversionDiagnosisResult@1', 'conversion-normalization'} <= ref_ids
+
+
+@pytest.mark.parametrize('component', [
+    'formula', 'adapter', 'normalization_policy', 'support_taxonomy',
+    'population', 'grain', 'support_scope', 'cannot_support',
+])
+def test_f03_other_semantic_dependencies_change_evidence_id(users, component):
+    unit, = evidence(build_evidence_pack(artifact(users)), 'decomposition')
+    data = unit.model_dump(mode='json')
+    data['evidence_id'] = 'pending'
+    if component == 'formula':
+        data['formula_ref']['version'] = '2'
+    elif component == 'adapter':
+        data['provenance']['adapter_ref']['version'] = 'h2-1.2'
+    elif component == 'normalization_policy':
+        data['provenance']['normalization_policy_ref']['version'] = '2'
+    elif component == 'support_taxonomy':
+        data['support_taxonomy_ref']['version'] = '2'
+    elif component == 'population':
+        data['population']['semantic_ref']['version'] = '2'
+    elif component == 'grain':
+        data['grain']['semantic_ref']['version'] = '2'
+    elif component == 'support_scope':
+        data['support_scope'].remove('descriptive_contribution')
+    else:
+        data['cannot_support'].remove('causal_effect')
+    changed = finalize_evidence(type(unit).model_validate(data))
+    assert changed.evidence_id != unit.evidence_id
+
+
+def test_f03_presentation_label_is_not_semantic_identity(users):
+    unit = build_evidence_pack(artifact(users)).evidence[0]
+    data = unit.model_dump(mode='json')
+    data['evidence_id'] = 'pending'
+    data['label'] = 'Presentation wording changed'
+    data['definition_ref']['label'] = 'Another presentation label'
+    changed = finalize_evidence(type(unit).model_validate(data))
+    assert changed.evidence_id == unit.evidence_id
+
+
+@pytest.mark.parametrize('collection', [
+    'channel_comparison', 'ranking_collection', 'quality_flags', 'field_bindings', 'ranking_universe',
+])
+def test_f04_nonsemantic_source_collection_order_keeps_evidence_and_pack_identity(users, collection):
+    baseline_artifact = artifact(users)
+    changed_artifact = artifact(users)
+    if collection == 'channel_comparison':
+        changed_artifact.result_data['channel_comparison'].reverse()
+    elif collection == 'ranking_collection':
+        changed_artifact.result_data['rankings'].reverse()
+    elif collection == 'quality_flags':
+        changed_artifact.result_data['quality_flags'].reverse()
+    elif collection == 'field_bindings':
+        changed_artifact.params['execution_spec']['field_bindings'].reverse()
+    else:
+        for ranking in changed_artifact.result_data['rankings']:
+            ranking['ranking_universe'].reverse()
+    before = build_evidence_pack(baseline_artifact)
+    after = build_evidence_pack(changed_artifact)
+    assert before.pack_id == after.pack_id and before.content_hash == after.content_hash
+    assert before.evidence == after.evidence
+
+
+def test_f04_ties_are_unordered_but_ranked_members_remain_ordered(users):
+    ranking = evidence(build_evidence_pack(artifact(users)), 'ranking')[0]
+    first = ranking.members[0]
+    member_a = first.model_copy(update={'ties': ('beta', 'alpha')})
+    member_b = first.model_copy(update={'ties': ('alpha', 'beta')})
+    a = finalize_evidence(ranking.model_copy(update={'evidence_id': 'pending', 'members': (member_a, *ranking.members[1:])}))
+    b = finalize_evidence(ranking.model_copy(update={'evidence_id': 'pending', 'members': (member_b, *ranking.members[1:])}))
+    assert a.evidence_id == b.evidence_id
+    reversed_result = artifact(users)
+    reversed_result.result_data['rankings'][0]['items'].reverse()
+    with pytest.raises(EvidenceError, match='RESULT_CONTRACT_INCONSISTENT'):
+        build_evidence_pack(reversed_result)
+
+
+def test_f04_pack_identity_canonicalizes_evidence_and_omission_sets(users):
+    pack = build_evidence_pack(artifact(users))
+    forward = pack.model_dump(mode='json', exclude={'produced_at', 'pack_id', 'content_hash'})
+    reversed_view = copy.deepcopy(forward)
+    reversed_view['evidence'].reverse()
+    reversed_view['quality_summary'].reverse()
+    reversed_view['omissions'].reverse()
+    assert canonical_hash(evidence_pack_identity_material(forward)) == canonical_hash(evidence_pack_identity_material(reversed_view))

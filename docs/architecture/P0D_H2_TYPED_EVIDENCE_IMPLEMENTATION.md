@@ -1,10 +1,26 @@
 # P0D-H2 — Typed Evidence Implementation
 
-日期：2026-09-07。**CURRENT：H2 实现待独立源码审计，不是最终冻结。**
+日期：2026-09-09。**CURRENT：H2.1 Evidence Semantic Integrity Remediation；等待原 clean-room auditor 复审，不是最终冻结。**
 
 H1 依赖是 `e11b7253821ff213699ca4113a72ba70b7ef0b78`，本机独立复审
 `P0D_H1_1_INDEPENDENT_REAUDIT.md` 确认 FINAL FREEZE: PASS，F01/F02 CLOSED。
 旧 H1/H1.1 文档的 BLOCKED/PASS 文字保留为历史，不在 H2 改写审计证据。
+
+## CURRENT — H2.1 remediation
+
+H2 独立审计的 F01–F04 是本轮 defect authority，原审计与 decision register 的
+`FAIL / FIX REQUIRED` 保持不变。H2.1 只修复以下边界：
+
+- F01：flagship population 收缩为 H1 已证明的 selected cohort users；当前 adapter 不再发布
+  `new_customer_*`、`registered_user` 或 `unique_registered_user` typed identity。
+- F02：legacy `models` 与 persisted Top3 必须按 producer contract 在 entity、value、percentage、
+  order、rank、ties 与 member count 上一致；矛盾统一失败关闭，发布顺序直接来自已验证的 persisted Top3。
+- F03：Evidence ID 在完整 typed unit 构造后生成，递归收集全部 MetricDefinition 与 Ref，
+  包括嵌套 rate/count/share、formula、population、grain、support taxonomy、adapter 与 provenance 定义版本。
+- F04：identity projection 集中规范化业务无序集合；ranked members、baseline/current、
+  decomposition terms 与 input_refs 继续保序。
+
+H1 deterministic math、Capability Registry 执行能力、服务器 ownership read、SummaryV2 原子预算和安全边界未重开。
 
 ## CURRENT — authority 与读取路径
 
@@ -65,8 +81,10 @@ source_analysis_ref、capability_ref、operator_ref、execution_spec_ref、input
 静态定义包括：
 
 ```text
-new_customer_count@1           converted_customer_count@1
-new_customer_cvr@1             cvr_delta_pp@1
+selected_cohort_user_count@1
+selected_cohort_converted_user_count@1
+selected_cohort_conversion_rate@1
+cvr_delta_pp@1
 channel_user_count@1           channel_share@1
 channel_converted_count@1      channel_cvr@1
 channel_cvr_delta_pp@1          conversion_count_delta@1
@@ -78,6 +96,9 @@ represented_user_count@legacy-1
 allocated_conversion_value@legacy-1
 ```
 
+历史 `new_customer_count@1`、`converted_customer_count@1`、`new_customer_cvr@1`
+保留为 `reserved` catalog entries，只用于兼容定义目录；当前 conversion adapter 无权生成这些 Evidence。
+
 每个 rate observation 与 share 都携带对应 definition_ref，分子/分母 Quantity 也含定义及单位。
 不是只在 registry 中登记而在传输时丢失引用。比较整体 delta 用 percentage_point；率/share 用 fraction。
 
@@ -87,30 +108,51 @@ H1 冻结的口径是 `all_input_users_in_selected_cohorts`，字段来自 entit
 baseline/current 标签来自 ComparisonSpec。H2 携带 entity_type/entity_key/cohort_field/cohort_values、
 filter_scope/population_role/channel 与 time_window。
 
-H1 并未保存明确日历起止日期，也未验证 new_user_flag，因此 H2 不把 demo 日期写死成所有数据的窗口：
-`time_window=cohort_labels_only_dates_not_recorded`，`new_customer_only=null`。
-注册人口语义沿用 H1 的业务假设，明确质量标记 `registration_population_assumed`、`calendar_window_not_recorded`。
-不能把注册假设写成已执行的过滤器。metric ID 保持约定，label 明确 selected cohort。
+H1 并未保存明确日历起止日期，也未验证 new_user_flag 或注册资格，因此 H2 不把 demo 日期写死成所有数据的窗口：
+`entity_type=user`、`population_kind=selected_cohort_population`、
+`filter_scope=all_input_users_in_selected_cohorts`、`new_customer_only=null`、
+`registration_status_verified=false`、`time_window=cohort_labels_only_dates_not_recorded`。
+`new_customer_qualification_not_verified`、`registration_population_not_verified` 与
+`calendar_window_not_recorded` 只是限制标记，不提升 typed identity。
 
-Flagship grain 为 user / 实际绑定的 entity key / unique_registered_user；derived fanout 的来源
+Flagship grain 为 user / 实际绑定的 entity key / unique_selected_user；derived fanout 的来源
 由 H1 frozen fingerprint hash 与 QualityEvidence 的 input_record_count、unique_user_count、projection 保留。
 legacy grain 为 represented_user / 原 user_id_col / joined_or_source_input_records，
 不在没有保存来源证明时断言必然是行为事件或特定 Join。
 
 ### Provenance / identity
 
-- source_analysis_ref.version = canonical hash(persisted result + 可选归档 revision)。无 revision 时用内容版本。
+- source_analysis_ref.version = canonical hash(adapter 使用的 persisted semantic fields + 可选归档 revision)。
+  legacy 的额外 raw/secret/presentation 字段不成为证据身份；conversion 的无序集合先 canonicalize。
 - frozen capability/operator/spec/input dataset versions、完整 authoritative fingerprint hash。
 - normalization policy ID/version/定义 hash、normalization records hash。
 - 参数 hash 绑定 operator parameters、population、comparison 与 field bindings；comparison 标签另有显式字段。
-- adapter_ref 固定 output contract + h2-1；每项 metric definition/version 单独携带。
+- adapter_ref 固定 output contract + h2-1.1；每项 metric definition/version 单独携带。
 - legacy 缺 ExecutionSpec、输入版本与 normalization 时返回 null，并带 legacy quality flags；绝不伪造。
 
-Evidence ID 绑定 analysis/result version、指标定义、population、dimension、类型及 provenance。
-Pack content_hash 对 schema/pack version、provenance、evidence、coverage、omissions、quality 做 canonical hash。
+Evidence ID 从最终 typed Evidence 的 `EvidenceIdentityMaterial` 产生：排除 evidence_id 和 presentation label，
+递归纳入所有 MetricDefinition/Ref 与完整事实、population/grain、scope/limitations、coverage 和 provenance。
+因此任何被引用的 nested definition version 改变都会改变依赖单元 ID；纯文案 label 改变不会 churn。
+Pack content_hash 对 semantic projection 做 canonical hash，并对无序 Evidence 集规范化。
 pack_id 使用该 hash；produced_at 来源于 Analysis 完成时间（否则创建时间），排除在内容 hash 外。
 相同 artifact 重读内容与引用稳定；result/spec/fingerprint/policy 改变会改变身份。
 H1 row-order policy 保留：数值相同但输入行序不同可以得到不同 provenance/pack hash。
+
+H2.1 canonical collection policy：
+
+| Collection | Order semantics | Identity policy |
+|---|---|---|
+| ranking members | 有；producer/rank contract | 保序，错误顺序 reject |
+| baseline/current | 有；比较方向 | 保序 |
+| decomposition members | 有；formula terms | 保序 |
+| provenance input_refs | 有；primary/base | 保序 |
+| quality flags / support / limitations | 无 | canonical sort |
+| field bindings | 无；role → dataset/column mapping | 仅在 H2 provenance projection 按 semantic key 排序 |
+| ranking universe / ties | 无；集合 | canonical sort |
+| channel comparisons / ranking collection | 无；独立事实集合 | source identity 与 pack identity canonical sort |
+| Evidence / omissions / evidence refs | 无；view order另行保留 | pack identity canonical sort |
+
+同一 transport/display 顺序仍可保留业务友好排列；它不再冒充事实身份。H1 ExecutionSpec 本身的冻结策略未改变。
 
 ### Scope / coverage
 
@@ -133,7 +175,8 @@ H1 compiler 当前会拒绝该场景的完整旗舰执行；H2 adapter 的 parti
 Adapter 不从原始数据计算 CVR，也不以算出的校验值替换结果。它校验：
 计数范围、分子/分母与已存 CVR 一致、渠道计数合计与整体一致、share 与分母一致、
 delta/current/baseline 一致、分解项与已存公式/总项/残差一致、ranking universe/成员/排序/ties/rank 一致，
-以及 operator、comparison、normalization records 与 spec 一致。
+以及 operator、comparison、normalization records 与 spec 一致。legacy 还严格核对 persisted Top3 的
+entity sequence、value、percentage、rank、ties、member count 与 producer-recorded model order。
 不一致统一 `RESULT_CONTRACT_INCONSISTENT`；不修补、不降级成可信 Evidence。
 H1 未舍入数值检查绝对容差1e-10；legacy 4dp 数值和2dp percentage 按已知舍入误差界检查。
 
@@ -162,8 +205,10 @@ summary.pack_ref/content_hash 指回权威包；evidence_refs 仅含实际携带
 
 2054/2000 四舍五入后1.03：support_scope 只有 represented_record_mean。
 它不能证明完整旅程、首触转化优势、漏斗瓶颈或渠道优化优先级。
-模型比较保存每个 model dimension、按分摊值排序的 entity/value/rank/ties；原 top3 必须能在模型结果中核验，
-因此不会压成“3 items”。所有 legacy evidence 为 descriptive_only/legacy_limited，
+新 producer 的 persisted Top3 保存每个 model dimension、entity/value/percentage/rank/ties；adapter 只发布
+这份通过校验的 persisted prefix，不从 full models 重新排序或补造完整 ranking。历史结果若没有 Top3，
+ranking 不可用，同时保留按 model/touchpoint 维度表达的 allocation MetricEvidence。
+所有 legacy evidence 为 descriptive_only/legacy_limited，
 不声称有 H1 conversion decline 的冻结执行来源或完整业务人口。
 
 ## Security 与兼容性
@@ -185,6 +230,6 @@ legacy 使用显式字段投影，额外 raw/secret 字段不输出；完整内�
 - 未证明云部署/真实DB/存储并发或 source replay；不重新核验线下业务人群、因果或追踪完整性。
 - Legacy 输入版本缺失仍是历史事实；H2 没有新增结果版本表或伪造旧 provenance。
 
-**P0D-H2 IMPLEMENTATION: READY FOR INDEPENDENT SOURCE AUDIT**
+**P0D-H2.1 REMEDIATION: READY FOR INDEPENDENT RE-AUDIT**
 
 验证结果与交接清单见 [H2 QA](../qa/P0D_H2_TYPED_EVIDENCE_VERIFICATION.md)。等待独立审计，不进入 H3。

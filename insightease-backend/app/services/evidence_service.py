@@ -14,7 +14,8 @@ from app.schemas.evidence import (EvidencePack, InputRef, Omission, Provenance, 
 from app.services.capability_input_service import canonical_hash
 from app.services.conversion_diagnosis_evidence_adapter import adapt_conversion
 from app.services.attribution_evidence_adapter import adapt_attribution
-from app.services.evidence_common import EvidenceError, require
+from app.services.evidence_common import (EvidenceError, canonicalize_semantic_value,
+                                          evidence_pack_identity_material, require)
 
 ADAPTERS = MappingProxyType({'ConversionDiagnosisResult@1': adapt_conversion, 'LegacyAttributionResult@1': adapt_attribution})
 MAX_PACK_BYTES = 512 * 1024
@@ -38,15 +39,40 @@ def _result_contract(analysis):
     raise EvidenceError('EVIDENCE_UNAVAILABLE_UNSUPPORTED_CONTRACT')
 
 
+def _result_identity_material(contract, result, recorded_version):
+    """Select the persisted fields used by an adapter and canonicalize set-like collections."""
+    if contract == 'ConversionDiagnosisResult@1':
+        payload = result
+    else:
+        summary = result.get('summary', {})
+        payload = {
+            'schema_version': result.get('schema_version'),
+            'user_journey_count': result.get('user_journey_count'),
+            'models': result.get('models'),
+            'summary': {
+                'avg_touchpoints_per_journey': summary.get('avg_touchpoints_per_journey'),
+                'represented_record_count': summary.get('represented_record_count'),
+                'represented_user_count': summary.get('represented_user_count'),
+                'model_comparison': summary.get('model_comparison'),
+            },
+        }
+    return canonicalize_semantic_value({'result': payload, 'recorded_version': recorded_version})
+
+
 def _provenance(analysis, contract, spec):
     # Persisted content supplies its own immutable logical version; no DB migration.
-    result_version = canonical_hash({'result': analysis.result_data,
-                                     'recorded_version': getattr(analysis, 'result_version', None)})
+    result_version = canonical_hash(_result_identity_material(
+        contract, analysis.result_data, getattr(analysis, 'result_version', None)
+    ))
     ref = Ref(id=analysis.id, version=result_version)
     if spec:
         fp = spec.authoritative_input_fingerprint
+        bindings = sorted((b.model_dump(mode='json') for b in spec.field_bindings),
+                          key=lambda item: (item['role'], item['dataset_ref']['dataset_id'], item['column']))
         params = dict(operator_parameters=spec.operator_parameters.model_dump(), population=spec.population_spec.model_dump(),
-                      comparison=spec.comparison_spec.model_dump(), bindings=[b.model_dump() for b in spec.field_bindings])
+                      comparison=spec.comparison_spec.model_dump(), bindings=bindings)
+        normalization_records = sorted((r.model_dump(mode='json') for r in fp.normalization_records),
+                                       key=canonical_hash)
         return Provenance(source_analysis_ref=ref,
             capability_ref=Ref(id=spec.capability_ref.capability_id, version=spec.capability_ref.version),
             operator_ref=Ref(id=spec.operator_ref.operator_id, version=spec.operator_ref.version),
@@ -55,15 +81,15 @@ def _provenance(analysis, contract, spec):
             authoritative_input_fingerprint_hash=canonical_hash(fp.model_dump(mode='json')),
             normalization_policy_ref=Ref(id=fp.normalization_policy.policy_id, version=fp.normalization_policy.version),
             normalization_policy_hash=canonical_hash(fp.normalization_policy.model_dump(mode='json')),
-            normalization_records_hash=canonical_hash([r.model_dump(mode='json') for r in fp.normalization_records]),
+            normalization_records_hash=canonical_hash(normalization_records),
             parameters_hash=canonical_hash(params), comparison_baseline=spec.comparison_spec.baseline,
-            comparison_current=spec.comparison_spec.current, adapter_ref=Ref(id=contract, version='h2-1'))
+            comparison_current=spec.comparison_spec.current, adapter_ref=Ref(id=contract, version='h2-1.1'))
     return Provenance(source_analysis_ref=ref, capability_ref=Ref(id='touchpoint_attribution_legacy', version='1'),
         operator_ref=Ref(id='touchpoint_attribution', version='legacy-1'), execution_spec_ref=None,
         input_refs=(InputRef(dataset_id=analysis.dataset_id, version=None),), authoritative_input_fingerprint_hash=None,
         normalization_policy_ref=None, normalization_policy_hash=None, normalization_records_hash=None,
         parameters_hash=canonical_hash(analysis.params), comparison_baseline=None, comparison_current=None,
-        adapter_ref=Ref(id=contract, version='h2-1'))
+        adapter_ref=Ref(id=contract, version='h2-1.1'))
 
 
 def build_evidence_pack(analysis):
@@ -109,7 +135,7 @@ def build_evidence_pack(analysis):
             content = dict(schema_version='EvidencePack@1', pack_version='1', provenance=provenance.model_dump(mode='json'),
                            coverage=coverage.model_dump(), evidence=[e.model_dump(mode='json') for e in units],
                            omissions=[o.model_dump() for o in all_omissions], quality_summary=list(flags))
-            digest = canonical_hash(content)
+            digest = canonical_hash(evidence_pack_identity_material(content))
             pack = EvidencePack(**content, pack_id=digest, content_hash=digest, produced_at=timestamp.isoformat())
             if len(pack.model_dump_json().encode()) <= MAX_PACK_BYTES:
                 return pack
